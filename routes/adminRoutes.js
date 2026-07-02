@@ -10,11 +10,14 @@ import * as orderController from "../controller/admincontroller/orderController.
 import * as CouponController from "../controller/admincontroller/couponController.js";
 import * as OfferController from "../controller/admincontroller/offerController.js";
 import * as ReportController from "../controller/admincontroller/reportController.js";
+import adminApiRoutes from "./adminApiRoutes.js";
 import Order from "../models/ordersModel.js";
 
 const router = express.Router();
 
 router.use(adminAuth.noCache);
+
+router.use("/api", adminApiRoutes);
 
 router.use(async (req, res, next) => {
     try {
