@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Edit Profile | TechKart</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0657f9",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#0D0D0D",
+                        "card-dark": "#161b22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/css/views/user/profile/edit-profile.css">
+</head>
+
+<body
+    class="bg-background-dark font-display text-white selection:bg-primary selection:text-white min-h-screen flex flex-col">
+    <nav class="border-b border-white/5 bg-background-dark/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="size-8 text-primary">
+                    <svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                        <path clip-rule="evenodd"
+                            d="M24 0.757355L47.2426 24L24 47.2426L0.757355 24L24 0.757355ZM21 35.7574V12.2426L9.24264 24L21 35.7574Z"
+                            fill="currentColor" fill-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight">TechKart</h1>
+            </div>
+            <a href="/user/profile"
+                class="text-sm font-medium text-white/60 hover:text-white transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">arrow_back</span>
+                Back to Profile
+            </a>
+        </div>
+    </nav>
+
+    <main class="flex-1 p-6 md:p-10 flex items-center justify-center">
+        <div class="max-w-2xl w-full">
+            <div class="glass-card rounded-[2.5rem] p-10 md:p-12 relative border border-white/5 overflow-hidden">
+                <div class="mb-10 text-center">
+                    <h2 class="text-3xl font-bold tracking-tight mb-2">Edit Your Profile</h2>
+                    <p class="text-white/40">Keep your information up to date</p>
+                </div>
+
+                <form id="editProfileForm" action="/user/profile/edit" method="POST" enctype="multipart/form-data"
+                    class="space-y-8">
+                    <div class="space-y-6">
+                        <!-- Profile Image Section -->
+                        <div class="flex flex-col items-center justify-center mb-10 pb-8 border-b border-white/5">
+
+                            <label for="avatarInput" class="flex flex-col items-center cursor-pointer group">
+                                <div class="relative mb-5">
+                                    <div
+                                        class="size-32 rounded-full border-4 border-white/5 p-1 transition-all group-hover:border-primary/50 group-hover:shadow-[0_0_20px_rgba(6,87,249,0.3)] duration-300">
+                                        <div
+                                            class="size-full rounded-full overflow-hidden bg-primary/20 flex items-center justify-center">
+
+                                            <% if (user.profileImage) { %>
+                                                <img id="previewImg" src="<%= user.profileImage %>"
+                                                    referrerpolicy="no-referrer" class="w-full h-full object-cover">
+                                                <% } else { %>
+                                                    <span
+                                                        class="text-4xl flex items-center justify-center w-full h-full text-white/50">👤</span>
+                                                    <% } %>
+
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                        <span class="material-symbols-outlined text-white text-3xl">add_a_photo</span>
+                                    </div>
+                                </div>
+
+                                <span
+                                    class="text-primary text-sm font-bold tracking-wide group-hover:text-primary/80 transition-colors uppercase">
+                                    Update Picture
+                                </span>
+                            </label>
+
+                            <!--  HIDDEN FILE INPUT -->
+                            <input type="file" id="avatarInput" name="avatar" accept="image/*" class="hidden">
+
+                        </div>
+                        <!-- Full Name -->
+                        <div class="flex flex-col gap-3">
+                            <label for="fullname"
+                                class="text-white/40 text-xs font-bold uppercase tracking-widest ml-1">Full
+                                Name</label>
+                            <input type="text" id="fullname" name="fullname" value="<%= user.fullname %>"
+                                class="w-full input-glass rounded-2xl px-6 py-4 text-white font-medium text-lg placeholder:text-white/20 focus:outline-none ring-0 focus:ring-0">
+                        </div>
+
+                        <!-- Email (Read Only for now as requested or standard) -->
+                        <div class="flex flex-col gap-3 opacity-60">
+                            <label class="text-white/40 text-xs font-bold uppercase tracking-widest ml-1">Email
+                                (Primary)</label>
+                            <div
+                                class="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-4 text-white/50 font-medium text-lg flex items-center justify-between">
+                                <span>
+                                    <%= user.email %>
+                                </span>
+                                <span class="material-symbols-outlined text-sm">lock</span>
+                            </div>
+                            <p class="text-[10px] text-white/30 italic ml-1">Contact support to change your primary
+                                email.</p>
+                        </div>
+
+                        <!-- Phone Number -->
+                        <div class="flex flex-col gap-3">
+                            <label for="phone"
+                                class="text-white/40 text-xs font-bold uppercase tracking-widest ml-1">Phone
+                                Number</label>
+                            <div class="relative">
+                                <span
+                                    class="absolute left-6 top-1/2 -translate-y-1/2 text-white/30 font-bold">+91</span>
+                                <input type="tel" id="phone" name="phone" value="<%= user.phone || '' %>"
+                                    placeholder="Enter your mobile number"
+                                    class="w-full input-glass rounded-2xl pl-16 pr-6 py-4 text-white font-medium text-lg placeholder:text-white/20 focus:outline-none ring-0 focus:ring-0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-6">
+                        <button type="submit"
+                            class="w-full bg-primary hover:bg-primary/90 text-white py-5 rounded-2xl text-lg font-bold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-3 group">
+                            Save Changes
+                            <span
+                                class="material-symbols-outlined group-hover:translate-x-1 transition-transform">check_circle</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="p-10 text-center text-white/20 text-xs uppercase tracking-[0.2em]">
+        &copy; 2026 TechKart Premium Ecosystem
+    </footer>
+
+    <script src="/js/user/profile/edit-profile.js"></script>
+</body>
+
+</html>

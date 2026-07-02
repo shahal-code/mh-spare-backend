@@ -1,0 +1,57 @@
+
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;300;400;500;700;900&display=swap');
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #050505;
+            color: #fff;
+        }
+
+        .premium-heading {
+            letter-spacing: -0.02em;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .bg-primary {
+            background-color: #3b82f6;
+        }
+
+        /* Tailwind blue-500 */
+        .text-primary {
+            color: #3b82f6;
+        }
+
+        .FILL {
+            font-variation-settings: 'FILL' 1;
+        }
+
+        .img-zoom-container {
+            position: relative;
+            cursor: zoom-in;
+            overflow: hidden;
+        }
+
+        #mainImage {
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center center;
+        }
+
+        .img-zoom-container:hover #mainImage {
+            transform: scale(2.2);
+        }
+
+        @media (max-width: 1024px) {
+            .img-zoom-container:hover #mainImage {
+                transform: none !important;
+            }
+
+            .img-zoom-container {
+                cursor: default;
+            }
+        }
+    

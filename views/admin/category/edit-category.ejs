@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TechKart Admin - Edit Category</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0055ff",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#0d0d0d",
+                        "card-bg": "rgba(23, 33, 54, 0.4)",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/css/views/admin/category/edit-category.css">
+</head>
+
+<body class="flex min-h-screen bg-[#0D0D0D]">
+    <%- include('../../partials/admin/sidebar') %>
+
+        <main class="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar">
+            <%- include('../../partials/admin/header') %>
+
+                <div class="p-10 max-w-4xl mx-auto w-full space-y-8">
+                    <!-- Breadcrumbs -->
+                    <nav class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                        <a href="/admin/category" class="hover:text-primary transition-colors">Categories</a>
+                        <span class="material-symbols-outlined text-xs">chevron_right</span>
+                        <span class="text-slate-300">Edit Category</span>
+                        <span class="material-symbols-outlined text-xs">chevron_right</span>
+                        <span class="text-primary">
+                            <%= category.name %>
+                        </span>
+                    </nav>
+
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <h2 class="text-3xl font-bold tracking-tight">Edit Category</h2>
+                            <p class="text-xs text-slate-500 uppercase tracking-widest font-medium mt-1">Modify your
+                                category configuration</p>
+                        </div>
+                        <a href="/admin/category"
+                            class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-[10px] font-bold uppercase tracking-widest">
+                            <span class="material-symbols-outlined text-sm">arrow_back</span>
+                            Back to List
+                        </a>
+                    </div>
+
+                    <section class="glass-morphism rounded-3xl p-10 border border-white/5 relative overflow-hidden">
+                        <form id="editCategoryForm" class="space-y-8 relative z-10">
+                            <input type="hidden" id="categoryId" value="<%= category._id %>">
+                            <div class="grid grid-cols-1 gap-8">
+                                <div>
+                                    <label
+                                        class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Category
+                                        Name</label>
+                                    <input type="text" id="categoryName" name="name" value="<%= category.name %>"
+                                        class="input-field w-full" placeholder="e.g. Gaming Gear" oninput="clearError('categoryName')" />
+                                    <p id="categoryNameError" class="field-error"></p>
+                                </div>
+
+                                <div>
+                                    <label
+                                        class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Description</label>
+                                    <textarea id="categoryDescription" name="description"
+                                        class="input-field w-full h-16 resize-none"
+                                        placeholder="Provide a detailed description..." oninput="clearError('categoryDescription')"><%= category.description %></textarea>
+                                    <p id="categoryDescriptionError" class="field-error"></p>
+                                </div>
+
+                                <div class="pt-6 flex gap-4">
+                                    <button type="submit"
+                                        class="flex-1 bg-primary hover:bg-primary/90 text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all shadow-[0_8px_25px_rgba(0,85,255,0.3)]">
+                                        Save Changes
+                                    </button>
+                                    <button type="button" onclick="window.location.href='/admin/category'"
+                                        class="px-8 py-4 rounded-2xl border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-all text-xs font-bold uppercase tracking-widest">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <!-- Background Glow -->
+                        <div
+                            class="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[100px] pointer-events-none -z-10 rounded-full">
+                        </div>
+                    </section>
+                </div>
+        </main>
+
+        <script src="/js/validation.js"></script>
+</body>
+
+</html>

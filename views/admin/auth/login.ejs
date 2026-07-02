@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+ <html class="dark" lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TechKart Admin Secure Login</title>
+
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/css/views/admin/auth/login.css">
+  <script src="/js/admin/auth/login.js"></script>
+</head>
+
+<body class="bg-[#0d0d0d] text-white min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+  <div class="fixed inset-0 glow-corner-tl pointer-events-none"></div>
+  <div class="fixed inset-0 glow-corner-br pointer-events-none"></div>
+
+  <main class="relative z-10 w-full max-w-[1440px] px-6 py-12 flex flex-col items-center justify-center min-h-screen">
+    <div class="glass-morphism w-full max-w-[520px] p-10 md:p-14 rounded-xl flex flex-col items-center shadow-2xl">
+      <!-- Branding -->
+      <div class="mb-10 text-center">
+        <div class="flex items-center justify-center gap-2 mb-2">
+          <span class="material-symbols-outlined text-blue-500 text-5xl">bolt</span>
+          <h1 class="text-3xl font-bold tracking-tighter uppercase">
+            TechKart
+          </h1>
+        </div>
+
+        <div class="flex items-center justify-center gap-3">
+          <div class="h-[1px] w-8 bg-blue-500/40"></div>
+          <span class="text-xs font-bold tracking-[0.4em] text-blue-500 uppercase">Admin Portal</span>
+          <div class="h-[1px] w-8 bg-blue-500/40"></div>
+        </div>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <% if (locals.message) { %>
+        <div
+          class="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm mb-6 w-full text-center">
+          <%= message %>
+        </div>
+        <% } %>
+          <form action="/admin/login" method="POST" class="w-full space-y-6">
+            <!-- Email -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-400 tracking-wider uppercase ml-1">
+                Administrator Email
+              </label>
+
+              <div class="relative group">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                  badge
+                </span>
+
+                <input name="email" type="text" placeholder="  Id" value="<%= locals.email || '' %>"
+                  class="w-full bg-[#0d0d0d] border border-white/10 rounded-lg py-4 pl-12 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 input-glow" />
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="space-y-2">
+              <label class="block text-sm font-medium text-slate-400 tracking-wider uppercase ml-1">
+                Password
+              </label>
+
+              <div class="relative group">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                  encrypted
+                </span>
+
+                <input name="password" type="password" placeholder="  ••••••••"
+                  class="w-full bg-[#0d0d0d] border border-white/10 rounded-lg py-4 pl-12 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500 input-glow" />
+              </div>
+            </div>
+
+            <div class="flex justify-center pt-2">
+              <a class="text-xs text-slate-500 hover:text-blue-500 underline underline-offset-4" href="#">
+                Forgot Security Credentials?
+              </a>
+            </div>
+
+            <button type="submit"
+              class="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-blue-900 hover:opacity-90 text-white font-bold py-5 rounded-lg transition-all">
+              <span class="material-symbols-outlined">lock</span>
+              <span class="tracking-widest uppercase">Secure Login</span>
+            </button>
+          </form>
+
+          <div class="mt-10 flex items-center gap-2 text-[10px] text-slate-600 uppercase tracking-widest">
+            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            System Status: Encrypted & Operational
+          </div>
+    </div>
+  </main>
+</body>
+
+</html>

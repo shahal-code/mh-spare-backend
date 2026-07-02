@@ -1,0 +1,28 @@
+
+    body {
+      font-family: "Space Grotesk", sans-serif;
+      background: #0d0d0d;   
+    }
+
+    .glass-morphism {
+      background: rgba(23, 33, 54, 0.6);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .glow-corner-tl {
+      background: radial-gradient(circle at top left,
+          rgba(0, 85, 255, 0.15) 0%,
+          transparent 50%);
+    }
+
+    .glow-corner-br {
+      background: radial-gradient(circle at bottom right,
+          rgba(0, 85, 255, 0.15) 0%,
+          transparent 50%);
+    }
+
+    .input-glow:focus {
+      box-shadow: 0 0 15px rgba(0, 85, 255, 0.3);
+    }
+  

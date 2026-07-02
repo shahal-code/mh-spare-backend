@@ -1,0 +1,84 @@
+<!-- ═══ MH SPARE HUB Design System ═══ -->
+<link rel="stylesheet" href="/css/mh-design.css">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script>(function(){try{const t=localStorage.getItem('admin-theme');if(t==='light')document.documentElement.classList.remove('dark');else document.documentElement.classList.add('dark');}catch(e){}})()</script>
+
+<% const activeClasses="bg-primary/10 text-primary border-r-2 border-primary shadow-[inset_0_0_20px_rgba(0,85,255,0.1)]"; 
+   const inactiveClasses="text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5"; %>
+    <aside id="adminSidebar" class="mh-admin-sidebar fixed lg:static inset-y-0 left-0 z-[70] w-[280px] flex flex-col bg-transparent transition-transform duration-300 -translate-x-full lg:translate-x-0 border-r border-transparent h-screen">
+        <div class="mh-admin-sidebar-logo">
+            <a href="/admin/dashboard">
+                <img src="https://raw.githubusercontent.com/muhammedhaseeb9645/MH-SPARE-HUB/refs/heads/main/logo/Logo%20big%20.png" alt="MH SPARE HUB" style="height: 35px; filter: drop-shadow(0 0 1px rgba(0,210,255,0.3));">
+            </a>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <nav class="flex-1 px-4 space-y-1 mt-4 overflow-y-auto custom-scrollbar">
+            <a class="flex items-center gap-4 px-4 py-3 rounded-lg <%= locals.activePage === 'dashboard' ? activeClasses : inactiveClasses %> transition-all group"
+                href="/admin/dashboard">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span class="font-medium text-sm">Dashboard</span>
+            </a>
+            <a class="flex items-center gap-4 px-4 py-3 rounded-lg <%= locals.activePage === 'products' ? activeClasses : inactiveClasses %> transition-all group"
+                href="/admin/product">
+                <span class="material-symbols-outlined">inventory_2</span>
+                <span class="font-medium text-sm">Products</span>
+            </a>
+            <a class="flex items-center gap-4 px-4 py-3 rounded-lg <%= locals.activePage === 'orders' ? activeClasses : inactiveClasses %> transition-all group"
+                href="/admin/orders">
+                <span class="material-symbols-outlined">shopping_cart</span>
+                <span class="font-medium text-sm">Orders</span>
+            </a>
+            <a class="flex items-center gap-4 px-4 py-3 rounded-lg <%= locals.activePage === 'returns' ? activeClasses : inactiveClasses %> transition-all group"
+                href="/admin/returns">
+                <span class="material-symbols-outlined">keyboard_return</span>
+                <span class="font-medium text-sm flex-1">Return Requests</span>
+                <% if (locals.returnCount> 0) { %>
+                    <span
+                        class="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.4)] animate-pulse">
+                        <%= returnCount %>
+                    </span>
+                    <% } %>
+            </a>
+            <a class="flex items-center gap-4 px-4 py-3 rounded-lg <%= locals.activePage === 'customers' ? activeClasses : inactiveClasses %> transition-all group"
+                href="/admin/users">
+                <span class="material-symbols-outlined">group</span>
+                <span class="font-medium text-sm">Customers</span>
+            </a>
+            <a class="flex items-center gap-4 px-4 py-3 rounded-lg <%= locals.activePage === 'coupons' ? activeClasses : inactiveClasses %> transition-all group"
+                href="/admin/coupons">
+                <span class="material-symbols-outlined">confirmation_number</span>
+                <span class="font-medium text-sm">Coupons</span>
+            </a>
+            <a class="flex items-center gap-4 px-4 py-3 rounded-lg <%= locals.activePage === 'reports' ? activeClasses : inactiveClasses %> transition-all group"
+                href="/admin/reports">
+                <span class="material-symbols-outlined">monitoring</span>
+                <span class="font-medium text-sm">Reports</span>
+            </a>
+            <a class="flex items-center gap-4 px-4 py-3 rounded-lg <%= locals.activePage === 'category' ? activeClasses : inactiveClasses %> transition-all group"
+                href="/admin/category">
+                <span class="material-symbols-outlined">category</span>
+                <span class="font-medium text-sm">Category</span>
+            </a>
+            <a class="flex items-center gap-4 px-4 py-3 rounded-lg <%= locals.activePage === 'offers' ? activeClasses : inactiveClasses %> transition-all group"
+                href="/admin/offers">
+                <span class="material-symbols-outlined">redeem</span>
+                <span class="font-medium text-sm">Offer</span>
+            </a>
+        </nav>
+        <div class="p-6 border-t border-white/5">
+            <a href="/admin/logout"
+                class="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-all mt-auto mb-4">
+                <span class="material-symbols-outlined font-bold">logout</span>
+                <span class="font-bold text-sm">Logout</span>
+            </a>
+            <div class="bg-primary/5 rounded-xl p-4">
+                <p class="text-[10px] text-primary font-bold uppercase tracking-widest mb-1">System Status</p>
+                <div class="flex items-center gap-2">
+                    <div class="h-2 w-2 rounded-full bg-emerald-500"></div>
+                    <span class="text-xs text-slate-400">Secure &amp; Online</span>
+                </div>
+            </div>
+        </div>
+    </aside>

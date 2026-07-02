@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>MH SPARE HUB Signup</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
+    
+    <!-- ═══ MH SPARE HUB Design System ═══ -->
+    <link rel="stylesheet" href="/css/mh-design.css">
+    <script>(function(){try{const t=localStorage.getItem('theme');if(t==='light')document.documentElement.classList.remove('dark');else document.documentElement.classList.add('dark');}catch(e){}})()</script>
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0055ff",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#0f1623",
+                        "dark-form": "#0D0D0D",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/css/views/user/auth/signup.css">
+    <script src="/js/user/auth/signup.js"></script>
+</head>
+
+<body style="background: var(--bg-page); color: var(--text-primary); overflow-x: hidden; min-height: 100vh;">
+    <div class="flex h-screen w-full flex-col lg:flex-row">
+        <!-- Hero Section -->
+        <div class="relative hidden lg:flex lg:w-1/2 flex-col justify-center items-center overflow-hidden" style="background: var(--bg-surface); border-right: 1px solid var(--border);">
+            <div class="relative z-20 flex flex-col items-center text-center px-12">
+                <img src="https://raw.githubusercontent.com/muhammedhaseeb9645/MH-SPARE-HUB/refs/heads/main/logo/Logo%20big%20.png" alt="MH SPARE HUB" style="height: 60px; margin-bottom: 24px; filter: drop-shadow(0 0 1px rgba(0,210,255,0.3));">
+                <h1 style="font-size: 2.5rem; font-weight: 900; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 16px;">Create an Account</h1>
+                <p style="font-size: 1.1rem; color: var(--text-muted); max-width: 400px; line-height: 1.6;">
+                    Join our community and gain access to high-quality spare parts and exclusive offers.
+                </p>
+            </div>
+        </div>
+        <!-- Form Section -->
+        <div class="flex-1 flex flex-col min-h-screen lg:h-screen overflow-y-auto" style="background: var(--bg-page);">
+            <header class="flex items-center justify-between px-8 py-6 lg:px-12">
+                <div class="flex items-center gap-3 lg:hidden">
+                    <img src="https://raw.githubusercontent.com/muhammedhaseeb9645/MH-SPARE-HUB/refs/heads/main/logo/Logo%20big%20.png" alt="MH SPARE HUB" style="height: 30px;">
+                </div>
+                <div class="hidden lg:block"></div>
+                <a class="text-sm font-medium transition-colors" href="/user/dashboard" style="color: var(--text-muted); hover:color: var(--primary);">Home</a>
+            </header>
+            <main class="flex-1 flex flex-col justify-center px-6 py-12 lg:px-24">
+                <div class="max-w-[440px] w-full mx-auto">
+                    <div class="mb-10">
+                        <h2 style="font-size: 1.875rem; font-weight: 700; letter-spacing: -0.025em; color: var(--text-primary); margin-bottom: 8px;">Create Your Account</h2>
+                        <p style="color: var(--text-muted);">Get started with MH SPARE HUB today.</p>
+                    </div>
+                    <form id="signupForm" action="/user/signup" method="POST" class="space-y-5">
+                        <% if (locals.errors && errors.length> 0) { %>
+                            <div
+                                class="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-lg text-sm mb-4">
+                                <ul class="list-disc list-inside">
+                                    <% errors.forEach(err=> { %>
+                                        <li>
+                                            <%= err %>
+                                        </li>
+                                        <% }) %>
+                                </ul>
+                            </div>
+                            <% } else if (locals.message) { %>
+                                <div
+                                    class="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-lg text-sm mb-4">
+                                    <%= message %>
+                                </div>
+                                <% } %>
+                                    <div class="flex flex-col gap-2">
+                                        <label class="text-sm font-medium text-gray-300 px-1">Full Name</label>
+                                        <div class="relative group">
+                                            <span
+                                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors text-[20px]">person</span>
+                                            <input id="fullname" name="fullname"
+                                                class="w-full bg-[#172136]/50 border border-[#2e426b] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg h-14 pl-12 pr-4 text-white placeholder:text-gray-500 transition-all"
+                                                placeholder="Enter your full name" type="text"
+                                                value="<%= locals.fullname || '' %>" />
+                                        </div>
+                                        <p id="fullname-error" class="text-red-500 text-xs hidden"></p>
+                                    </div>
+                                    <div class="flex flex-col gap-2">
+                                        <label class="text-sm font-medium text-gray-300 px-1">Email Address</label>
+                                        <div class="relative group">
+                                            <span
+                                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors text-[20px]">mail</span>
+                                            <input id="email" name="email"
+                                                class="w-full bg-[#172136]/50 border border-[#2e426b] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg h-14 pl-12 pr-4 text-white placeholder:text-gray-500 transition-all"
+                                                placeholder="name@company.com" type="text"
+                                                value="<%= locals.email || '' %>" />
+                                        </div>
+                                        <p id="email-error" class="text-red-500 text-xs hidden"></p>
+                                    </div>
+                                    <div class="flex flex-col gap-2">
+                                        <label class="text-sm font-medium text-gray-300 px-1">Password</label>
+                                        <div class="relative group">
+                                            <span
+                                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors text-[20px]">lock</span>
+                                            <input id="password" name="password"
+                                                class="w-full bg-[#172136]/50 border border-[#2e426b] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg h-14 pl-12 pr-12 text-white placeholder:text-gray-500 transition-all"
+                                                placeholder="••••••••" type="password" />
+                                            <button type="button"
+                                                class="toggle-password absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
+                                                <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                            </button>
+                                        </div>
+                                        <p id="password-error" class="text-red-500 text-xs hidden"></p>
+                                    </div>
+                                    <div class="flex flex-col gap-2">
+                                        <label class="text-sm font-medium text-gray-300 px-1">Confirm Password</label>
+                                        <div class="relative group">
+                                            <span
+                                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors text-[20px]">lock_reset</span>
+                                            <input id="confirmPassword" name="confirmPassword"
+                                                class="w-full bg-[#172136]/50 border border-[#2e426b] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg h-14 pl-12 pr-12 text-white placeholder:text-gray-500 transition-all"
+                                                placeholder="••••••••" type="password" />
+                                            <button type="button"
+                                                class="toggle-password absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors">
+                                                <span class="material-symbols-outlined text-[20px]">visibility</span>
+                                            </button>
+                                        </div>
+                                        <p id="confirmPassword-error" class="text-red-500 text-xs hidden"></p>
+                                    </div>
+                                    <!-- Referral Code field inside the form -->
+                                    <div class="flex flex-col gap-2">
+                                        <label class="text-sm font-medium text-gray-300 px-1">Referral Code <span
+                                                class="text-gray-500 font-normal">(Optional)</span></label>
+                                        <div class="relative group">
+                                            <span
+                                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors text-[20px]">redeem</span>
+                                            <input id="referralCodeInput" name="referralCode"
+                                                class="w-full bg-[#172136]/50 border border-[#2e426b] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg h-14 pl-12 pr-4 text-white placeholder:text-gray-500 transition-all"
+                                                placeholder="Enter referral code (e.g. TECHKARTD9C8EF)" type="text"
+                                                value="<%= locals.referralCode || '' %>" />
+                                        </div>
+                                    </div>
+                                    <button
+                                        class="w-full bg-primary hover:bg-primary/90 text-white font-bold h-14 rounded-lg transition-all shadow-lg shadow-primary/20 mt-4 flex items-center justify-center gap-2"
+                                        type="submit">
+                                        Create Account
+                                        <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                                    </button>
+                    </form>
+                    <div class="relative my-10">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-800"></div>
+                        </div>
+                        <div class="relative flex justify-center text-xs uppercase">
+                            <span class="bg-dark-form px-4 text-gray-500 tracking-widest">Or continue with</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-4">
+
+                        <a href="/user/auth/google"
+                            class="flex items-center justify-center gap-2 h-12 bg-transparent border border-gray-800 hover:border-gray-600 rounded-lg transition-all text-sm font-medium shadow-sm active:scale-95 text-white">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                                    fill="#4285F4"></path>
+                                <path
+                                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                                    fill="#34A853"></path>
+                                <path
+                                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                                    fill="#FBBC05"></path>
+                                <path
+                                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z"
+                                    fill="#EA4335"></path>
+                            </svg>
+                            Google
+                        </a>
+
+                    </div>
+                    <div class="mt-12 text-center">
+                        <p class="text-gray-400 text-sm">
+                            Already have an account?
+                            <a class="text-primary font-semibold hover:underline ml-1" href="/user/login">Log In</a>
+                        </p>
+                    </div>
+                </div>
+            </main>
+            <footer class="px-8 py-6 text-center lg:text-left lg:px-24">
+                <p class="text-gray-600 text-xs">
+                    © 2024 TechKart Inc. All rights reserved.
+                    <a class="hover:text-gray-400 ml-2" href="#">Privacy Policy</a>
+                    <a class="hover:text-gray-400 ml-2" href="#">Terms of Service</a>
+                </p>
+            </footer>
+        </div>
+    </div>
+    <script src="/js/utils/password-toggle.js"></script>
+    <script>
+            // Token URL approach: pre-fill referral code from ?ref= query param
+            (function () {
+                const params = new URLSearchParams(window.location.search);
+                const refCode = params.get('ref');
+                if (refCode) {
+                    const input = document.getElementById('referralCodeInput');
+                    if (input && !input.value) input.value = refCode.toUpperCase();
+                }
+            })();
+    </script>
+</body>
+
+</html>

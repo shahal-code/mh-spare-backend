@@ -1,0 +1,44 @@
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            @apply bg-background-dark text-white;
+        }
+        .glass-morphism {
+            background: rgba(23, 33, 54, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .sidebar-item-active {
+            @apply bg-primary/10 text-primary border-r-2 border-primary shadow-[inset_0_0_20px_rgba(0,85,255,0.1)];
+        }
+        .input-field {
+            @apply w-full bg-white/5 border border-white/10 rounded-lg py-2.5 px-4 text-sm focus:ring-1 focus:ring-primary focus:border-primary text-slate-200 placeholder-slate-500 transition-all outline-none;
+        }
+        .label-text {
+            @apply text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 block;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .status-badge {
+            @apply px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5;
+        }
+        .status-out-for-delivery { @apply bg-blue-500/10 text-blue-500 border border-blue-500/20; }
+        .status-shipped { @apply bg-primary/10 text-primary border border-primary/20; }
+        .status-delivered { @apply bg-emerald-500/10 text-emerald-500 border border-emerald-500/20; }
+        .status-cancelled { @apply bg-rose-500/10 text-rose-500 border border-rose-500/20; }
+
+        /* Force dark mode for select options */
+        select option {
+            background-color: #1a2234 !important;
+            color: white !important;
+        }
+    

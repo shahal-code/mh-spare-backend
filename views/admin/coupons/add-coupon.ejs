@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TechKart Admin - Add Coupon</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { "primary": "#0055ff", "background-dark": "#0d0d0d" },
+                    fontFamily: { "display": ["Space Grotesk", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/css/views/admin/coupons/add-coupon.css">
+</head>
+
+<body class="flex min-h-screen bg-[#0D0D0D]">
+    <%- include('../../partials/admin/sidebar') %>
+
+    <main class="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar">
+        <%- include('../../partials/admin/header') %>
+
+        <div class="p-10 max-w-3xl mx-auto w-full space-y-8">
+            <!-- Breadcrumbs -->
+            <nav class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                <a href="/admin/coupons" class="hover:text-primary transition-colors">Coupons</a>
+                <span class="material-symbols-outlined text-xs">chevron_right</span>
+                <span class="text-slate-300">Add New Coupon</span>
+            </nav>
+
+            <div class="flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-bold tracking-tight">Create Coupon</h2>
+                    <p class="text-xs text-slate-500 uppercase tracking-widest font-medium mt-1">Set up a new promotional offer</p>
+                </div>
+                <a href="/admin/coupons" class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-[10px] font-bold uppercase tracking-widest">
+                    <span class="material-symbols-outlined text-sm">arrow_back</span>
+                    Back to List
+                </a>
+            </div>
+
+            <section class="glass-morphism rounded-3xl p-10 border border-white/5 relative overflow-hidden">
+                <form id="addCouponForm" class="grid grid-cols-2 gap-6 relative z-10" novalidate>
+
+                    <!-- Coupon Code -->
+                    <div class="col-span-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Coupon Code</label>
+                        <input type="text" id="couponCode" placeholder="e.g. SUMMER25"
+                            class="input-field !uppercase font-bold"
+                            oninput="clearError('couponCode')" />
+                        <p id="couponCodeError" class="field-error">Coupon code is required.</p>
+                        <p class="text-[10px] text-slate-500 mt-2 italic">Will be saved in uppercase automatically.</p>
+                    </div>
+
+                    <!-- Discount Type -->
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Discount Type</label>
+                        <select id="discountType" onchange="updateValueLabel()" class="input-field appearance-none">
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="flat">Fixed Amount (&#8377;)</option>
+                        </select>
+                    </div>
+
+                    <!-- Discount Value -->
+                    <div>
+                        <label id="valueLabel" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Discount Value (%)</label>
+                        <input type="number" id="discountValue" min="1" placeholder="e.g. 20"
+                            class="input-field"
+                            oninput="clearError('discountValue')" />
+                        <p id="discountValueError" class="field-error">Please enter a valid discount value.</p>
+                    </div>
+
+                    <!-- Min Purchase -->
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Min. Purchase Amount (&#8377;)</label>
+                        <input type="number" id="minPurchaseAmount" min="0" placeholder="e.g. 500" class="input-field" />
+                    </div>
+
+                    <!-- Max Discount -->
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">
+                            Max Discount Cap (&#8377;) <span class="normal-case text-slate-600 font-normal">optional</span>
+                        </label>
+                        <input type="number" id="maxDiscountAmount" min="0" placeholder="Leave blank for no cap" class="input-field" />
+                    </div>
+
+                    <!-- Expiration Date -->
+                    <div class="col-span-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Expiration Date</label>
+                        <input type="date" id="expirationDate"
+                            class="input-field"
+                            onchange="clearError('expirationDate')" />
+                        <p id="expirationDateError" class="field-error">Expiration date is required.</p>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="col-span-2 pt-2 flex gap-4">
+                        <button type="button" onclick="submitCoupon()"
+                            class="flex-1 bg-primary hover:bg-primary/90 text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all shadow-[0_8px_25px_rgba(0,85,255,0.3)]">
+                            Create Coupon
+                        </button>
+                        <button type="button" onclick="window.location.href='/admin/coupons'"
+                            class="px-8 py-4 rounded-2xl border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 transition-all text-xs font-bold uppercase tracking-widest">
+                            Cancel
+                        </button>
+                    </div>
+
+                </form>
+                <div class="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[100px] pointer-events-none -z-10 rounded-full"></div>
+            </section>
+        </div>
+    </main>
+
+    <script src="/js/validation.js"></script>
+    <script src="/js/admin/coupons/add-coupon.js"></script>
+</body>
+</html>

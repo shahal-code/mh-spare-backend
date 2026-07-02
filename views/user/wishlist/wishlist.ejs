@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TechKart | My Wishlist</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0055ff",
+                        "dark-bg": "#0D0D0D",
+                        "surface-dark": "#161b22",
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/css/views/user/wishlist/wishlist.css">
+</head>
+
+<body class="min-h-screen flex flex-col">
+    <%- include('../../partials/user/header') %>
+
+        <main class="flex-1 max-w-7xl mx-auto w-full px-6 py-16">
+            <div class="mb-12">
+                <h1 class="text-5xl font-black premium-heading tracking-tight mb-2">My Wishlist  </h1>
+                <p class="text-gray-400">Save your favorite tech for later.</p>
+            </div>
+
+            <% if (wishlist && wishlist.products && wishlist.products.length> 0) { %>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <% wishlist.products.forEach(item=> {
+                        const product = item.productId;
+                        if (!product) return;
+                        const variantIdStr = item.variantId ? item.variantId.toString() : null;
+                        const variant = product.variants.find(v => v._id.toString() === variantIdStr) ||
+                        product.variants[0];
+                        %>
+                        <div data-product-id="<%= product._id %>" data-variant-id="<%= variant?._id %>"
+                            class="glass-card group rounded-3xl overflow-hidden hover:border-primary/50 transition-all duration-500 <%= item.isUnavailable ? 'opacity-50 grayscale' : '' %>">
+                            <div class="relative aspect-[4/3] overflow-hidden">
+                                <img src="<%= (variant && variant.images && variant.images.length > 0) ? variant.images[0] : (product.images ? product.images[0] : '/img/placeholder.jpg') %>"
+                                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                <button onclick="removeFromWishlist('<%= product._id %>', '<%= variant?._id %>')"
+                                    class="absolute top-4 right-4 size-10 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-white hover:bg-red-500 transition-all duration-300">
+                                    <span class="material-symbols-outlined text-xl">close</span>
+                                </button>
+                            </div>
+                            <div class="p-8">
+                                <div class="flex justify-between items-start mb-4">
+                                    <h3 class="text-xl font-bold text-white group-hover:text-primary transition-colors">
+                                        <%= product.name %>
+                                    </h3>
+                                    <% if (!item.isUnavailable) { %>
+                                        <span class="text-primary font-bold">₹<%= variant?.price || 0 %></span>
+                                    <% } %>
+                                </div>
+                                <% if(variant && !item.isUnavailable) { %>
+                                    <div class="flex flex-wrap gap-2 mb-3">
+                                        <% if(variant.ram) { %><span
+                                                class="px-2 py-1 bg-white/5 rounded text-[10px] text-gray-400 font-bold">
+                                                <%= variant.ram %>
+                                            </span>
+                                            <% } %>
+                                                <% if(variant.storage) { %><span
+                                                        class="px-2 py-1 bg-white/5 rounded text-[10px] text-gray-400 font-bold">
+                                                        <%= variant.storage %>
+                                                    </span>
+                                                    <% } %>
+                                                        <% if(variant.processor) { %><span
+                                                                class="px-2 py-1 bg-white/5 rounded text-[10px] text-gray-400 font-bold">
+                                                                <%= variant.processor %>
+                                                            </span>
+                                                            <% } %>
+                                    </div>
+                                    <% } %>
+
+                                        <% if (item.isUnavailable) { %>
+                                            <span class="inline-block mb-4 text-sm font-bold text-red-500 bg-red-500/10 px-3 py-1 rounded-full">
+                                                Product Unavailable
+                                            </span>
+                                        <% } else { %>
+                                            <p class="text-gray-400 text-sm line-clamp-2 mb-8">
+                                                <%= product.description %>
+                                            </p>
+                                        <% } %>
+
+                                        <div class="flex gap-4">
+                                            <a href="/user/product/<%= product._id %>"
+                                                class="flex-1 py-4 bg-white text-black text-center font-black text-xs uppercase tracking-widest rounded-full hover:bg-primary hover:text-white transition-all duration-300">
+                                                View Product
+                                            </a>
+                                            <% if (item.isUnavailable) { %>
+                                                <button disabled
+                                                    class="size-12 rounded-full border border-red-500/30 bg-red-500/10 flex items-center justify-center text-red-500 cursor-not-allowed"
+                                                    title="Product Unavailable">
+                                                    <span class="material-symbols-outlined">block</span>
+                                                </button>
+                                            <% } else if (variant && variant.stock > 0) { %>
+                                                <button
+                                                    onclick="moveToCart('<%= product._id %>', '<%= variant?._id %>')"
+                                                    class="size-12 rounded-full border border-white/10 flex items-center justify-center hover:bg-primary hover:border-primary transition-all duration-300">
+                                                    <span class="material-symbols-outlined">add_shopping_cart</span>
+                                                </button>
+                                            <% } else { %>
+                                                <button disabled
+                                                    class="size-12 rounded-full border border-red-500/30 bg-red-500/10 flex items-center justify-center text-red-500 cursor-not-allowed"
+                                                    title="Out of Stock">
+                                                    <span
+                                                        class="material-symbols-outlined">remove_shopping_cart</span>
+                                                </button>
+                                            <% } %>
+                                        </div>
+                            </div>
+                        </div>
+                        <% }) %>
+
+                </div>
+                <% } else { %>
+                    <div class="glass-card rounded-3xl p-20 text-center">
+                        <span class="material-symbols-outlined text-6xl text-gray-700 mb-6">heart_broken</span>
+                        <h2 class="text-2xl font-bold mb-4">Your wishlist is empty</h2>
+                        <p class="text-gray-500 mb-10">Start exploring our collection and save what you love!</p>
+                        <a href="/user/shop"
+                            class="inline-block px-10 py-4 bg-primary text-white font-black uppercase tracking-widest rounded-full hover:scale-105 transition-all">
+                            Explore Shop
+                        </a>
+                    </div>
+                    <% } %>
+        </main>
+
+        <%- include('../../partials/user/footer') %>
+
+            <script src="/js/user/wishlist/wishlist.js"></script>
+</body>
+
+</html>

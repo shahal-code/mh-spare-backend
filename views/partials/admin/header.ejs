@@ -1,0 +1,56 @@
+<header
+    class="h-20 border-b border-white/5 flex items-center justify-between px-4 md:px-10 glass-morphism sticky top-0 z-40">
+    <div class="flex items-center gap-4">
+        <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white p-2">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+        <div>
+            <h2 class="text-lg md:text-xl font-bold tracking-tight whitespace-nowrap">
+                <%= locals.pageTitle || 'Admin Panel' %>
+            </h2>
+            <p class="hidden xs:block text-[10px] text-slate-500 uppercase tracking-widest font-medium">
+                <%= locals.pageSubtitle || 'Real-time Statistics' %>
+            </p>
+        </div>
+    </div>
+    <div class="flex items-center gap-4 md:gap-6">
+        <button onclick="toggleAdminTheme()" class="size-9 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition-all flex items-center justify-center border border-white/5 shadow-sm" title="Toggle Theme">
+            <span class="material-symbols-outlined block dark:hidden text-[20px]">light_mode</span>
+            <span class="material-symbols-outlined hidden dark:block text-[20px]">dark_mode</span>
+        </button>
+        <script>
+            function toggleAdminTheme() {
+                const isDark = document.documentElement.classList.toggle('dark');
+                localStorage.setItem('admin-theme', isDark ? 'dark' : 'light');
+            }
+        </script>
+        <% if (locals.activePage==='users' ) { %>
+            <button
+                class="bg-primary hover:bg-primary/80 text-white text-[10px] font-bold px-6 py-2.5 rounded-lg transition-all shadow-[0_0_20px_rgba(0,85,255,0.3)] uppercase tracking-widest flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">person_add</span>
+                Edit Customer
+            </button>
+            <% } else { %>
+                <button class="relative p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">notifications</span>
+                    <span
+                        class="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full ring-2 ring-white dark:ring-[#161b22]"></span>
+                </button>
+                <% } %>
+                    <div class="h-8 w-[1px] bg-white/10 mx-2"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-sm font-bold">shahal</p>
+                            <p class="text-[10px] text-primary uppercase tracking-widest">
+                                Master Admin
+                            </p>
+                        </div>
+                        <div
+                            class="h-10 w-10 rounded-full border border-primary/30 bg-primary/10 flex items-center justify-center overflow-hidden">
+                            <span class="material-symbols-outlined text-primary">person</span>
+                        </div>
+                    </div>
+    </div>
+</header>
+
+<script src="/js/partials/admin-header.js"></script>

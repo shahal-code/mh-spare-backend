@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Change Email | TechKart</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0657f9",
+                        "background-dark": "#0D0D0D",
+                        "card-dark": "#161b22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/css/views/user/auth/change-email.css">
+</head>
+
+<body class="bg-background-dark font-display text-white min-h-screen flex flex-col">
+    <div class="flex h-screen overflow-hidden">
+        <%- include('../../partials/user/sidebar') %>
+
+            <main class="flex-1 flex flex-col overflow-y-auto">
+                <header
+                    class="flex items-center justify-between px-10 py-5 border-b border-white/5 bg-background-dark/50 backdrop-blur-md sticky top-0 z-10">
+                    <div class="flex items-center gap-10">
+                        <h1 class="text-xl font-bold tracking-tight">Security</h1>
+                    </div>
+                </header>
+
+                <section class="p-10 max-w-2xl mx-auto w-full space-y-12 pb-20 mt-10">
+                    <div class="glass-card rounded-[2.5rem] p-12 relative border border-white/5 overflow-hidden">
+                        <div class="mb-10 text-center">
+                            <div
+                                class="size-20 rounded-2xl bg-primary/20 flex items-center justify-center mx-auto mb-6 text-primary">
+                                <span class="material-symbols-outlined text-4xl">mail</span>
+                            </div>
+                            <h2 class="text-3xl font-bold tracking-tight mb-2">Change Email</h2>
+                            <p class="text-white/40">Update your primary account email address</p>
+                        </div>
+
+                        <div id="messageContainer" class="hidden mb-6 p-4 rounded-xl text-sm font-medium"></div>
+
+                        <!-- Step 1: Verify Current Email -->
+                        <div id="step-1" class="space-y-8">
+                            <div class="mb-8 p-6 bg-primary/10 border border-primary/20 rounded-2xl flex items-start gap-4">
+                                <span class="material-symbols-outlined text-primary mt-1">security</span>
+                                <div class="text-sm text-primary/80 leading-relaxed">
+                                    For security, an OTP will be sent to your current email address (<span class="font-bold text-primary"><%= user.email %></span>) to verify your identity.
+                                </div>
+                            </div>
+                            
+                            <form id="step1Form" class="space-y-6">
+                                <div class="pt-2">
+                                    <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white py-5 rounded-2xl text-lg font-bold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-3 group">
+                                        Generate OTP
+                                        <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">lock_open</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Step 2: Verify OTP -->
+                        <div id="step-2" class="space-y-8 hidden">
+                            <div class="mb-8 p-6 bg-primary/10 border border-primary/20 rounded-2xl flex items-start gap-4">
+                                <span class="material-symbols-outlined text-primary mt-1">mark_email_read</span>
+                                <div class="text-sm text-primary/80 leading-relaxed">
+                                    An OTP has been sent to your current email. Please enter it below to verify your identity.
+                                </div>
+                            </div>
+                            
+                            <form id="step2Form" class="space-y-6">
+                                <div class="flex flex-col gap-3">
+                                    <label for="otp" class="text-white/40 text-xs font-bold uppercase tracking-widest ml-1">Enter 6-digit OTP</label>
+                                    <input type="text" id="otp" name="otp" placeholder="XXXXXX" required pattern="[0-9]{6}" maxlength="6"
+                                        class="w-full input-glass rounded-2xl px-6 py-4 text-center text-white font-black text-2xl tracking-[1em] placeholder:text-white/20 focus:outline-none ring-0">
+                                </div>
+                                <div class="pt-6">
+                                    <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white py-5 rounded-2xl text-lg font-bold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-3 group">
+                                        Verify OTP
+                                        <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">verified</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Step 3: Enter New Email -->
+                        <div id="step-3" class="space-y-8 hidden">
+                            <div class="mb-8 p-6 bg-primary/10 border border-primary/20 rounded-2xl flex items-start gap-4">
+                                <span class="material-symbols-outlined text-primary mt-1">mark_email_unread</span>
+                                <div class="text-sm text-primary/80 leading-relaxed">
+                                    Identity verified. You can now enter your new email address. A verification link will be sent to confirm the change.
+                                </div>
+                            </div>
+                            
+                            <form id="step3Form" action="/user/profile/change-email" method="POST" class="space-y-6">
+                                <div class="flex flex-col gap-3">
+                                    <label for="newEmail" class="text-white/40 text-xs font-bold uppercase tracking-widest ml-1">New Email Address</label>
+                                    <input type="email" id="newEmail" name="newEmail" placeholder="Enter your new email" required
+                                        class="w-full input-glass rounded-2xl px-6 py-4 text-white font-medium text-lg placeholder:text-white/20 focus:outline-none ring-0">
+                                </div>
+                                <div class="pt-6">
+                                    <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white py-5 rounded-2xl text-lg font-bold transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-3 group">
+                                        Send Verification Link
+                                        <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">send</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+            </main>
+    </div>
+    
+    <script src="/js/user/auth/change-email.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TechKart Admin - Offers</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { "primary": "#0055ff", "background-dark": "#0d0d0d", "card-bg": "#121620" },
+                    fontFamily: { "display": ["Space Grotesk", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/css/views/admin/offers/offers.css">
+</head>
+
+<body class="flex min-h-screen bg-[#0D0D0D]">
+    <%- include('../../partials/admin/sidebar') %>
+
+        <main class="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar">
+            <%- include('../../partials/admin/header') %>
+
+                <div class="p-8 lg:p-12 space-y-8">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h2 class="text-3xl font-bold tracking-tight mb-1">Offers Management</h2>
+                            <p class="text-sm text-slate-500 font-medium">Manage product and category offers
+                            </p>
+                        </div>
+                    </div>
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Total Offers -->
+                        <div class="glass-morphism rounded-xl p-6 border-l-4 border-l-primary">
+                            <div class="flex justify-between items-start mb-4">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total
+                                    Offers</p>
+                                <span
+                                    class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">style</span>
+                            </div>
+                            <h3 class="text-4xl font-bold tracking-tight text-white">
+                                <%= totalOffers %>
+                            </h3>
+                        </div>
+                        <!-- Active Offers -->
+                        <div class="glass-morphism rounded-xl p-6 border-l-4 border-l-emerald-500">
+                            <div class="flex justify-between items-start mb-4">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Offers
+                                </p>
+                                <span
+                                    class="material-symbols-outlined text-emerald-500 bg-emerald-500/10 p-2 rounded-lg">local_offer</span>
+                            </div>
+                            <h3 class="text-4xl font-bold tracking-tight text-emerald-400">
+                                <%= typeof activeOffers !=='undefined' ? activeOffers : 0 %>
+                            </h3>
+                        </div>
+                        <!-- Expired Offers -->
+                        <div class="glass-morphism rounded-xl p-6 border-l-4 border-l-rose-500">
+                            <div class="flex justify-between items-start mb-4">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Expired
+                                    Offers</p>
+                                <span
+                                    class="material-symbols-outlined text-rose-500 bg-rose-500/10 p-2 rounded-lg">timer_off</span>
+                            </div>
+                            <h3 class="text-4xl font-bold tracking-tight text-rose-400">
+                                <%= expiredOffers %>
+                            </h3>
+                        </div>
+                    </div>
+
+                    <section class="glass-morphism rounded-2xl overflow-hidden shadow-2xl">
+                        <div class="p-6 border-b border-white/5 flex flex-wrap items-center justify-between gap-4">
+                            <div class="relative flex-1 max-w-sm">
+                                <span
+                                    class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">search</span>
+                                <input type="text" id="searchInput" placeholder="Search offers..."
+                                    class="!bg-white/5 border border-white/10 rounded-full py-2.5 pl-12 pr-6 text-sm w-full focus:outline-none focus:border-primary text-white placeholder:text-slate-500 transition-all">
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                <button onclick="window.location.href='/admin/offers/add'"
+                                    class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-full font-bold text-xs tracking-wide transition-all shadow-[0_4px_20px_rgba(0,85,255,0.4)] ml-2">
+                                    <span class="material-symbols-outlined text-[16px]">add</span>
+                                    Create New Offer
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr
+                                        class="border-b border-white/5 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                                        <th class="px-8 py-5">Offer Name</th>
+                                        <th class="px-6 py-5">Type</th>
+                                        <th class="px-6 py-5">Discount</th>
+                                        <th class="px-6 py-5">Status</th>
+                                        <th class="px-6 py-5">Valid Until</th>
+                                        <th class="px-8 py-5 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/5 text-sm" id="offersTableBody">
+                                    <% if (offers && offers.length> 0) { %>
+                                        <% offers.forEach(offer=> { %>
+                                            <tr class="hover:bg-white/5 transition-colors group">
+                                                <td class="px-8 py-4">
+                                                    <div class="font-bold text-white tracking-wide">
+                                                        <%= offer.name %>
+                                                    </div>
+                                                    <% if(offer.description) { %>
+                                                        <div class="text-[10px] text-slate-500 mt-1">
+                                                            <%= offer.description.substring(0, 30) %>...
+                                                        </div>
+                                                        <% } %>
+                                                </td>
+                                                <td class="px-6 py-4 text-slate-400 capitalize">
+                                                    <span class="px-2 py-1 bg-white/5 rounded-md text-[10px] font-bold">
+                                                        <%= offer.offerType %>
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 font-bold text-white">
+                                                    <%= offer.discountType==='flat' ? '₹' + offer.discountValue :
+                                                        offer.discountValue + '%' %>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <% if (new Date()> new Date(offer.endDate) || !offer.isActive) { %>
+                                                        <span
+                                                            class="px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">Expired/Inactive</span>
+                                                        <% } else { %>
+                                                            <span
+                                                                class="px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">Active</span>
+                                                            <% } %>
+                                                </td>
+                                                <td class="px-6 py-4 text-slate-400 text-sm">
+                                                    <%= new Date(offer.endDate).toLocaleDateString('en-US', {
+                                                        month: 'short' , day: 'numeric' , year: 'numeric' }) %>
+                                                </td>
+                                                <td class="px-8 py-4 flex items-center justify-end gap-4">
+                                                    <button
+                                                        onclick="window.location.href='/admin/offers/edit/<%= offer._id %>'"
+                                                        class="text-slate-500 hover:text-white transition-colors"
+                                                        title="Edit">
+                                                        <span class="material-symbols-outlined text-[18px]">edit</span>
+                                                    </button>
+                                                    <button onclick="toggleOfferStatus('<%= offer._id %>', <%= offer.isActive %>, '<%= offer.name.replace(/'/g, `\\'`) %>')"
+                                                        class="text-slate-500 hover:text-white transition-colors"
+                                                        title="<%= offer.isActive ? 'Deactivate' : 'Activate' %>">
+                                                        <span class="material-symbols-outlined text-[18px]">
+                                                            <%= offer.isActive ? 'block' : 'check_circle' %>
+                                                        </span>
+                                                    </button>
+                                                    <button onclick="deleteOffer('<%= offer._id %>')"
+                                                        class="text-rose-500/70 hover:text-rose-500 transition-colors"
+                                                        title="Delete">
+                                                        <span
+                                                            class="material-symbols-outlined text-[18px]">delete</span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <% }) %>
+                                                <% } else { %>
+                                                    <tr>
+                                                        <td colspan="6" class="px-8 py-12 text-center text-slate-500">
+                                                            No offers found. Create one to get started!
+                                                        </td>
+                                                    </tr>
+                                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="p-6 border-t border-white/5 flex items-center justify-between">
+                            <p class="text-[10px] text-slate-500 font-medium uppercase tracking-widest">
+                                Showing <%= offers ? offers.length : 0 %> offers
+                            </p>
+                            <div class="flex items-center gap-2">
+                                <button
+                                    class="px-4 py-2 rounded-lg border border-white/10 text-slate-400 hover:bg-white/5 transition-all text-[10px] font-bold uppercase">Previous</button>
+                                <button
+                                    class="h-8 w-8 flex items-center justify-center rounded-lg text-[10px] font-bold bg-primary text-white shadow-[0_0_15px_rgba(0,85,255,0.3)]">1</button>
+                                <button
+                                    class="px-4 py-2 rounded-lg border border-white/10 text-slate-400 hover:bg-white/5 transition-all text-[10px] font-bold uppercase">Next</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+        </main>
+
+        <script src="/js/admin/offers/offers.js"></script>
+</body>
+
+</html>

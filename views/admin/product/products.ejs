@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TechKart Admin - Product Inventory</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0055ff",
+                        "background-dark": "#0d0d0d",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/css/views/admin/product/products.css">
+</head>
+
+<body class="flex min-h-screen bg-[#0D0D0D]">
+    <%- include('../../partials/admin/sidebar') %>
+
+        <main class="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar">
+            <%- include('../../partials/admin/header') %>
+
+                <div class="p-8 lg:p-12 space-y-8">
+                    <!-- Header Area -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h2 class="text-3xl font-bold tracking-tight mb-1">Product Inventory</h2>
+                            <p class="text-sm text-slate-500 font-medium">Manage your hardware catalog</p>
+                        </div>
+                        <button onclick="window.location.href='/admin/addProduct'"
+                            class="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-full font-bold text-sm tracking-wide transition-all shadow-[0_4px_20px_rgba(0,85,255,0.4)]">
+                            <span class="material-symbols-outlined text-sm">add</span>
+                            ADD NEW PRODUCT
+                        </button>
+                    </div>
+
+                    <!-- Stats grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Total Products -->
+                        <div class="stat-card border-l-4 border-primary">
+                            <div class="flex justify-between items-start mb-6">
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Products</p>
+                                <span
+                                    class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg text-xl">inventory_2</span>
+                            </div>
+                            <div class="flex items-end gap-3">
+                                <h3 class="text-4xl font-bold tracking-tight">
+                                    <%= totalProducts || 0 %>
+                                </h3>
+                            </div>
+                        </div>
+                        <!-- Active Products -->
+                        <div class="stat-card border-l-4 border-emerald-500">
+                            <div class="flex justify-between items-start mb-6">
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Products
+                                </p>
+                                <span
+                                    class="material-symbols-outlined text-emerald-500 bg-emerald-500/10 p-2 rounded-lg text-xl">check_circle</span>
+                            </div>
+                            <div class="flex items-end gap-3">
+                                <h3 class="text-4xl font-bold tracking-tight text-emerald-400">
+                                    <%= activeProductsCount || 0 %>
+                                </h3>
+                            </div>
+                        </div>
+                        <!-- Inactive Products -->
+                        <div class="stat-card border-l-4 border-rose-500">
+                            <div class="flex justify-between items-start mb-6">
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Inactive Products
+                                </p>
+                                <span
+                                    class="material-symbols-outlined text-rose-500 bg-rose-500/10 p-2 rounded-lg text-xl">block</span>
+                            </div>
+                            <div class="flex items-end gap-3">
+                                <h3 class="text-4xl font-bold tracking-tight text-rose-400">
+                                    <%= inactiveProductsCount || 0 %>
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table Section -->
+                    <section class="glass-morphism rounded-2xl overflow-hidden border border-white/5">
+                        <!-- Filters -->
+                        <form action="/admin/product" method="GET"
+                            class="p-6 border-b border-white/5 flex flex-wrap items-center gap-4">
+
+                            <div class="relative flex-1 max-w-md">
+                                <span
+                                    class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xl">search</span>
+                                <input type="text" name="search" value="<%= search || '' %>"
+                                    placeholder="Search products..."
+                                    class="!bg-white/5 border border-white/10 rounded-xl py-2.5 pl-12 pr-10 text-sm w-full focus:outline-none focus:border-primary text-white placeholder:text-slate-500">
+                            </div>
+
+                            <div class="flex items-center gap-3">
+                                <button type="submit"
+                                    class="bg-primary hover:bg-primary/90 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg uppercase tracking-wider">
+                                    Apply Filters
+                                </button>
+                                <a href="/admin/product"
+                                    class="bg-white/5 hover:bg-white/10 text-slate-400 text-xs font-bold px-6 py-2.5 rounded-xl transition-all border border-white/10 uppercase tracking-wider">
+                                    Reset
+                                </a>
+                            </div>
+                        </form>
+
+                        <!-- Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-white/5 text-xs text-slate-500 font-medium">
+                                        <th class="px-6 py-4 font-medium">Image</th>
+                                        <th class="px-6 py-4 font-medium">Product Name</th>
+                                        <th class="px-6 py-4 font-medium">Category</th>
+                                        <th class="px-6 py-4 font-medium">Price</th>
+                                        <th class="px-6 py-4 font-medium">Variants</th>
+                                        <th class="px-6 py-4 font-medium">Status</th>
+                                        <th class="px-6 py-4 font-medium text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/5 text-sm">
+                                    <% if(products && products.length> 0) { %>
+                                        <% products.forEach(p=> { %>
+                                            <tr class="hover:bg-white/5 transition-colors group">
+                                                <td class="px-6 py-4">
+                                                    <div
+                                                        class="w-12 h-12 rounded-xl bg-[#151923] border border-white/5 flex items-center justify-center overflow-hidden">
+                                                        <% if(p.variants && p.variants.length> 0 && p.variants[0].images
+                                                            && p.variants[0].images.length > 0) { %>
+                                                            <img src="<%= p.variants[0].images[0] %>"
+                                                                class="w-full h-full object-cover">
+                                                            <% } else if(p.images && p.images.length> 0) { %>
+                                                                <img src="<%= p.images[0] %>"
+                                                                    class="w-full h-full object-cover">
+                                                                <% } else { %>
+                                                                    <div
+                                                                        class="w-8 h-6 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-sm opacity-50">
+                                                                    </div>
+                                                                    <% } %>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <p class="font-bold text-white mb-1">
+                                                        <%= p.name %>
+                                                    </p>
+                                                    <p class="text-[10px] text-slate-500 uppercase tracking-wider">SKU:
+                                                        <%= p.variants[0]?.sku || 'N/A' %>
+                                                    </p>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <span
+                                                        class="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold border border-primary/20">
+                                                        <%= p.category_id ? p.category_id.name : 'Unknown' %>
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 font-bold">₹<%= p.variants[0]?.price || 0 %>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <span
+                                                        class="px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-[10px] font-bold border border-white/10">
+                                                        <%= p.variants.length %> Variants
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4">
+                                                    <span
+                                                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold border <%= p.is_blocked ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' %>">
+                                                        <span
+                                                            class="w-1.5 h-1.5 rounded-full <%= p.is_blocked ? 'bg-rose-400' : 'bg-emerald-400' %>"></span>
+                                                        <%= p.is_blocked ? 'Blocked' : 'Active' %>
+                                                    </span>
+                                                </td>
+                                                <td
+                                                    class="px-6 py-4 text-right space-x-3 flex items-center justify-end">
+                                                    <a href="/admin/product/manage-variants/<%= p._id %>"
+                                                        class="text-[10px] font-bold text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20 transition-all uppercase tracking-widest flex items-center gap-2">
+                                                        <span
+                                                            class="material-symbols-outlined text-[14px]">layers</span>
+                                                        VARIANTS
+                                                    </a>
+                                                    <button
+                                                        onclick="toggleProductStatus('<%= p._id %>', '<%= p.is_blocked %>')"
+                                                        class="transition-colors <%= p.is_blocked ? 'text-rose-500 hover:text-rose-400' : 'text-emerald-500 hover:text-emerald-400' %>"
+                                                        title="<%= p.is_blocked ? 'Unblock Product' : 'Block Product' %>">
+                                                        <span class="material-symbols-outlined text-lg">
+                                                            <%= p.is_blocked ? 'visibility_off' : 'visibility' %>
+                                                        </span>
+                                                    </button>
+                                                    <button
+                                                        onclick="window.location.href='/admin/product/edit/<%= p._id %>'"
+                                                        class="text-slate-400 hover:text-white transition-colors">
+                                                        <span class="material-symbols-outlined text-lg">edit</span>
+                                                    </button>
+                                                    <button onclick="confirmDelete('<%= p._id %>')"
+                                                        class="text-rose-500 hover:text-rose-400 transition-colors">
+                                                        <span class="material-symbols-outlined text-lg">delete</span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <% }) %>
+                                                <% } else { %>
+                                                    <tr>
+                                                        <td colspan="6" class="px-6 py-4 text-center text-slate-500">No
+                                                            products found.</td>
+                                                    </tr>
+                                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="p-6 border-t border-white/5 flex items-center justify-between">
+                            <p class="text-xs text-slate-500 font-medium uppercase tracking-widest">
+                                Showing <%= (page - 1) * limit + 1 %> to <%= Math.min(page * limit, totalProducts) %> of
+                                        <%= totalProducts %> products
+                            </p>
+                            <% if (totalPages> 1) { %>
+                                <div class="flex items-center gap-2">
+                                    <a href="?page=<%= page - 1 %>&search=<%= search %>"
+                                        class="px-6 py-2.5 rounded-lg border border-white/10 text-slate-400 hover:bg-white/5 transition-all text-[10px] font-bold uppercase tracking-widest <%= page === 1 ? 'pointer-events-none opacity-30' : '' %>">
+                                        Previous
+                                    </a>
+
+                                    <% for(let i=1; i <=totalPages; i++) { %>
+                                        <a href="?page=<%= i %>&search=<%= search %>"
+                                            class="h-10 w-10 flex items-center justify-center rounded-lg text-[10px] font-bold transition-all <%= page === i ? 'bg-primary text-white shadow-[0_0_20px_rgba(0,85,255,0.3)]' : 'border border-white/10 text-slate-400 hover:bg-white/5' %>">
+                                            <%= i %>
+                                        </a>
+                                        <% } %>
+
+                                            <a href="?page=<%= page + 1 %>&search=<%= search %>"
+                                                class="px-6 py-2.5 rounded-lg border border-white/10 text-slate-400 hover:bg-white/5 transition-all text-[10px] font-bold uppercase tracking-widest <%= page === totalPages ? 'pointer-events-none opacity-30' : '' %>">
+                                                Next
+                                            </a>
+                                </div>
+                                <% } %>
+                        </div>
+
+                    </section>
+                </div>
+        </main>
+        <script src="/js/admin/product/list.js"></script>
+</body>
+
+</html>

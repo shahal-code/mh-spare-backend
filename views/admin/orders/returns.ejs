@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TechKart Admin - Return Requests</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0055ff",
+                        "background-dark": "#0d0d0d",
+                        "card-bg": "rgba(23, 33, 54, 0.4)",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/css/views/admin/orders/returns.css">
+</head>
+
+
+<body class="flex min-h-screen">
+    <%- include('../../partials/admin/sidebar') %>
+    <main class="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar min-w-0">
+        <%- include('../../partials/admin/header') %>
+        <div class="p-10 max-w-[1600px] mx-auto w-full space-y-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-black tracking-tight">Return Requests</h1>
+                    <p class="text-slate-400 text-sm mt-1">Manage and process product return claims from customers</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="glass-morphism px-6 py-3 rounded-xl border border-white/5">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active Requests</p>
+                        <p class="text-2xl font-black text-primary"><%= totalOrders %></p>
+                    </div>
+                </div>
+            </div>
+           <!-- Search Bar Section -->
+<div class="glass-morphism p-6 rounded-2xl border border-white/5 mb-8">
+
+    <form action="/admin/returns" method="GET"
+        class="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+
+        <!-- Search Input -->
+        <div class="relative flex-1">
+
+            <span
+                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg">
+                search
+            </span>
+
+            <input
+                name="search"
+                type="text"
+                placeholder="Search Order ID, Customer Name, Product..."
+                value="<%= search || '' %>"
+                class="w-full bg-[#0B1120] border border-white/10 rounded-xl pl-12 pr-4 py-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all">
+
+        </div>
+
+        <!-- Search Button -->
+        <button
+            type="submit"
+            class="bg-primary hover:bg-primary/90 px-8 py-4 rounded-xl text-[11px] font-bold uppercase tracking-[0.2em] transition-all hover:shadow-[0_0_25px_rgba(0,85,255,0.35)] whitespace-nowrap">
+
+            Search
+
+        </button>
+         <a href="/admin/returns"
+          class="px-4 py-3 border border-white/10 hover:bg-white/5 rounded-lg text-[10px] font-bold text-slate-400 transition-all text-center">
+          RESET
+         </a>
+
+    </form>
+
+</div>
+            <section class="glass-morphism rounded-2xl overflow-hidden shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/5 bg-white/[0.02]">
+                                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Order Details</th>
+                                <th class="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Customer</th>
+                                <th class="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Requested Item</th>
+                                <th class="px-6 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reason</th>
+                                <th class="px-8 py-5 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                            <% if (orders && orders.length > 0) { %>
+                                <% orders.forEach(order => { %>
+                                    <% order.orderedItems.filter(item => item.status === 'Return Request').forEach(item => { %>
+                                        <tr class="hover:bg-white/[0.03] transition-colors group">
+                                            <td class="px-8 py-6">
+                                                <div class="flex flex-col">
+                                                    <span class="text-sm font-bold text-primary font-mono">#<%= order.orderId %></span>
+                                                    <span class="text-[10px] text-slate-500 mt-1 uppercase tracking-widest">
+                                                        <%= new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-6">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-xs font-bold text-primary border border-primary/20">
+                                                        <%= order.userId ? order.userId.fullname.split(' ').map(n => n[0]).join('') : 'U' %>
+                                                    </div>
+                                                    <div class="flex flex-col">
+                                                        <span class="text-sm font-bold text-slate-200"><%= order.userId ? order.userId.fullname : 'Unknown User' %></span>
+                                                        <span class="text-xs text-slate-500"><%= order.userId ? order.userId.email : '' %></span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-6">
+                                                <div class="flex items-center gap-4">
+                                                    <div class="size-12 rounded-lg bg-slate-900 border border-white/5 overflow-hidden flex-shrink-0">
+                                                        <% const variant = item.product?.variants?.find(v => v._id.toString() === item.variantId.toString()); %>
+                                                        <img src="<%= variant?.images[0] %>" class="w-full h-full object-cover">
+                                                    </div>
+                                                    <div class="flex flex-col">
+                                                        <span class="text-sm font-medium text-slate-200"><%= item.product?.name %></span>
+                                                        <span class="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">Qty: <%= item.quantity %></span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-6">
+                                                <p class="text-sm text-slate-300 italic max-w-xs truncate">"<%= item.returnReason || 'No reason provided' %>"</p>
+                                            </td>
+                                            <td class="px-8 py-6 text-right">
+                                                <div class="flex justify-end gap-3">
+                                                    <button onclick="handleReturnAction('<%= order._id %>', '<%= item._id %>', 'approve')"
+                                                        class="px-4 py-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white text-[10px] font-bold transition-all uppercase tracking-widest border border-emerald-500/20">
+                                                        Approve
+                                                    </button>
+                                                    <button onclick="handleReturnAction('<%= order._id %>', '<%= item._id %>', 'reject')"
+                                                        class="px-4 py-2 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white text-[10px] font-bold transition-all uppercase tracking-widest border border-rose-500/20">
+                                                        Reject
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                <% }) %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="5" class="px-8 py-20 text-center text-slate-500">
+                                        <div class="flex flex-col items-center gap-3">
+                                            <span class="material-symbols-outlined text-5xl opacity-20">keyboard_return</span>
+                                            <p class="text-sm font-medium">No pending return requests</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <% if (totalPages > 1) { %>
+                    <div class="p-6 border-t border-white/5 flex items-center justify-center gap-2">
+                        <% for(let i = 1; i <= totalPages; i++) { %>
+                            <a href="?page=<%= i %>"
+                                class="h-10 w-10 flex items-center justify-center rounded-lg text-[10px] font-bold transition-all <%= page === i ? 'bg-primary text-white shadow-[0_0_20px_rgba(0,85,255,0.3)]' : 'border border-white/10 text-slate-400 hover:bg-white/5' %>">
+                                <%= i %>
+                            </a>
+                        <% } %>
+                    </div>
+                <% } %>
+            </section>
+        </div>
+    </main>
+
+    <script src="/js/admin/orders/returns.js"></script>
+</body>
+</html>

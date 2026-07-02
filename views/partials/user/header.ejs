@@ -1,0 +1,109 @@
+<!-- ═══ MH SPARE HUB Design System ═══ -->
+<link rel="stylesheet" href="/css/mh-design.css">
+<script>(function(){try{const t=localStorage.getItem('theme');if(t==='light')document.documentElement.classList.remove('dark');else document.documentElement.classList.add('dark');}catch(e){}})()</script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/js/user/cart/cartUtils.js"></script>
+
+<header class="mh-header" id="mainHeader">
+    <div class="mh-logo-container">
+        <a href="/user/dashboard">
+            <img src="https://raw.githubusercontent.com/muhammedhaseeb9645/MH-SPARE-HUB/refs/heads/main/logo/Logo%20big%20.png" alt="MH SPARE HUB" class="mh-logo">
+        </a>
+    </div>
+
+    <!-- Desktop Nav Links -->
+    <nav style="display:flex; gap:8px; align-items:center;" class="hidden-on-mobile">
+        <% const currentPath = locals.path || '' %>
+        <a href="/user/dashboard" class="mh-nav-link <%= currentPath === '/user/dashboard' || currentPath === '/' ? 'active' : '' %>">Home</a>
+        <a href="/user/shop" class="mh-nav-link <%= currentPath === '/user/shop' ? 'active' : '' %>">Shop</a>
+        <a href="/user/contact" class="mh-nav-link <%= currentPath === '/user/contact' ? 'active' : '' %>">Contact Us</a>
+        <a href="/user/about" class="mh-nav-link <%= currentPath === '/user/about' ? 'active' : '' %>">About Us</a>
+    </nav>
+
+    <!-- Header Actions -->
+    <div style="display:flex; align-items:center; gap:12px;">
+        <!-- Theme Toggle -->
+        <button class="mh-theme-toggle" id="themeToggle" title="Toggle dark/light mode" onclick="toggleTheme()">
+            <span class="icon-sun">&#9728;&#65039;</span>
+            <span class="icon-moon">&#127769;</span>
+        </button>
+
+        <!-- Wishlist -->
+        <a href="/user/wishlist" onclick="<%= !locals.user ? 'event.preventDefault(); showAuthToast();' : '' %>" class="mh-icon-btn" title="Wishlist">
+            <span class="material-symbols-outlined">favorite</span>
+            <span id="wishlist-badge" class="badge <%= locals.wishlistCount > 0 ? '' : 'hidden' %>" style="<%= locals.wishlistCount > 0 ? '' : 'display:none;' %>">
+                <%= locals.wishlistCount || 0 %>
+            </span>
+        </a>
+
+        <!-- Cart -->
+        <a href="/user/cart" onclick="<%= !locals.user ? 'event.preventDefault(); showAuthToast();' : '' %>" class="mh-icon-btn" title="Cart">
+            <span class="material-symbols-outlined">shopping_cart</span>
+            <span id="cart-badge" class="badge <%= locals.cartCount > 0 ? '' : 'hidden' %>" style="<%= locals.cartCount > 0 ? '' : 'display:none;' %>">
+                <%= locals.cartCount || 0 %>
+            </span>
+        </a>
+
+        <!-- Profile/Login -->
+        <% if (locals.user) { %>
+            <a href="/user/profile" class="mh-header-cta hidden-on-mobile">
+                <span class="material-symbols-outlined" style="font-size:1.1rem;">person</span> PROFILE
+            </a>
+        <% } else { %>
+            <a href="/user/login" class="mh-header-cta hidden-on-mobile">
+                <span class="material-symbols-outlined" style="font-size:1.1rem;">person_add</span> LOG IN
+            </a>
+        <% } %>
+
+        <!-- Mobile Menu Toggle -->
+        <button onclick="toggleMobileMenu()" class="mh-icon-btn mobile-only" style="display:none;" id="mobileMenuBtn">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </div>
+</header>
+
+<link rel="stylesheet" href="/css/views/partials/user/header.css">
+
+<!-- Mobile Navigation Menu (Minimal Rewrite) -->
+<div id="mobileMenu" class="fixed inset-0 z-[100] hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; z-index:100; display:none;">
+    <div onclick="toggleMobileMenu()" style="position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);"></div>
+    <div style="position:absolute; top:0; left:0; width:280px; height:100%; background:var(--bg-surface); padding:24px; box-shadow:var(--shadow-hover); display:flex; flex-direction:column; gap:20px; border-right:1px solid var(--border);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <img src="https://raw.githubusercontent.com/muhammedhaseeb9645/MH-SPARE-HUB/refs/heads/main/logo/Logo%20big%20.png" alt="MH SPARE HUB" style="height:35px;">
+            <button onclick="toggleMobileMenu()" class="mh-icon-btn"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            <a href="/user/dashboard" class="mh-user-sidebar-link"><span class="material-symbols-outlined">home</span> Home</a>
+            <a href="/user/shop" class="mh-user-sidebar-link"><span class="material-symbols-outlined">storefront</span> Shop</a>
+            <a href="/user/wishlist" class="mh-user-sidebar-link"><span class="material-symbols-outlined">favorite</span> Wishlist</a>
+            <a href="/user/contact" class="mh-user-sidebar-link"><span class="material-symbols-outlined">call</span> Contact Us</a>
+            <a href="/user/cart" class="mh-user-sidebar-link"><span class="material-symbols-outlined">shopping_cart</span> Cart</a>
+            <% if (locals.user) { %>
+                <a href="/user/profile" class="mh-user-sidebar-link"><span class="material-symbols-outlined">person</span> Profile</a>
+            <% } else { %>
+                <a href="/user/login" class="mh-user-sidebar-link"><span class="material-symbols-outlined">login</span> Log In</a>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleMobileMenu() {
+        const menu = document.getElementById('mobileMenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+    
+    // Theme toggle script (also used in home.ejs)
+    function toggleTheme() {
+        const html = document.documentElement;
+        if (html.classList.contains('dark')) {
+            html.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        } else {
+            html.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        }
+    }
+</script>

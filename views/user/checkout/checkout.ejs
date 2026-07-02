@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Checkout | TechKart</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Noto+Sans:wght@400;500;600&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script id="tailwind-config">
+
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0055ff",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#0d0d0d",
+                        "surface-dark": "#161b22",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "sans": ["Noto Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/css/views/user/checkout/checkout.css">
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-white min-h-screen flex flex-col">
+    <%- include('../../partials/user/header') %>
+
+        <main class="flex-1 max-w-[1440px] mx-auto w-full px-6 lg:px-20 py-12">
+            <div class="mb-10">
+                <h2 class="text-4xl md:text-5xl font-black tracking-tight">Checkout</h2>
+                <p class="text-white/50 mt-2">Complete your order by providing shipping and payment details</p>
+            </div>
+
+            <form id="checkout-form" class="flex flex-col lg:flex-row gap-12">
+                <!-- Left Side: Shipping & Payment -->
+                <div class="flex-1 space-y-10">
+
+                    <!-- Address Section -->
+                    <section>
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-3">
+                                <span
+                                    class="size-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">1</span>
+                                <h3 class="text-2xl font-bold">Shipping Address</h3>
+                            </div>
+                            <a href="/user/address/add?from=checkout"
+                                class="text-primary hover:underline text-sm font-bold flex items-center gap-1 transition-all">
+                                <span class="material-symbols-outlined text-lg">add</span>
+                                ADD NEW
+                            </a>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <% if (addresses && addresses.length> 0) { %>
+                                <% addresses.forEach((address, index)=> { %>
+                                    <label class="relative cursor-pointer block">
+                                        <input type="radio" name="addressId" value="<%= address._id %>"
+                                            class="address-radio absolute opacity-0" <%=address.is_default ? 'checked'
+                                            : '' %> required>
+                                        <div class="premium-card p-5 rounded-xl h-full flex flex-col">
+                                            <div class="flex justify-between items-start mb-3">
+                                                <span
+                                                    class="text-xs font-black uppercase tracking-widest text-primary bg-primary/10 px-2 py-1 rounded">
+                                                    <%= address.address_type || 'HOME' %>
+                                                </span>
+                                                <div class="flex gap-2">
+                                                    <a href="/user/address/edit/<%= address._id %>?from=checkout"
+                                                        class="text-white/30 hover:text-white transition-colors">
+                                                        <span class="material-symbols-outlined text-lg">edit</span>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            <h4 class="font-bold text-lg mb-1">
+                                                <%= address.fullname %>
+                                            </h4>
+                                            <p class="text-white/60 text-sm leading-relaxed flex-1">
+                                                <%= address.line1 %>, <%= address.line2 ? address.line2 + ',' : '' %>
+                                                        <br>
+                                                        <%= address.city %>, <%= address.state %> - <%=
+                                                                    address.postal_code %>
+                                            </p>
+                                            <p class="text-white/80 text-sm mt-3 font-medium">
+                                                <span
+                                                    class="material-symbols-outlined text-xs align-middle mr-1">call</span>
+                                                <%= address.phone %>
+                                            </p>
+                                        </div>
+                                        <!-- Selected Indicator -->
+                                        <div
+                                            class="absolute top-4 right-4 pointer-events-none opacity-0 transition-opacity peer-checked:opacity-100">
+                                            <span
+                                                class="material-symbols-outlined text-primary font-black">check_circle</span>
+                                        </div>
+                                    </label>
+                                    <% }) %>
+                                        <% } else { %>
+                                            <div
+                                                class="col-span-2 glass p-10 rounded-xl text-center border-dashed border-white/20">
+                                                <span
+                                                    class="material-symbols-outlined text-4xl text-white/20 mb-3">location_off</span>
+                                                <p class="text-white/50 mb-4">No addresses found in your profile</p>
+                                                <a href="/user/address/add?from=checkout"
+                                                    class="inline-block bg-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-primary/90 transition-all">
+                                                    Add Your First Address
+                                                </a>
+                                            </div>
+                                            <% } %>
+                        </div>
+                    </section>
+
+                    <div class="h-px bg-white/5 w-full"></div>
+
+                    <!-- Payment Section -->
+                    <section>
+                        <div class="flex items-center gap-3 mb-6">
+                            <span
+                                class="size-10 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold">2</span>
+                            <h3 class="text-2xl font-bold">Payment Method</h3>
+                        </div>
+
+                        <div class="space-y-3">
+                            <!-- COD -->
+                            <label class="relative cursor-pointer block">
+                                <input type="radio" name="paymentMethod" value="COD"
+                                    class="payment-radio absolute opacity-0" checked required>
+                                <div
+                                    class="payment-method-card glass p-5 rounded-xl flex items-center gap-4 transition-all hover:bg-white/5 border border-white/10">
+                                    <div
+                                        class="size-12 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                                        <span class="material-symbols-outlined">payments</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-bold">Cash on Delivery</h4>
+                                        <p class="text-white/40 text-xs">Pay when you receive your package</p>
+                                    </div>
+                                    <div
+                                        class="radio-indicator size-5 rounded-full border-2 border-white/20 flex items-center justify-center">
+                                        <div class="size-2.5 rounded-full bg-primary scale-0 transition-transform">
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <!-- UPI -->
+                            <% const upiDisabled = total > 500000; %>
+                            <label class="relative <%= upiDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer' %> block" id="upi-label">
+                                    <input type="radio" name="paymentMethod" value="UPI"
+                                    class="payment-radio absolute opacity-0" <%= upiDisabled ? 'disabled' : '' %> required>
+                                    <div
+                                        class="payment-method-card glass p-5 rounded-xl flex items-center gap-4 transition-all hover:bg-white/5 border border-white/10">
+                                        <div
+                                            class="size-12 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                                            <span class="material-symbols-outlined">qr_code_2</span>
+                                        </div>
+                                        <div class="flex-1">
+                                            <h4 class="font-bold">UPI Payment</h4>
+                                            <% if (upiDisabled) { %>
+                                                <p class="text-amber-400 text-xs font-semibold">⚠ Not available — order
+                                                    exceeds ₹5,00,000 limit</p>
+                                                <% } else { %>
+                                                    <p class="text-white/40 text-xs">GPay, PhonePe, Paytm, and more</p>
+                                                    <% } %>
+                                        </div>
+                                        <div
+                                            class="radio-indicator size-5 rounded-full border-2 border-white/20 flex items-center justify-center">
+                                            <div class="size-2.5 rounded-full bg-primary scale-0 transition-transform">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <!-- Wallet -->
+                                <label class="relative cursor-pointer block">
+                                    <input type="radio" name="paymentMethod" value="Wallet"
+                                        class="payment-radio absolute opacity-0" required>
+                                    <div
+                                        class="payment-method-card glass p-5 rounded-xl flex items-center gap-4 transition-all hover:bg-white/5 border border-white/10">
+                                        <div
+                                            class="size-12 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                                            <span class="material-symbols-outlined">account_balance_wallet</span>
+                                        </div>
+                                        <div class="flex-1">
+                                            <h4 class="font-bold">Wallet</h4>
+                                            <p class="text-white/40 text-xs">Pay using your TechKart wallet balance</p>
+                                        </div>
+                                        <div
+                                            class="radio-indicator size-5 rounded-full border-2 border-white/20 flex items-center justify-center">
+                                            <div class="size-2.5 rounded-full bg-primary scale-0 transition-transform">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </label>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Right Side: Order Summary -->
+                <div class="w-full lg:w-[450px]">
+                    <div class="glass rounded-2xl p-8 sticky top-32 border border-white/10">
+                        <h3 class="text-2xl font-bold mb-8">Order Summary</h3>
+                        <% const hasUnavailableItems = unavailableNames && unavailableNames.length > 0; %>
+
+                        <% if (hasUnavailableItems) { %>
+                            <div class="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4">
+                                <div class="flex items-start gap-3">
+                                    <span class="material-symbols-outlined text-rose-400">block</span>
+                                    <div>
+                                        <p class="text-sm font-bold text-rose-300">Some items in this cart are unavailable.</p>
+                                        <p class="mt-1 text-xs text-rose-200/80">They remain in your cart until you remove them manually.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        <% } %>
+
+                        <!-- Products List -->
+                        <div class="max-h-[300px] overflow-y-auto space-y-6 pr-2 mb-8 custom-scrollbar">
+                            <% if (cart && cart.items && cart.items.length> 0) { %>
+                                <% cart.items.forEach(item=> {
+                                    const product = item.productId;
+                                    if(product) {
+                                    const variant = product.variants.find(v => v._id.toString() ===
+                                    item.variantId.toString());
+                                    if(variant) {
+                                    %>
+                                    <div class="flex gap-4 relative group/item <%= item.isUnavailable ? 'opacity-60' : '' %>">
+                                        <div
+                                            class="size-20 rounded-xl bg-surface-dark border border-white/5 flex-shrink-0 overflow-hidden">
+                                            <img src="<%= variant.images[0] %>" alt="<%= product.name %>"
+                                                class="w-full h-full object-cover">
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex justify-between items-start">
+                                                <h4 class="font-bold text-sm truncate">
+                                                    <%= product.name %>
+                                                </h4>
+                                                <button type="button" onclick="removeFromCheckout('<%= item._id %>')"
+                                                    class="text-white/20 hover:text-rose-500 transition-colors p-1 -mr-1"
+                                                    title="Remove from Order">
+                                                    <span class="material-symbols-outlined text-base">close</span>
+                                                </button>
+                                            </div>
+                                            <p class="text-white/40 text-[10px] uppercase tracking-wider mt-1">
+                                                QTY: <%= item.quantity %> •
+                                                    <% if(variant.color) { %>
+                                                        <%= variant.color %>
+                                                            <% } %>
+                                                                <% if(variant.storage) { %>| <%= variant.storage %>
+                                                                        <% } %>
+                                            </p>
+                                              <% if (item.isUnavailable) { %>
+                                                  <p class="mt-2 text-[10px] font-bold uppercase tracking-widest text-rose-400">
+                                                      Currently unavailable
+                                                  </p>
+                                                  <p class="text-[10px] text-rose-300/60 mt-1">Remove this item to place your order</p>
+                                              <% } else { %>
+                                              <div class="flex justify-between items-center mt-2">
+                                                <span class="text-xs font-medium text-white/60">₹<%= variant.price %> ×
+                                                        <%= item.quantity %></span>
+                                                <span class="font-bold text-sm text-primary">₹<%= (variant.price *
+                                                        item.quantity).toFixed(2) %></span>
+                                            </div>
+                                              <% } %>
+                                        </div>
+                                    </div>
+                                    <% } } }) %>
+                                        <% } %>
+                        </div>
+
+                        <div class="h-px bg-white/10 my-6"></div>
+
+                        <!-- Coupon Section -->
+                        <div class="mb-6">
+                            <% if (appliedCoupon) { %>
+                                <div
+                                    class="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex justify-between items-center">
+                                    <div>
+                                        <div
+                                            class="text-[10px] text-emerald-400 font-bold uppercase tracking-widest mb-1">
+                                            Coupon Applied </div>
+                                        <div class="font-bold tracking-widest">
+                                            <%= appliedCoupon.code %>
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="removeCoupon()"
+                                        class="text-[10px] font-bold text-rose-400 hover:text-rose-300 transition-colors uppercase tracking-widest bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20">
+                                        Remove
+                                    </button>
+                                </div>
+                                <% } else { %>
+                                    <% const coupons = availableCoupons || []; %>
+                                    <div class="flex items-center justify-between mb-3">
+                                        <p class="text-[10px] font-bold uppercase tracking-widest text-white/50">Coupons</p>
+                                        <% if (coupons.length > 0) { %>
+                                            <button type="button" onclick="toggleCouponList()"
+                                                class="text-primary text-[10px] font-bold uppercase tracking-widest hover:text-primary/80 transition-colors">
+                                                View Available
+                                            </button>
+                                        <% } %>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="couponCode" placeholder="ENTER COUPON"
+                                            class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold uppercase focus:ring-primary focus:border-primary transition-all">
+                                        <button type="button" onclick="applyCoupon()"
+                                            class="bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 font-bold px-6 py-3 rounded-xl transition-colors text-[10px] uppercase tracking-widest">
+                                            Apply
+                                        </button>
+                                    </div>
+                                    <% if (coupons.length > 0) { %>
+                                        <div id="available-coupons" class="hidden mt-3 space-y-3">
+                                            <% coupons.forEach(coupon => { %>
+                                                <div class="rounded-xl border border-white/10 bg-white/5 p-4">
+                                                    <div class="flex items-start justify-between gap-4">
+                                                        <div>
+                                                            <p class="text-sm font-bold tracking-widest text-primary"><%= coupon.code %></p>
+                                                            <p class="mt-1 text-xs text-white/70">
+                                                                <% if (coupon.discountType === 'percentage') { %>
+                                                                    Save <%= coupon.discountValue %>%<% if (coupon.maxDiscountAmount) { %> up to Rs.<%= coupon.maxDiscountAmount %><% } %>
+                                                                <% } else { %>
+                                                                    Flat Rs.<%= coupon.discountValue %> off
+                                                                <% } %>
+                                                            </p>
+                                                            <p class="mt-1 text-[10px] uppercase tracking-widest text-white/40">
+                                                                Min purchase Rs.<%= coupon.minPurchaseAmount || 0 %>
+                                                            </p>
+                                                        </div>
+                                                        <button type="button" onclick="fillCouponCode('<%= coupon.code %>')"
+                                                            class="shrink-0 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-primary hover:bg-primary/20 transition-colors">
+                                                            Use
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            <% }) %>
+                                        </div>
+                                    <% } else { %>
+                                        <p class="mt-3 text-xs text-white/40">No applicable coupons are available for this order.</p>
+                                    <% } %>
+                                    <% } %>
+                        </div>
+
+                        <!-- Price Calculations -->
+                        <div class="space-y-4 mb-8">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-white/50">Subtotal</span>
+                                <span class="font-medium">₹<%= subtotal.toFixed(2) %></span>
+                            </div>
+                            <% if (discount> 0) { %>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-white/50">Discount (<%= appliedCoupon.code %>)</span>
+                                    <span class="font-medium text-emerald-500">- ₹<%= discount.toFixed(2) %></span>
+                                </div>
+                                <% } %>
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-white/50">Shipping</span>
+                                        <span
+                                            class="font-bold text-emerald-500 uppercase text-[10px] tracking-widest">Free</span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-white/50">Estimated Tax (18%)</span>
+                                        <span class="font-medium">₹<%= tax.toFixed(2) %></span>
+                                    </div>
+
+                                    <div class="pt-4 mt-4 border-t border-white/5 flex justify-between items-center">
+                                        <span class="text-xl font-bold">Total Amount</span>
+                                        <span class="text-3xl font-black text-primary">₹<%= total.toFixed(2) %></span>
+                                    </div>
+                        </div>
+
+                        <button type="submit" id="place-order-btn" <%= hasUnavailableItems ? 'disabled' : '' %>
+                            class="w-full font-black py-5 rounded-xl transition-all flex items-center justify-center gap-3 group relative overflow-hidden <%= hasUnavailableItems ? 'bg-white/10 text-white/40 border border-white/10 cursor-not-allowed' : 'bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20' %>">
+                            <span class="relative z-10 uppercase tracking-widest">Place Order</span>
+                            <span
+                                class="material-symbols-outlined relative z-10 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                            <!-- Gloss effect -->
+                            <div
+                                class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 <%= hasUnavailableItems ? 'hidden' : '' %>">
+                            </div>
+                        </button>
+
+                        <p class="text-[10px] text-center text-white/30 mt-6 uppercase tracking-[0.15em]">
+                            Secure SSL Encrypted Checkout
+                        </p>
+                    </div>
+                </div>
+            </form>
+        </main>
+
+        <%- include('../../partials/user/footer') %>
+
+            <script>
+                window.checkoutData = {
+                    unavailableItems: <%- JSON.stringify(typeof unavailableNames !== 'undefined' ? unavailableNames : []) %>,
+                    subtotal: <%= typeof subtotal !== 'undefined' ? subtotal : 0 %>,
+                    total: <%= typeof total !== 'undefined' ? total : 0 %>,
+                    razorpayKey: "<%= typeof razorpayKey !== 'undefined' ? razorpayKey : '' %>",
+                    userName: <%- JSON.stringify((typeof user !== 'undefined' && user?.fullname ? user.fullname : '').replace(/[^a-zA-Z\s]/g, '').trim() || 'Customer') %>,
+                    userEmail: <%- JSON.stringify(typeof user !== 'undefined' && user?.email ? user.email : '') %>,
+                    userPhone: <%- JSON.stringify(typeof user !== 'undefined' && user?.phone ? user.phone : '') %>
+                };
+            </script>
+            <script src="/js/user/checkout/checkout.js"></script>
+
+            
+</body>
+
+</html>

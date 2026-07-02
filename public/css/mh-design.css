@@ -1,0 +1,830 @@
+/* =====================================================
+   MH SPARE HUB — Global Design System
+   Include in every page/layout for consistent design
+   ===================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+/* ---- CSS Custom Properties (Light theme default) ---- */
+:root {
+    --primary:        #2563eb;
+    --primary-hover:  #1d4ed8;
+    --primary-glow:   rgba(37, 99, 235, 0.35);
+    --success:        #10b981;
+    --danger:         #ef4444;
+    --warning:        #f59e0b;
+    --whatsapp:       #25d366;
+
+    /* Layout */
+    --bg-page:        #f1f5f9;
+    --bg-surface:     #ffffff;
+    --bg-muted:       #f8fafc;
+    --bg-nav:         #ffffff;
+
+    /* Borders */
+    --border:         #e2e8f0;
+    --border-hover:   #cbd5e1;
+
+    /* Text */
+    --text-primary:   #1e293b;
+    --text-muted:     #64748b;
+    --text-faint:     #94a3b8;
+
+    /* Shadows */
+    --shadow-card:    0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.04);
+    --shadow-hover:   0 20px 30px -10px rgba(15,23,42,0.15);
+    --shadow-header:  0 4px 6px -1px rgba(0,0,0,0.05);
+    --shadow-btn:     0 4px 14px rgba(37,99,235,0.3);
+
+    /* Motion */
+    --ease-elastic:   cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-smooth:    cubic-bezier(0.25, 1, 0.5, 1);
+
+    /* Radii */
+    --radius-sm:   8px;
+    --radius-md:   12px;
+    --radius-lg:   16px;
+    --radius-xl:   24px;
+    --radius-full: 9999px;
+
+    /* Metallic shine */
+    --shine: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.42) 40%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.42) 60%, transparent 70%);
+}
+
+/* ---- Dark Mode Tokens ---- */
+html.dark {
+    --bg-page:        #0d1117;
+    --bg-surface:     #161b22;
+    --bg-muted:       #1c2128;
+    --bg-nav:         #161b22;
+    --border:         rgba(255,255,255,0.08);
+    --border-hover:   rgba(255,255,255,0.18);
+    --text-primary:   #e6edf3;
+    --text-muted:     #8b949e;
+    --text-faint:     #6e7681;
+    --shadow-card:    0 4px 6px -1px rgba(0,0,0,0.35);
+    --shadow-hover:   0 20px 40px -10px rgba(0,0,0,0.6);
+    --shadow-header:  0 4px 6px -1px rgba(0,0,0,0.4);
+    --shine:          linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 60%, transparent 70%);
+}
+
+/* ---- Base Reset ---- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--bg-page) !important;
+    color: var(--text-primary) !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    transition: background-color 0.35s ease, color 0.35s ease;
+    min-height: 100vh;
+}
+
+/* =============================================
+   MH SPARE HUB HEADER (user pages)
+   ============================================= */
+.mh-header {
+    background-color: var(--bg-surface);
+    padding: 10px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: var(--shadow-header);
+    border-bottom: 1px solid var(--border);
+    transition: background-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+/* Logo */
+.mh-logo-container {
+    display: flex;
+    align-items: center;
+    height: 50px;
+    position: relative;
+    overflow: visible;
+    padding: 4px 0;
+    gap: 10px;
+}
+
+.mh-logo {
+    height: 42px;
+    width: auto;
+    object-fit: contain;
+    position: relative;
+    z-index: 2;
+    filter: drop-shadow(0 0 2px rgba(0,210,255,0.3));
+    animation: mhLogoPulse 3s ease-in-out infinite;
+}
+
+.mh-logo-container::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -150%; width: 30%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0,210,255,0.2), rgba(255,255,255,0.6), rgba(0,210,255,0.2), transparent);
+    transform: skewX(-25deg);
+    z-index: 3;
+    animation: mhLogoSweep 4.5s infinite ease-in-out;
+    pointer-events: none;
+}
+
+@keyframes mhLogoPulse {
+    0%, 100% { filter: drop-shadow(0 0 2px rgba(0,210,255,0.3)) brightness(1); }
+    50%       { filter: drop-shadow(0 0 10px rgba(0,210,255,0.7)) brightness(1.05); }
+}
+
+@keyframes mhLogoSweep {
+    0%        { left: -50%; }
+    30%, 100% { left: 120%; }
+}
+
+/* Header nav links */
+.mh-nav-link {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: var(--radius-full);
+    transition: all 0.2s var(--ease-smooth);
+    position: relative;
+}
+
+.mh-nav-link:hover,
+.mh-nav-link.active {
+    color: var(--primary);
+    background: rgba(37,99,235,0.06);
+}
+
+/* Header icon buttons (cart, wishlist) */
+.mh-icon-btn {
+    width: 40px; height: 40px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border);
+    background: var(--bg-muted);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.25s var(--ease-smooth);
+    position: relative;
+}
+
+.mh-icon-btn:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(37,99,235,0.06);
+    transform: scale(1.05);
+}
+
+.mh-icon-btn .badge {
+    position: absolute;
+    top: -4px; right: -4px;
+    min-width: 18px; height: 18px;
+    border-radius: var(--radius-full);
+    background: var(--primary);
+    color: white;
+    font-size: 0.6rem;
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--bg-surface);
+    padding: 0 3px;
+}
+
+/* Header CTA button */
+.mh-header-cta {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 20px;
+    border-radius: var(--radius-full);
+    background: var(--primary);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    border: none; cursor: pointer;
+    transition: all 0.3s var(--ease-smooth);
+    box-shadow: var(--shadow-btn);
+}
+
+.mh-header-cta:hover {
+    background: var(--primary-hover);
+    box-shadow: 0 8px 24px var(--primary-glow);
+    transform: translateY(-1px);
+}
+
+/* Search bar in header */
+.mh-search-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg-muted);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-full);
+    padding: 8px 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    flex: 1; max-width: 380px;
+}
+
+.mh-search-bar:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    background: var(--bg-surface);
+}
+
+.mh-search-bar input {
+    border: none; background: transparent;
+    font-size: 0.875rem; color: var(--text-primary);
+    flex: 1; outline: none;
+    font-family: inherit;
+}
+
+.mh-search-bar input::placeholder { color: var(--text-faint); }
+
+/* Theme toggle */
+.mh-theme-toggle {
+    width: 40px; height: 40px;
+    border-radius: var(--radius-full);
+    border: 1.5px solid var(--border);
+    background: var(--bg-muted);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    position: relative; overflow: hidden;
+    transition: all 0.3s var(--ease-elastic);
+    flex-shrink: 0;
+}
+
+.mh-theme-toggle:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    transform: scale(1.1) rotate(20deg);
+    box-shadow: var(--shadow-btn);
+}
+
+.mh-theme-toggle .icon-sun,
+.mh-theme-toggle .icon-moon {
+    position: absolute;
+    transition: opacity 0.3s ease, transform 0.4s var(--ease-elastic);
+}
+
+html:not(.dark) .mh-theme-toggle .icon-sun  { opacity: 1; transform: scale(1) rotate(0deg); }
+html:not(.dark) .mh-theme-toggle .icon-moon { opacity: 0; transform: scale(0) rotate(-90deg); }
+html.dark       .mh-theme-toggle .icon-sun  { opacity: 0; transform: scale(0) rotate(90deg); }
+html.dark       .mh-theme-toggle .icon-moon { opacity: 1; transform: scale(1) rotate(0deg); }
+
+/* =============================================
+   MH CARDS
+   ============================================= */
+.mh-card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.4s var(--ease-elastic), box-shadow 0.4s var(--ease-smooth), border-color 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.mh-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -150%; width: 150%; height: 100%;
+    background: var(--shine);
+    z-index: 1; pointer-events: none; opacity: 0;
+}
+
+.mh-card:hover::before {
+    opacity: 1; left: 150%;
+    transition: left 0.85s var(--ease-smooth);
+}
+
+.mh-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--border-hover);
+}
+
+/* =============================================
+   MH BUTTONS
+   ============================================= */
+.mh-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: var(--radius-full);
+    font-size: 0.875rem; font-weight: 700;
+    font-family: inherit;
+    cursor: pointer; border: none;
+    transition: all 0.25s var(--ease-smooth);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.mh-btn-primary {
+    background: var(--primary);
+    color: white;
+    box-shadow: var(--shadow-btn);
+}
+
+.mh-btn-primary:hover {
+    background: var(--primary-hover);
+    box-shadow: 0 8px 24px var(--primary-glow);
+    transform: translateY(-2px);
+}
+
+.mh-btn-secondary {
+    background: transparent;
+    color: var(--primary);
+    border: 2px solid rgba(37,99,235,0.3);
+}
+
+.mh-btn-secondary:hover {
+    background: rgba(37,99,235,0.06);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.mh-btn-danger {
+    background: var(--danger);
+    color: white;
+}
+
+.mh-btn-danger:hover {
+    background: #dc2626;
+    box-shadow: 0 4px 14px rgba(239,68,68,0.3);
+    transform: translateY(-1px);
+}
+
+.mh-btn-ghost {
+    background: var(--bg-muted);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+
+.mh-btn-ghost:hover {
+    background: var(--border);
+    color: var(--text-primary);
+}
+
+.mh-btn:active { transform: scale(0.97) !important; }
+.mh-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
+
+/* =============================================
+   MH FORM INPUTS
+   ============================================= */
+.mh-input {
+    width: 100%;
+    padding: 11px 16px;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border);
+    background: var(--bg-muted);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    outline: none;
+}
+
+.mh-input:focus {
+    border-color: var(--primary);
+    background: var(--bg-surface);
+    box-shadow: 0 0 0 4px rgba(37,99,235,0.1);
+}
+
+.mh-input::placeholder { color: var(--text-faint); }
+
+.mh-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+
+.mh-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 38px;
+}
+
+/* =============================================
+   MH BADGES
+   ============================================= */
+.mh-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+.mh-badge-blue   { background: rgba(37,99,235,0.1); color: var(--primary); border: 1px solid rgba(37,99,235,0.2); }
+.mh-badge-green  { background: rgba(16,185,129,0.1); color: #059669; border: 1px solid rgba(16,185,129,0.2); }
+.mh-badge-red    { background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); }
+.mh-badge-amber  { background: rgba(245,158,11,0.1); color: #d97706; border: 1px solid rgba(245,158,11,0.2); }
+.mh-badge-gray   { background: var(--bg-muted); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* =============================================
+   MH TABLE
+   ============================================= */
+.mh-table-wrap {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+.mh-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.mh-table thead { background: var(--bg-muted); }
+
+.mh-table th {
+    padding: 13px 16px;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.mh-table td {
+    padding: 14px 16px;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+.mh-table tbody tr:last-child td { border-bottom: none; }
+
+.mh-table tbody tr {
+    transition: background 0.15s;
+}
+
+.mh-table tbody tr:hover { background: var(--bg-muted); }
+
+/* =============================================
+   MH STAT CARDS (admin)
+   ============================================= */
+.mh-stat-card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+    padding: 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    transition: transform 0.3s var(--ease-elastic), box-shadow 0.3s;
+}
+
+.mh-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
+}
+
+.mh-stat-icon {
+    width: 48px; height: 48px;
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; flex-shrink: 0;
+}
+
+.mh-stat-icon.blue   { background: rgba(37,99,235,0.1); color: var(--primary); }
+.mh-stat-icon.green  { background: rgba(16,185,129,0.1); color: var(--success); }
+.mh-stat-icon.amber  { background: rgba(245,158,11,0.1); color: var(--warning); }
+.mh-stat-icon.red    { background: rgba(239,68,68,0.1); color: var(--danger); }
+
+.mh-stat-label {
+    font-size: 0.75rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-faint); margin-bottom: 4px;
+}
+
+.mh-stat-value {
+    font-size: 1.7rem; font-weight: 900;
+    color: var(--text-primary); line-height: 1.1;
+    letter-spacing: -0.5px;
+}
+
+.mh-stat-change {
+    font-size: 0.78rem; font-weight: 700;
+    margin-top: 4px; color: var(--text-faint);
+}
+
+.mh-stat-change.up   { color: var(--success); }
+.mh-stat-change.down { color: var(--danger); }
+
+/* =============================================
+   MH ADMIN SIDEBAR
+   ============================================= */
+.mh-admin-sidebar {
+    width: 256px;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    height: 100vh;
+    position: sticky; top: 0;
+    transition: background 0.35s, border-color 0.35s;
+    flex-shrink: 0;
+}
+
+.mh-admin-sidebar-logo {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+}
+
+.mh-admin-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+
+.mh-admin-nav-link {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem; font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: all 0.2s var(--ease-smooth);
+    margin-bottom: 2px;
+}
+
+.mh-admin-nav-link:hover {
+    color: var(--text-primary);
+    background: var(--bg-muted);
+}
+
+.mh-admin-nav-link.active {
+    background: rgba(37,99,235,0.1);
+    color: var(--primary);
+    font-weight: 700;
+    border-right: 3px solid var(--primary);
+}
+
+.mh-admin-nav-link .material-symbols-outlined { font-size: 1.2rem; }
+
+.mh-admin-logout {
+    padding: 16px 12px;
+    border-top: 1px solid var(--border);
+}
+
+/* =============================================
+   MH ADMIN HEADER
+   ============================================= */
+.mh-admin-header {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 68px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+    box-shadow: var(--shadow-header);
+    transition: background 0.35s;
+}
+
+/* =============================================
+   MH USER SIDEBAR (profile, orders, etc.)
+   ============================================= */
+.mh-user-sidebar {
+    width: 260px;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px 12px;
+    box-shadow: var(--shadow-card);
+    flex-shrink: 0;
+    height: fit-content;
+}
+
+.mh-user-sidebar-link {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem; font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: all 0.2s var(--ease-smooth);
+    margin-bottom: 2px;
+}
+
+.mh-user-sidebar-link:hover { background: var(--bg-muted); color: var(--text-primary); }
+.mh-user-sidebar-link.active { background: rgba(37,99,235,0.1); color: var(--primary); font-weight: 700; }
+
+/* =============================================
+   MH PAGE LAYOUT
+   ============================================= */
+.mh-page {
+    min-height: 100vh;
+    background: var(--bg-page);
+    padding: 24px;
+}
+
+.mh-page-header {
+    margin-bottom: 28px;
+}
+
+.mh-page-title {
+    font-size: 1.6rem; font-weight: 900;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+}
+
+.mh-page-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.mh-section-title {
+    font-size: 1.05rem; font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+}
+
+/* Grid utilities */
+.mh-grid-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.mh-grid-2     { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.mh-grid-3     { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+/* =============================================
+   DARK MODE — surface overrides
+   ============================================= */
+html.dark .mh-card,
+html.dark .mh-stat-card,
+html.dark .mh-table-wrap,
+html.dark .mh-admin-sidebar,
+html.dark .mh-admin-header,
+html.dark .mh-user-sidebar,
+html.dark .mh-header {
+    background: var(--bg-surface);
+    border-color: var(--border);
+}
+
+html.dark .mh-input {
+    background: var(--bg-muted);
+    border-color: var(--border);
+    color: var(--text-primary);
+}
+
+html.dark .mh-table thead { background: var(--bg-muted); }
+html.dark .mh-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+html.dark .mh-table td,
+html.dark .mh-table th { border-bottom-color: var(--border); }
+
+/* =============================================
+   ANIMATION UTILITIES
+   ============================================= */
+@keyframes mhFadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mhSlideIn {
+    from { opacity: 0; transform: translateX(-16px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes mhPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.7; transform: scale(1.15); }
+}
+
+.mh-animate-fadeup  { animation: mhFadeUp 0.5s var(--ease-smooth) both; }
+.mh-animate-slidein { animation: mhSlideIn 0.4s var(--ease-smooth) both; }
+
+/* Stagger children */
+.mh-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.mh-stagger > *:nth-child(2) { animation-delay: 60ms; }
+.mh-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.mh-stagger > *:nth-child(4) { animation-delay: 180ms; }
+.mh-stagger > *:nth-child(5) { animation-delay: 240ms; }
+
+/* =============================================
+   RESPONSIVE
+   ============================================= */
+@media (max-width: 1024px) {
+    .mh-admin-sidebar { position: fixed; left: 0; top: 0; z-index: 200; transform: translateX(-100%); transition: transform 0.3s var(--ease-smooth); }
+    .mh-admin-sidebar.open { transform: translateX(0); box-shadow: 20px 0 60px rgba(0,0,0,0.2); }
+    .mh-grid-3 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 768px) {
+    .mh-page { padding: 16px; }
+    .mh-grid-2, .mh-grid-3 { grid-template-columns: 1fr; }
+    .mh-grid-stats { grid-template-columns: 1fr 1fr; }
+    .mh-admin-header { padding: 0 16px; }
+}
+
+@media (max-width: 480px) {
+    .mh-grid-stats { grid-template-columns: 1fr; }
+}
+
+/* =============================================
+   ADMIN & DYNAMIC GLOBAL THEME RESPONSIVENESS
+   ============================================= */
+
+/* Force global body styles to respect the theme state */
+html:not(.dark) body {
+    background-color: var(--bg-page) !important;
+    color: var(--text-primary) !important;
+}
+html.dark body {
+    background-color: var(--bg-page) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Make glass-morphism panels responsive */
+.glass-morphism {
+    background: var(--bg-surface) !important;
+    border-color: var(--border) !important;
+    box-shadow: var(--shadow-card) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+}
+
+/* Light mode specific element text and border color adjustments */
+html:not(.dark) main h1,
+html:not(.dark) main h2,
+html:not(.dark) main h3,
+html:not(.dark) main h4,
+html:not(.dark) main h5,
+html:not(.dark) main h6,
+html:not(.dark) main th,
+html:not(.dark) main td {
+    color: var(--text-primary) !important;
+}
+
+html:not(.dark) main p,
+html:not(.dark) main label {
+    color: var(--text-muted) !important;
+}
+
+html:not(.dark) main input,
+html:not(.dark) main select,
+html:not(.dark) main textarea {
+    background-color: var(--bg-surface) !important;
+    border-color: var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+html:not(.dark) main input::placeholder,
+html:not(.dark) main textarea::placeholder {
+    color: var(--text-faint) !important;
+}
+
+html:not(.dark) main .border-white\/5,
+html:not(.dark) main .divide-white\/5 > * {
+    border-color: var(--border) !important;
+}
+
+html:not(.dark) main .border-white\/10 {
+    border-color: var(--border) !important;
+}
+
+html:not(.dark) main tr:hover {
+    background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+html:not(.dark) main [class*="bg-[#151923]"],
+html:not(.dark) main [class*="bg-[#111111]"] {
+    background-color: var(--bg-muted) !important;
+}
+
+html:not(.dark) main [class*="bg-white/5"] {
+    background-color: var(--bg-muted) !important;
+}
+html:not(.dark) main [class*="bg-white/10"] {
+    background-color: var(--border) !important;
+}
+
+html:not(.dark) main .text-slate-200,
+html:not(.dark) main .text-slate-300 {
+    color: var(--text-primary) !important;
+}
+html:not(.dark) main .text-slate-400,
+html:not(.dark) main .text-slate-500 {
+    color: var(--text-muted) !important;
+}

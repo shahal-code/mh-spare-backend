@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>TechKart Admin - Orders Management</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0055ff",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#0d0d0d",
+                        "card-bg": "rgba(23, 33, 54, 0.4)",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <link rel="stylesheet" href="/css/views/admin/orders/orders.css">
+</head>
+
+<body class="flex min-h-screen">
+    <%- include('../../partials/admin/sidebar') %>
+        <main class="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar min-w-0">
+            <!-- Header -->
+            <%- include('../../partials/admin/header') %>
+                <div class="p-10 max-w-[1600px] mx-auto w-full space-y-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="glass-morphism p-6 rounded-xl border-l-4 border-primary">
+                            <div class="flex justify-between items-start mb-4">
+                                <span
+                                    class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">shopping_bag</span>
+                            </div>
+                            <h4 class="text-2xl font-bold tracking-tight"><%= totalOrdersCount %></h4>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total Orders</p>
+                        </div>
+                        <div class="glass-morphism p-6 rounded-xl border-l-4 border-amber-500">
+                            <div class="flex justify-between items-start mb-4">
+                                <span
+                                    class="material-symbols-outlined text-amber-500 bg-amber-500/10 p-2 rounded-lg">pending_actions</span>
+                            </div>
+                            <h4 class="text-2xl font-bold tracking-tight"><%= pendingOrdersCount %></h4>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Pending</p>
+                        </div>
+                        <div class="glass-morphism p-6 rounded-xl border-l-4 border-rose-500">
+                            <div class="flex justify-between items-start mb-4">
+                                <span
+                                    class="material-symbols-outlined text-rose-500 bg-rose-500/10 p-2 rounded-lg">cancel</span>
+                            </div>
+                            <h4 class="text-2xl font-bold tracking-tight"><%= canceledOrdersCount %></h4>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Canceled</p>
+                        </div>
+                        <div class="glass-morphism p-6 rounded-xl border-l-4 border-emerald-500">
+                            <div class="flex justify-between items-start mb-4">
+                                <span
+                                    class="material-symbols-outlined text-emerald-500 bg-emerald-500/10 p-2 rounded-lg">check_circle</span>
+                            </div>
+                            <h4 class="text-2xl font-bold tracking-tight"><%= completedOrdersCount %></h4>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Completed</p>
+                        </div>
+                    </div>
+                    <section class="glass-morphism rounded-xl overflow-hidden">
+                        <!-- Filter Section -->
+                        <div class="glass-morphism p-8 rounded-xl border border-white/5 mb-6">
+                            <form action="/admin/orders" method="GET"
+                                class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                                <!-- Keep search query when filtering -->
+                                <input type="hidden" name="search" value="<%= filters?.search || '' %>">
+                                
+                                <!-- Date Range -->
+                                <div class="space-y-2">
+                                    <label class="label-text">Date Range</label>
+                                    <div class="flex gap-2">
+                                        <input type="date" name="startDate" class="input-field text-xs"
+                                            value="<%= filters?.startDate || '' %>">
+                                        <input type="date" name="endDate" class="input-field text-xs"
+                                            value="<%= filters?.endDate || '' %>">
+                                    </div>
+                                </div>
+
+                                <!-- Order Status -->
+                                <div class="space-y-2">
+                                    <label class="label-text">Order Status</label>
+                                    <div class="relative">
+                                        <select name="status" class="input-field appearance-none pr-10">
+                                            <option value="">All Status</option>
+                                            <option value="Pending" <%=filters?.status==='Pending' ? 'selected' : '' %>>Pending</option>
+                                            <option value="Shipped" <%=filters?.status==='Shipped' ? 'selected' : '' %>>Shipped</option>
+                                            <option value="Out for Delivery" <%=filters?.status==='Out for Delivery' ? 'selected' : '' %>>Out for Delivery</option>
+                                            <option value="Delivered" <%=filters?.status==='Delivered' ? 'selected' : '' %>>Delivered</option>
+                                            <option value="Cancelled" <%=filters?.status==='Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                                            <option value="Return Request" <%=filters?.status==='Return Request' ? 'selected' : '' %>>Return Request</option>
+                                            <option value="Returned" <%=filters?.status==='Returned' ? 'selected' : '' %>>Returned</option>
+                                        </select>
+                                        <span
+                                            class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-sm">expand_more</span>
+                                    </div>
+                                </div>
+
+                                <!-- Payment Method -->
+                                <div class="space-y-2">
+                                    <label class="label-text">Payment Method</label>
+                                    <div class="relative">
+                                        <select name="paymentMethod" class="input-field appearance-none pr-10">
+                                            <option value="">All Methods</option>
+                                            <option value="COD" <%=filters?.paymentMethod==='COD' ? 'selected' : '' %>>Cash on Delivery</option>
+                                            <option value="UPI" <%=filters?.paymentMethod==='UPI' ? 'selected' : '' %>>UPI Payment</option>
+                                            <option value="Wallet" <%=filters?.paymentMethod==='Wallet' ? 'selected' : '' %>>Wallet Payment</option>
+                                        </select>
+                                        <span
+                                            class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-sm">expand_more</span>
+                                    </div>
+                                </div>
+
+                                <!-- Filter Action Buttons -->
+                                <div class="flex gap-3">
+                                    <button type="submit"
+                                        class="flex-1 bg-primary hover:bg-primary/80 text-white text-[10px] font-bold py-3 rounded-lg transition-all shadow-[0_0_15px_rgba(0,85,255,0.2)]">
+                                        APPLY FILTERS
+                                    </button>
+                                    <a href="/admin/orders"
+                                        class="px-4 py-3 border border-white/10 hover:bg-white/5 rounded-lg text-[10px] font-bold text-slate-400 transition-all text-center">
+                                        RESET
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Search Bar Section -->
+                        <div
+                            class="glass-morphism p-6 rounded-xl border border-white/5 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <form action="/admin/orders" method="GET" class="flex gap-4 flex-1">
+                                <!-- Keep filters when searching -->
+                                <input type="hidden" name="startDate" value="<%= filters?.startDate || '' %>">
+                                <input type="hidden" name="endDate" value="<%= filters?.endDate || '' %>">
+                                <input type="hidden" name="status" value="<%= filters?.status || '' %>">
+                                <input type="hidden" name="paymentMethod" value="<%= filters?.paymentMethod || '' %>">
+
+                                <div class="relative flex-1">
+                                    <span
+                                        class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg">search</span>
+                                    <input name="search" type="text" class="input-field pl-12 py-3"
+                                        placeholder="Search Order ID, Customer Name..."
+                                        value="<%= filters?.search || '' %>">
+                                </div>
+                                <button type="submit"
+                                    class="bg-primary px-10 py-3 rounded-lg text-[10px] font-bold hover:shadow-[0_0_20px_rgba(0,85,255,0.4)] transition-all uppercase tracking-widest">
+                                    Search
+                                </button>
+                            </form>
+                        </div>
+
+                        <section class="glass-morphism rounded-xl overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-white/5 bg-white/[0.02]">
+                                            <th
+                                                class="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                Order ID</th>
+                                            <th
+                                                class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                Customer Name</th>
+                                            <th
+                                                class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                Product</th>
+                                            <th
+                                                class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                Order Date</th>
+                                            <th
+                                                class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                Status</th>
+                                            <th
+                                                class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                Payment Method</th>
+                                            <th
+                                                class="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                Total Amount</th>
+                                            <th
+                                                class="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">
+                                                Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-white/5">
+                            <% if (orders && orders.length > 0) { %>
+                                <% orders.forEach(order => { %>
+                                    <tr class="hover:bg-white/[0.03] transition-colors group">
+                                        <td class="px-8 py-4">
+                                            <span class="text-sm font-bold text-primary font-mono"><%= order.orderId %></span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
+                                                    <%= (order.userId && order.userId.fullname) ? order.userId.fullname.split(' ').map(n => n[0]).join('') : 'U' %>
+                                                </div>
+                                                <span class="text-sm font-medium text-slate-200"><%= (order.userId && order.userId.fullname) ? order.userId.fullname : 'Unknown User' %></span>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="text-sm text-slate-300">
+                                                <%= order.orderedItems[0]?.product?.name || 'Product' %> 
+                                                <% if (order.orderedItems.length > 1) { %>
+                                                    <span class="text-[10px] text-slate-500">(+<%= order.orderedItems.length - 1 %> more)</span>
+                                                <% } %>
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-slate-400">
+                                            <%= new Date(order.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <% 
+                                                let statusClass = 'status-pending';
+                                                if (order.status === 'Shipped') statusClass = 'status-shipped';
+                                                if (order.status === 'Out for Delivery') statusClass = 'status-out-for-delivery';
+                                                if (order.status === 'Delivered') statusClass = 'status-delivered';
+                                                if (order.status === 'Cancelled') statusClass = 'status-cancelled';
+                                                if (order.status === 'Return Request') statusClass = 'status-return-request';
+                                                if (order.status === 'Returned') statusClass = 'status-returned';
+                                            %>
+                                            <span class="status-badge <%= statusClass %>"><%= order.status %></span>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-xs text-slate-300 font-bold uppercase tracking-wider">
+                                                <%= order.paymentMethod %>
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm font-bold">₹<%= order.finalAmount.toLocaleString() %></td>
+                                        <td class="px-8 py-4 text-right">
+                                            <div class="flex justify-end gap-2">
+                                                <a href="/admin/orders/<%= order._id %>"
+                                                    class="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all">
+                                                    <span class="material-symbols-outlined text-xl">visibility</span>
+                                                </a>
+                                                <button onclick="updateStatus('<%= order._id %>', '<%= order.status %>')"
+                                                    class="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-primary/10 transition-all">
+                                                    <span class="material-symbols-outlined text-xl">edit</span>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="7" class="px-8 py-10 text-center text-slate-500">
+                                        <span class="material-symbols-outlined text-4xl mb-2">inventory_2</span>
+                                        <p class="text-sm font-medium">No orders found</p>
+                                    </td>
+                                </tr>
+                            <% } %>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- Pagination -->
+                            <div class="p-6 border-t border-white/5 flex items-center justify-between">
+                                <p class="text-xs text-slate-500 font-medium uppercase tracking-widest">
+                                    Showing <%= (page - 1) * limit + 1 %> to <%= Math.min(page * limit, totalOrders) %> of <%= totalOrders %> orders
+                                </p>
+                                <% if (totalPages > 1) { %>
+                                    <div class="flex items-center gap-2">
+                                        <% 
+                                            const getQueryString = (p) => {
+                                                let q = `?page=${p}`;
+                                                if (filters.search) q += `&search=${filters.search}`;
+                                                if (filters.status) q += `&status=${filters.status}`;
+                                                if (filters.paymentMethod) q += `&paymentMethod=${filters.paymentMethod}`;
+                                                if (filters.startDate) q += `&startDate=${filters.startDate}`;
+                                                if (filters.endDate) q += `&endDate=${filters.endDate}`;
+                                                return q;
+                                            }
+                                        %>
+                                        <a href="<%= getQueryString(page - 1) %>"
+                                            class="px-6 py-2.5 rounded-lg border border-white/10 text-slate-400 hover:bg-white/5 transition-all text-[10px] font-bold uppercase tracking-widest <%= page === 1 ? 'pointer-events-none opacity-30' : '' %>">
+                                            Previous
+                                        </a>
+
+                                        <% for(let i = 1; i <= totalPages; i++) { %>
+                                            <a href="<%= getQueryString(i) %>"
+                                                class="h-10 w-10 flex items-center justify-center rounded-lg text-[10px] font-bold transition-all <%= page === i ? 'bg-primary text-white shadow-[0_0_20px_rgba(0,85,255,0.3)]' : 'border border-white/10 text-slate-400 hover:bg-white/5' %>">
+                                                <%= i %>
+                                            </a>
+                                        <% } %>
+
+                                        <a href="<%= getQueryString(page + 1) %>"
+                                            class="px-6 py-2.5 rounded-lg border border-white/10 text-slate-400 hover:bg-white/5 transition-all text-[10px] font-bold uppercase tracking-widest <%= page === totalPages ? 'pointer-events-none opacity-30' : '' %>">
+                                            Next
+                                        </a>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </section>
+                </div>
+        </main>
+        <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] pointer-events-none -z-10 rounded-full"></div>
+        <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] pointer-events-none -z-10 rounded-full"></div>
+
+        <script src="/js/admin/orders/orders.js"></script>
+</body>
+
+</html>
