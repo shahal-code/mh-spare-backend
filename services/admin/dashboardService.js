@@ -1,27 +1,57 @@
+import mongoose from "mongoose";
 import Order from "../../models/ordersModel.js";
 import User from "../../models/userModel.js";
 import Product from "../../models/productModel.js";
 import Category from "../../models/categoryModel.js";
+import Admin from "../../models/adminModel.js";
+import Payout from "../../models/payoutModel.js";
 
-export const getDashboardStats = async () => {
+export const getDashboardStats = async (adminContext = null) => {
   try {
     const validStatuses = ['Delivered', 'Shipped', 'Out for Delivery'];
+    
+    // Match query for orders
+    const matchQuery = { status: { $in: validStatuses } };
+    
+    // If not owner, only look at orders containing this admin's items
+    if (adminContext && adminContext.role !== 'owner') {
+      matchQuery["orderedItems.adminId"] = adminContext._id;
+    }
 
     // Basic Stats
     const totalRevenueAggr = await Order.aggregate([
-      { $match: { status: { $in: validStatuses } } },
-      { $group: { _id: null, total: { $sum: "$finalAmount" } } }
+      { $match: matchQuery },
+      { $unwind: "$orderedItems" },
+      ...(adminContext && adminContext.role !== 'owner' ? [{ $match: { "orderedItems.adminId": adminContext._id } }] : []),
+      { $match: { "orderedItems.status": { $in: validStatuses } } },
+      { $group: { 
+          _id: null, 
+          total: { $sum: { $multiply: ["$orderedItems.price", "$orderedItems.quantity"] } },
+          totalCommission: { $sum: "$orderedItems.commissionAmount" },
+          totalVendorEarning: { $sum: "$orderedItems.vendorEarning" }
+      } }
     ]);
-    const totalRevenue = totalRevenueAggr.length > 0 ? totalRevenueAggr[0].total : 0;
     
-    const totalOrders = await Order.countDocuments({ status: { $in: validStatuses } });
+    const totalRevenue = totalRevenueAggr.length > 0 ? totalRevenueAggr[0].total : 0;
+    const totalPlatformCommission = totalRevenueAggr.length > 0 ? totalRevenueAggr[0].totalCommission : 0;
+    const totalVendorEarnings = totalRevenueAggr.length > 0 ? totalRevenueAggr[0].totalVendorEarning : 0;
+    
+    const totalOrders = await Order.countDocuments(matchQuery);
     const totalUsers = await User.countDocuments({});
-    const totalProducts = await Product.countDocuments({ is_blocked: false });
+    
+    // Total products for vendor
+    const productQuery = { is_blocked: false };
+    if (adminContext && adminContext.role !== 'owner') {
+      productQuery.adminId = adminContext._id;
+    }
+    const totalProducts = await Product.countDocuments(productQuery);
 
     // Top 10 Products
     const topProducts = await Order.aggregate([
-      { $match: { status: { $in: validStatuses } } },
+      { $match: matchQuery },
       { $unwind: "$orderedItems" },
+      ...(adminContext && adminContext.role !== 'owner' ? [{ $match: { "orderedItems.adminId": adminContext._id } }] : []),
+      { $match: { "orderedItems.status": { $in: validStatuses } } },
       { $group: { _id: "$orderedItems.product", totalQuantity: { $sum: "$orderedItems.quantity" } } },
       { $sort: { totalQuantity: -1 } },
       { $limit: 10 },
@@ -32,8 +62,10 @@ export const getDashboardStats = async () => {
 
     // Top 10 Categories
     const topCategories = await Order.aggregate([
-      { $match: { status: { $in: validStatuses } } },
+      { $match: matchQuery },
       { $unwind: "$orderedItems" },
+      ...(adminContext && adminContext.role !== 'owner' ? [{ $match: { "orderedItems.adminId": adminContext._id } }] : []),
+      { $match: { "orderedItems.status": { $in: validStatuses } } },
       { $lookup: { from: "products", localField: "orderedItems.product", foreignField: "_id", as: "productDetails" } },
       { $unwind: "$productDetails" },
       { $group: { _id: "$productDetails.category_id", totalQuantity: { $sum: "$orderedItems.quantity" } } },
@@ -46,8 +78,10 @@ export const getDashboardStats = async () => {
 
     // Top 10 Brands (Extracting first word of product name as brand)
     const topBrands = await Order.aggregate([
-      { $match: { status: { $in: validStatuses } } },
+      { $match: matchQuery },
       { $unwind: "$orderedItems" },
+      ...(adminContext && adminContext.role !== 'owner' ? [{ $match: { "orderedItems.adminId": adminContext._id } }] : []),
+      { $match: { "orderedItems.status": { $in: validStatuses } } },
       { $lookup: { from: "products", localField: "orderedItems.product", foreignField: "_id", as: "productDetails" } },
       { $unwind: "$productDetails" },
       { $addFields: { brandName: { $arrayElemAt: [{ $split: ["$productDetails.name", " "] }, 0] } } },
@@ -57,6 +91,57 @@ export const getDashboardStats = async () => {
       { $project: { name: "$_id", totalQuantity: 1, _id: 0 } }
     ]);
 
+    // Super Admin specific stats
+    let superAdminStats = null;
+    if (adminContext && adminContext.role === 'owner') {
+      const vendors = await Admin.find({ role: 'vendor' });
+      const totalVendors = vendors.length;
+      const activeVendors = vendors.filter(v => v.status === 'active').length;
+      const blockedVendors = vendors.filter(v => v.status === 'blocked').length;
+      const pendingVendors = vendors.filter(v => v.status === 'pending').length;
+
+      const currentMonth = new Date();
+      currentMonth.setDate(1);
+      const newVendorsThisMonth = vendors.filter(v => v.createdAt >= currentMonth).length;
+
+      const payouts = await Payout.find();
+      const totalVendorPayouts = payouts.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0);
+      const pendingPayouts = payouts.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
+
+      // Return/Refund stats
+      const refundAggr = await Order.aggregate([
+        { $match: { paymentStatus: { $in: ['Refunded', 'Partially Refunded'] } } },
+        { $group: { _id: null, total: { $sum: "$finalAmount" } } } // Simplification: we might need more exact calculation for partials
+      ]);
+      const refundAmount = refundAggr.length > 0 ? refundAggr[0].total : 0;
+      const returnOrders = await Order.countDocuments({ status: { $in: ['Return Request', 'Returned'] } });
+
+      const vendorPerformance = await Order.aggregate([
+        { $match: { status: { $in: validStatuses } } },
+        { $unwind: "$orderedItems" },
+        { $match: { "orderedItems.status": { $in: validStatuses } } },
+        { $group: { 
+            _id: "$orderedItems.adminId", 
+            revenue: { $sum: { $multiply: ["$orderedItems.price", "$orderedItems.quantity"] } },
+            itemsSold: { $sum: "$orderedItems.quantity" }
+        } },
+        { $lookup: { from: "admins", localField: "_id", foreignField: "_id", as: "vendor" } },
+        { $unwind: "$vendor" },
+        { $project: { name: "$vendor.fullname", storeName: "$vendor.storeDetails.storeName", revenue: 1, itemsSold: 1 } },
+        { $sort: { revenue: -1 } }
+      ]);
+      const topSellingVendors = vendorPerformance.slice(0, 5);
+      const lowestPerformingVendors = vendorPerformance.slice(-5).reverse();
+
+      superAdminStats = {
+        totalVendors, activeVendors, blockedVendors, pendingVendors, newVendorsThisMonth,
+        totalVendorPayouts, pendingPayouts,
+        refundAmount, returnOrders,
+        topSellingVendors, lowestPerformingVendors,
+        totalPlatformCommission, totalVendorEarnings
+      };
+    }
+
     return {
       totalRevenue,
       totalOrders,
@@ -65,6 +150,7 @@ export const getDashboardStats = async () => {
       topProducts,
       topCategories,
       topBrands,
+      superAdminStats,
       activePage: "dashboard",
       pageTitle: "Global Overview",
       pageSubtitle: "Real-time Admin Statistics"
@@ -75,7 +161,7 @@ export const getDashboardStats = async () => {
   }
 };
 
-export const getChartData = async (filter) => {
+export const getChartData = async (filter, adminContext = null) => {
   try {
     const validStatuses = ['Delivered', 'Shipped', 'Out for Delivery'];
     let startDate;
@@ -85,14 +171,12 @@ export const getChartData = async (filter) => {
     const now = new Date();
     
     if (filter === 'yearly') {
-      // Last 5 years
       startDate = new Date(now.getFullYear() - 4, 0, 1);
       groupFormat = "%Y";
       for (let i = 4; i >= 0; i--) {
         labels.push((now.getFullYear() - i).toString());
       }
     } else if (filter === 'weekly') {
-      // Last 7 days
       startDate = new Date(now);
       startDate.setDate(now.getDate() - 6);
       startDate.setHours(0, 0, 0, 0);
@@ -100,10 +184,9 @@ export const getChartData = async (filter) => {
       for (let i = 6; i >= 0; i--) {
         const d = new Date(now);
         d.setDate(now.getDate() - i);
-        labels.push(d.toISOString().split('T')[0]); // YYYY-MM-DD
+        labels.push(d.toISOString().split('T')[0]); 
       }
     } else {
-      // Monthly - Default to last 12 months
       startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
       groupFormat = "%Y-%m";
       for (let i = 11; i >= 0; i--) {
@@ -114,35 +197,40 @@ export const getChartData = async (filter) => {
       }
     }
 
+    const matchQuery = { 
+      status: { $in: validStatuses },
+      createdAt: { $gte: startDate }
+    };
+
+    if (adminContext && adminContext.role !== 'owner') {
+      matchQuery["orderedItems.adminId"] = adminContext._id;
+    }
+
     const salesData = await Order.aggregate([
-      { 
-        $match: { 
-          status: { $in: validStatuses },
-          createdAt: { $gte: startDate }
-        } 
-      },
+      { $match: matchQuery },
+      { $unwind: "$orderedItems" },
+      ...(adminContext && adminContext.role !== 'owner' ? [{ $match: { "orderedItems.adminId": adminContext._id } }] : []),
+      { $match: { "orderedItems.status": { $in: validStatuses } } },
       {
         $group: {
           _id: { $dateToString: { format: groupFormat, date: "$createdAt" } },
-          totalRevenue: { $sum: "$finalAmount" }
+          totalRevenue: { $sum: { $multiply: ["$orderedItems.price", "$orderedItems.quantity"] } }
         }
       },
       { $sort: { _id: 1 } }
     ]);
 
-    // Fill in missing labels with 0
     let revenueData = [];
     labels.forEach(label => {
       let labelMatch = label;
       if (filter === 'monthly' && labelMatch.length > 7) {
-        labelMatch = labelMatch.substring(0, 7); // Handle YYYY-MM
+        labelMatch = labelMatch.substring(0, 7); 
       }
       
       const found = salesData.find(s => s._id === labelMatch);
       revenueData.push(found ? found.totalRevenue : 0);
     });
 
-    // Format labels for display
     if (filter === 'weekly') {
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

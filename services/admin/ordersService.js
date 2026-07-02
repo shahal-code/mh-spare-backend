@@ -44,11 +44,15 @@ const validateStatusTransition = (currentStatus, nextStatus, entityName = "Order
     }
 };
 
-export const getAllOrders = async (queryParams, page, limit) => {
+export const getAllOrders = async (queryParams, page, limit, adminContext = null) => {
     const { startDate, endDate, status, paymentMethod, search } = queryParams;
     const skip = (page - 1) * limit;
 
     let query = {};
+    
+    if (adminContext && adminContext.role !== 'owner') {
+        query["orderedItems.adminId"] = adminContext._id;
+    }
 
     // Filter by Status
     if (status) query.status = status;
@@ -67,7 +71,6 @@ export const getAllOrders = async (queryParams, page, limit) => {
 
     // Search Logic
     if (search) {
-        // We need User model here, assuming it's available or we can import it
         const User = (await import("../../models/userModel.js")).default;
         const matchingUsers = await User.find({
             fullname: { $regex: search, $options: 'i' }
@@ -89,10 +92,20 @@ export const getAllOrders = async (queryParams, page, limit) => {
     const orders = await Order.find(query)
         .populate("userId")
         .populate("orderedItems.product")
+        .populate("orderedItems.adminId", "fullname storeDetails")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean();
+        
+    // Filter items to only show the vendor's items if not owner
+    if (adminContext && adminContext.role !== 'owner') {
+        orders.forEach(order => {
+            order.orderedItems = order.orderedItems.filter(item => 
+                item.adminId && item.adminId.toString() === adminContext._id.toString()
+            );
+        });
+    }
 
     const totalOrders = await Order.countDocuments(query);
     const totalPages = Math.ceil(totalOrders / limit);
@@ -100,6 +113,29 @@ export const getAllOrders = async (queryParams, page, limit) => {
     return {
         orders, totalOrders, totalPages
     };
+};
+
+export const getOrderStats = async (adminContext = null) => {
+    const query = {};
+    if (adminContext && adminContext.role !== 'owner') {
+        query["orderedItems.adminId"] = adminContext._id;
+    }
+    
+    // Total orders containing this vendor's items
+    const totalOrdersCount = await Order.countDocuments(query);
+    
+    // We count based on item status if vendor
+    if (adminContext && adminContext.role !== 'owner') {
+        const pendingOrdersCount = await Order.countDocuments({ ...query, "orderedItems.status": "Pending" });
+        const canceledOrdersCount = await Order.countDocuments({ ...query, "orderedItems.status": "Cancelled" });
+        const completedOrdersCount = await Order.countDocuments({ ...query, "orderedItems.status": "Delivered" });
+        return { totalOrdersCount, pendingOrdersCount, canceledOrdersCount, completedOrdersCount };
+    }
+    
+    const pendingOrdersCount = await Order.countDocuments({ status: "Pending" });
+    const canceledOrdersCount = await Order.countDocuments({ status: "Cancelled" });
+    const completedOrdersCount = await Order.countDocuments({ status: "Delivered" });
+    return { totalOrdersCount, pendingOrdersCount, canceledOrdersCount, completedOrdersCount };
 };
 
 export const getOrderById = async (orderId) => {
@@ -258,7 +294,6 @@ export const getReturnRequests = async (queryParams ,page, limit) => {
         const cleanSearch = search.replace("#","").trim();
         const User=(await import ("../../models/userModel.js")).default
 
-
         const matchingUsers=await User.find({
             fullname:{$regex:cleanSearch,$options:"i"}
         }).select("_id");
@@ -287,7 +322,6 @@ export const getReturnRequests = async (queryParams ,page, limit) => {
         };
     }
     
-
     const orders = await Order.find(query)
         .populate("userId")
         .populate("orderedItems.product")
@@ -301,5 +335,3 @@ export const getReturnRequests = async (queryParams ,page, limit) => {
 
     return { orders, totalPages, totalOrders };
 };
-
-

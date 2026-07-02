@@ -13,6 +13,8 @@ import CouponService from "../../services/admin/couponService.js";
 import OfferService from "../../services/admin/offerService.js";
 import * as ReportService from "../../services/admin/reportService.js";
 
+import Admin from "../../models/adminModel.js";
+
 const ADMIN_OFFER_TYPES = ["product", "category"];
 
 const sendError = (res, error, status = 500) => {
@@ -20,43 +22,89 @@ const sendError = (res, error, status = 500) => {
   res.status(status).json({ success: false, message, error: message });
 };
 
-export const login = (req, res) => {
-  const { email, password } = req.body;
-  const validationError = validateLogin(req.body);
-  if (validationError) {
-    return res.status(400).json({ success: false, message: validationError });
+// Owner routes for vendor management
+export const getVendors = async (req, res) => {
+  try {
+    const vendors = await Admin.find({ role: { $ne: 'owner' } }).select('-password').sort({ createdAt: -1 });
+    res.json({ success: true, vendors });
+  } catch (error) {
+    sendError(res, error);
   }
+};
 
-  const adminEmail = process.env.ADMIN_EMAIL || "admin@gmail.com";
-  const adminPassword = process.env.ADMIN_PASSWORD || "12345";
-
-  if (email === adminEmail && password === adminPassword) {
-    req.session.admin = true;
-    return req.session.save((err) => {
-      if (err) return sendError(res, err);
-      res.json({ success: true, message: "Logged in successfully" });
-    });
+export const approveVendor = async (req, res) => {
+  try {
+    const vendor = await Admin.findById(req.params.id);
+    if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
+    vendor.status = 'active';
+    await vendor.save();
+    res.json({ success: true, vendor });
+  } catch (error) {
+    sendError(res, error);
   }
-
-  res.status(401).json({ success: false, message: "Invalid login credentials" });
 };
 
-export const session = async (req, res) => {
-  const returnCount = await Order.countDocuments({ "orderedItems.status": "Return Request" });
-  res.json({ authenticated: Boolean(req.session.admin), returnCount });
+export const blockVendor = async (req, res) => {
+  try {
+    const vendor = await Admin.findById(req.params.id);
+    if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
+    vendor.status = vendor.status === 'blocked' ? 'active' : 'blocked';
+    await vendor.save();
+    res.json({ success: true, vendor });
+  } catch (error) {
+    sendError(res, error);
+  }
 };
 
-export const logout = (req, res) => {
-  req.session.destroy((err) => {
-    if (err) return sendError(res, err);
-    res.clearCookie("admin.sid");
-    res.json({ success: true });
-  });
+export const vendorStats = async (req, res) => {
+  try {
+    const validStatuses = ['Delivered', 'Shipped', 'Out for Delivery'];
+    const vendorId = req.params.id;
+    const vendor = await Admin.findById(vendorId).select("-password");
+    if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
+
+    const totalRevenueAggr = await Order.aggregate([
+      { $match: { status: { $in: validStatuses } } },
+      { $unwind: "$orderedItems" },
+      { $match: { "orderedItems.adminId": vendor._id } },
+      { $match: { "orderedItems.status": { $in: validStatuses } } },
+      { $group: { _id: null, total: { $sum: { $multiply: ["$orderedItems.price", "$orderedItems.quantity"] } } } }
+    ]);
+    const totalRevenue = totalRevenueAggr.length > 0 ? totalRevenueAggr[0].total : 0;
+    const totalProducts = await Product.countDocuments({ adminId: vendor._id });
+
+    res.json({ success: true, vendor, totalRevenue, totalProducts });
+  } catch (error) {
+    sendError(res, error);
+  }
 };
+
+export const vendorProducts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const vendorId = req.params.id;
+    
+    const query = { adminId: vendorId };
+    const products = await Product.find(query)
+      .populate("category_id")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+    
+    const totalProducts = await Product.countDocuments(query);
+    res.json({ success: true, products, totalProducts, totalPages: Math.ceil(totalProducts / limit), page, limit });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+// Auth routes moved to admin.auth.js
 
 export const dashboard = async (req, res) => {
   try {
-    res.json(await DashboardService.getDashboardStats());
+    res.json(await DashboardService.getDashboardStats(req.admin));
   } catch (error) {
     sendError(res, error);
   }
@@ -64,7 +112,7 @@ export const dashboard = async (req, res) => {
 
 export const dashboardChart = async (req, res) => {
   try {
-    res.json(await DashboardService.getChartData(req.query.filter || "monthly"));
+    res.json(await DashboardService.getChartData(req.query.filter || "monthly", req.admin));
   } catch (error) {
     sendError(res, error);
   }
@@ -174,9 +222,23 @@ export const products = async (req, res) => {
     const limit = parseInt(req.query.limit) || 4;
     const search = req.query.search || "";
     const query = search ? { name: { $regex: search, $options: "i" } } : {};
+    
+    // Filter by admin if vendor
+    if (req.admin.role !== "owner") {
+      query.adminId = req.admin._id;
+    }
+
     const data = await ProductService.getAllProducts(query, page, limit);
-    const activeProductsCount = await Product.countDocuments({ is_blocked: false });
-    const inactiveProductsCount = await Product.countDocuments({ is_blocked: true });
+    
+    const activeProductsQuery = { is_blocked: false };
+    const inactiveProductsQuery = { is_blocked: true };
+    if (req.admin.role !== "owner") {
+      activeProductsQuery.adminId = req.admin._id;
+      inactiveProductsQuery.adminId = req.admin._id;
+    }
+    
+    const activeProductsCount = await Product.countDocuments(activeProductsQuery);
+    const inactiveProductsCount = await Product.countDocuments(inactiveProductsQuery);
     res.json({ ...data, page, limit, search, activeProductsCount, inactiveProductsCount });
   } catch (error) {
     sendError(res, error);
@@ -204,7 +266,8 @@ export const product = async (req, res) => {
 
 export const createProduct = async (req, res) => {
   try {
-    const product = await ProductService.createProduct(req.body);
+    const productData = { ...req.body, adminId: req.admin._id, approvalStatus: req.admin.role === 'owner' ? 'approved' : 'pending' };
+    const product = await ProductService.createProduct(productData);
     res.status(201).json({ success: true, product });
   } catch (error) {
     sendError(res, error, 400);
@@ -224,6 +287,18 @@ export const toggleProduct = async (req, res) => {
   try {
     const product = await ProductService.toggleProductStatus(req.params.id);
     res.json({ success: true, product, is_blocked: product.is_blocked });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+export const updateProductApproval = async (req, res) => {
+  try {
+    if (req.admin.role !== 'owner') {
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+    const product = await ProductService.updateProductApproval(req.params.id, req.body.status);
+    res.json({ success: true, product });
   } catch (error) {
     sendError(res, error);
   }
@@ -269,13 +344,15 @@ export const orders = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
-    const data = await OrderService.getAllOrders(req.query, page, limit);
-    const stats = {
-      totalOrdersCount: await Order.countDocuments(),
-      pendingOrdersCount: await Order.countDocuments({ status: "Pending" }),
-      canceledOrdersCount: await Order.countDocuments({ status: "Cancelled" }),
-      completedOrdersCount: await Order.countDocuments({ status: "Delivered" }),
-    };
+    
+    // Add admin filtering to the query
+    const filterQuery = { ...req.query };
+    if (req.admin.role !== 'owner') {
+      filterQuery.adminId = req.admin._id;
+    }
+
+    const data = await OrderService.getAllOrders(filterQuery, page, limit, req.admin);
+    const stats = await OrderService.getOrderStats(req.admin);
     res.json({ ...data, page, limit, filters: req.query, stats });
   } catch (error) {
     sendError(res, error);

@@ -14,6 +14,11 @@ const orderSchema = new mongoose.Schema({
     },
     
     orderedItems: [{
+        adminId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Admin',
+            required: true
+        },
         product: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Product',
@@ -30,6 +35,14 @@ const orderSchema = new mongoose.Schema({
         price: {
             type: Number, 
             required: true
+        },
+        commissionAmount: {
+            type: Number,
+            default: 0
+        },
+        vendorEarning: {
+            type: Number,
+            default: 0
         },
         status: {
             type: String,

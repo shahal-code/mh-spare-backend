@@ -1,88 +1,74 @@
 import User from "../models/userModel.js";
 import Cart from "../models/cartModel.js";
 import Wishlist from "../models/wishlistModel.js";
-import Product from "../models/productModel.js";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "default_jwt_secret";
+
+const extractUserId = (req) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.split(" ")[1];
+      const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded.type === "user") return decoded.id;
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+};
 
 export const isAuthenticated = async (req, res, next) => {
-  if (req.session.user) {
+  const userId = extractUserId(req);
+  if (userId) {
     try {
-      const user = await User.findById(req.session.user);
+      const user = await User.findById(userId);
       if (user && !user.isBlocked) {
         res.locals.user = user;
+        req.user = user;
         return next();
       } else {
-        req.session.destroy((err) => {
-          if (err) console.log("Session destruction error:", err);
-          if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
-            return res.status(401).json({ success: false, message: 'Account blocked' });
-          }
-          res.redirect("/user/login?message=Your account has been blocked by the administrator");
-        });
+        return res.status(403).json({ success: false, message: 'Account blocked by administrator' });
       }
     } catch (error) {
-      console.log("Middleware Error:", error);
-      if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
-        return res.status(401).json({ success: false, message: 'Authentication failed' });
-      }
-      res.redirect("/user/login");
+      console.error("Middleware Error:", error);
+      return res.status(401).json({ success: false, message: 'Authentication failed' });
     }
   } else {
-    if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Authentication required',
-        unauthenticated: true 
-      });
-    }
-    res.redirect("/user/login");
+    return res.status(401).json({ success: false, message: 'Authentication required', unauthenticated: true });
   }
 };
 
 export const isAlreadyLoggedIn = async (req, res, next) => {
-  if (req.session.user) {
+  const userId = extractUserId(req);
+  if (userId) {
     try {
-      const user = await User.findById(req.session.user);
-
+      const user = await User.findById(userId);
       if (user && !user.isBlocked) {
-        return res.redirect("/user/dashboard");
+        return res.status(400).json({ success: false, message: 'Already logged in' });
       }
-
-      if (user && user.isBlocked) {
-        return req.session.destroy((err) => {
-          if (err) console.log("Session destruction error:", err);
-          return res.redirect("/user/login?message=Your account has been blocked");
-        });
-      }
-
     } catch (error) {
       console.log("Middleware Error:", error);
     }
   }
-
-  //  Always continue if not redirected
   next();
 };
 
 export const isBlocked = async (req, res, next) => {
-  if (req.session.user) {
+  const userId = extractUserId(req);
+  if (userId) {
     try {
-      const user = await User.findById(req.session.user);
+      const user = await User.findById(userId);
       if (user && user.isBlocked) {
-        return req.session.destroy((err) => {
-          if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
-            return res.status(403).json({ success: false, message: 'Account blocked' });
-          }
-          res.redirect("/user/login?message=Your account has been blocked");
-        });
+        return res.status(403).json({ success: false, message: 'Account blocked' });
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   }
   next();
 };
-
-// no cache
 
 export const noCache = (req, res, next) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
@@ -93,7 +79,7 @@ export const noCache = (req, res, next) => {
 
 export const userContext = async (req, res, next) => {
   try {
-    const userId = req.session.user;
+    const userId = extractUserId(req);
     let user = null;
     let cartCount = 0;
     let wishlistCount = 0;
@@ -110,15 +96,11 @@ export const userContext = async (req, res, next) => {
         path: "products.productId",
         populate: { path: "category_id" }
       });
+      
       if (wishlist && wishlist.products) {
-        // Count ALL products in the wishlist for the badge (including blocked ones)
-        // — same as how cart counts all items even unavailable ones.
-        // The product is still saved in the wishlist, it's just currently blocked.
         const validProducts = wishlist.products.filter(item => item && item.productId);
         wishlistCount = validProducts.length;
 
-        // wishlistProductIds only includes available products — used to fill
-        // the heart icon on shop/home pages (don't mark blocked products as wishlisted)
         wishlistProductIds = validProducts
           .filter(item =>
             item.productId.is_blocked !== true &&
@@ -133,6 +115,7 @@ export const userContext = async (req, res, next) => {
     res.locals.cartCount = cartCount;
     res.locals.wishlistCount = wishlistCount;
     res.locals.wishlistProductIds = wishlistProductIds;
+    if (user) req.user = user;
     next();
   } catch (error) {
     console.error("User Context Middleware Error:", error);

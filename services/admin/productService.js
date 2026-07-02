@@ -7,6 +7,7 @@ import Product from "../../models/productModel.js";
 export const getAllProducts = async (query, page, limit) => {
     const products = await Product.find(query)
         .populate("category_id")
+        .populate("adminId", "fullname email storeDetails")
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
@@ -36,12 +37,14 @@ export const getProductById = async (id) => {
  * Create a new base product.
  */
 export const createProduct = async (productData) => {
-    const { name, description, category_id, price } = productData;
+    const { name, description, category_id, price, adminId, approvalStatus } = productData;
 
     const newProduct = new Product({
         name,
         description,
         category_id,
+        adminId,
+        approvalStatus: approvalStatus || 'pending',
         variants: price ? [{
             price: parseFloat(price),
             sku: `SKU-${Date.now()}`,
@@ -168,6 +171,17 @@ export const toggleProductStatus = async (id) => {
     if (!product) throw new Error("Product not found");
 
     product.is_blocked = !product.is_blocked;
+    return await product.save();
+};
+
+/**
+ * Update product approval status (Super Admin only).
+ */
+export const updateProductApproval = async (id, status) => {
+    const product = await Product.findById(id);
+    if (!product) throw new Error("Product not found");
+    
+    product.approvalStatus = status;
     return await product.save();
 };
 

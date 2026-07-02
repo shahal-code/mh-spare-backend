@@ -29,12 +29,19 @@ class OrderService {
             if (!variant || variant.is_blocked) throw new Error(`Specific variant for ${product.name} is no longer available.`);
             if (variant.stock < item.quantity) throw new Error(`Not enough stock for ${product.name}`);
 
-            subtotal += variant.price * item.quantity;
+            const itemTotal = variant.price * item.quantity;
+            subtotal += itemTotal;
+            const commission = itemTotal * 0.10; // 10% flat commission
+            const earning = itemTotal - commission;
+
             return {
+                adminId: product.adminId,
                 product: item.productId._id,
                 variantId: item.variantId.toString(),
                 quantity: item.quantity,
-                price: variant.price
+                price: variant.price,
+                commissionAmount: commission,
+                vendorEarning: earning
             };
         });
 

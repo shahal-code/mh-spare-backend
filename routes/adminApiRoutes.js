@@ -1,22 +1,26 @@
 import express from "express";
 import * as AdminApi from "../controller/admincontroller/adminApiController.js";
-import * as adminAuth from "../middleware/adminAuth.js";
+import { verifyAdminJWT } from "../middleware/jwtMiddleware.js";
+import { isOwner as enforceOwner } from "../middleware/rbacMiddleware.js";
+import * as AuthApi from "../controller/admincontroller/admin.auth.js";
 import { uploadProduct } from "../config/productMulter.js";
 
 const router = express.Router();
 
-const isAdminApiLoggedIn = (req, res, next) => {
-  if (req.session.admin) return next();
-  res.status(401).json({ authenticated: false, message: "Admin login required" });
-};
+router.post("/register", AuthApi.register);
+router.post("/login", AuthApi.login);
+router.post("/logout", AuthApi.logout);
 
-router.use(adminAuth.noCache);
+router.use(verifyAdminJWT);
 
-router.post("/login", AdminApi.login);
-router.get("/session", AdminApi.session);
-router.post("/logout", AdminApi.logout);
+router.get("/session", AuthApi.session);
 
-router.use(isAdminApiLoggedIn);
+// Owner-only routes for managing admins
+router.get("/vendors", enforceOwner, AdminApi.getVendors);
+router.post("/vendors/:id/approve", enforceOwner, AdminApi.approveVendor);
+router.post("/vendors/:id/block", enforceOwner, AdminApi.blockVendor);
+router.get("/vendors/:id/stats", enforceOwner, AdminApi.vendorStats);
+router.get("/vendors/:id/products", enforceOwner, AdminApi.vendorProducts);
 
 router.get("/dashboard", AdminApi.dashboard);
 router.get("/dashboard/chart", AdminApi.dashboardChart);
@@ -38,6 +42,7 @@ router.get("/products/:id", AdminApi.product);
 router.post("/products", AdminApi.createProduct);
 router.put("/products/:id", AdminApi.updateProduct);
 router.patch("/products/:id/toggle", AdminApi.toggleProduct);
+router.patch("/products/:id/approval", enforceOwner, AdminApi.updateProductApproval);
 router.delete("/products/:id", AdminApi.deleteProduct);
 router.post("/products/:id/variants", uploadProduct.array("images", 5), AdminApi.createVariant);
 router.put("/products/:id/variants/:variantId", uploadProduct.array("images", 5), AdminApi.updateVariant);

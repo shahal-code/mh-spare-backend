@@ -19,6 +19,16 @@ const productVariantSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const productSchema = new mongoose.Schema({
+    adminId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Admin',
+        required: true
+    },
+    approvalStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    },
     name: { 
         type: String, 
         required: true 
