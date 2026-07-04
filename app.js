@@ -5,6 +5,9 @@ import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import apiRoutes from "./routes/apiRoutes.js";
 import cors from "cors";
+import session from "express-session";
+import passport from "passport";
+import './config/passport.js';
 import * as ErrorHandler from "./middleware/errorHandler.js";
 import { userContext } from "./middleware/userAuth.js";
 import { preventCache, setLocals } from "./middleware/commonMiddleware.js";
@@ -37,7 +40,7 @@ const allowedOrigins = [
 ];
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.devtunnels.ms')) {
       return callback(null, true);
     }
     return callback(new Error("Not allowed by CORS"));
@@ -53,10 +56,38 @@ app.use("/api", apiRoutes);
 
 app.use(preventCache);
 
+//user session
+const userSession = session({
+  name: "user.id",
+  secret: process.env.SESSION_SECRET || "user-secret",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24
+  }
+});
+
+//admin session
+const adminSession = session({
+  name: "admin.sid",
+  secret: process.env.ADMIN_SECRET || "admin-secret",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 12
+  }
+});
+
+app.use(passport.initialize());
+
+app.get("/", (req, res) => {
+  res.redirect("/user");
+});
+
 //user routes
-app.use("/user", userContext, setLocals, userRoutes);
+app.use("/user", userSession, passport.session(), userContext, setLocals, userRoutes);
 //admin routes
-app.use("/admin", setLocals, adminRoutes)
+app.use("/admin", adminSession, passport.session(), setLocals, adminRoutes);
 
 app.use(setLocals);
 

@@ -16,32 +16,12 @@ import * as ReviewController from "../controller/usercontroller/reviewController
 
 
 // Authentication
-router
-  .route('/login')
-  .get(userAuth.isAlreadyLoggedIn, usercontroller.loadlogin)
-  .post(userAuth.isAlreadyLoggedIn, usercontroller.login);
-
-router
-  .route('/signup')
-  .get(userAuth.isAlreadyLoggedIn, usercontroller.loadsignup)
-  .post(userAuth.isAlreadyLoggedIn, usercontroller.signup);
-
-router
-  .route('/otp')
-  .get(userAuth.isAlreadyLoggedIn, usercontroller.load_otp)
-  .post(userAuth.isAlreadyLoggedIn, usercontroller.Verifyotp);
-
+router.post('/login', userAuth.isAlreadyLoggedIn, usercontroller.login);
+router.post('/signup', userAuth.isAlreadyLoggedIn, usercontroller.signup);
+router.post('/otp', userAuth.isAlreadyLoggedIn, usercontroller.Verifyotp);
 router.post('/resend-otp', usercontroller.resendOTP);
-
-router
-  .route('/forgot-password')
-  .get(userAuth.isAlreadyLoggedIn, usercontroller.load_Forgot_Password)
-  .post(userAuth.isAlreadyLoggedIn, usercontroller.fogotPassword);
-
-router
-  .route('/reset-password')
-  .get(userAuth.isAlreadyLoggedIn, usercontroller.load_reset_password)
-  .post(userAuth.isAlreadyLoggedIn, usercontroller.reset_Password);
+router.post('/forgot-password', userAuth.isAlreadyLoggedIn, usercontroller.fogotPassword);
+router.post('/reset-password', userAuth.isAlreadyLoggedIn, usercontroller.reset_Password);
 
 // Google OAuth
 router.get(
@@ -114,24 +94,13 @@ router.post('/wishlist/remove', userAuth.isAuthenticated, userAuth.isBlocked, Wi
 router.get('/dashboard', userAuth.isAuthenticated, PageController.Dashboard_load);
 
 // Profile
-router.get('/profile', userAuth.isAuthenticated, userAuth.isBlocked, Profile.load_profile);
-router.get('/profile/edit', userAuth.isAuthenticated, userAuth.isBlocked, Profile.load_editProfile);
-router.post(
-  "/profile/edit",
-  userAuth.isAuthenticated,
-  userAuth.isBlocked,
-  upload.single("avatar"),
-  Profile.editProfile
-);
-
-router.get('/profile/change-password', userAuth.isAuthenticated, userAuth.isBlocked, Profile.load_changePassword);
+router.get('/profile', userAuth.isAuthenticated, userAuth.isBlocked, Profile.getProfileDetails);
+router.put('/profile/edit', userAuth.isAuthenticated, userAuth.isBlocked, upload.single("avatar"), Profile.editProfile);
 router.post('/profile/change-password', userAuth.isAuthenticated, userAuth.isBlocked, Profile.changePassword);
-
-router.get('/profile/change-email', userAuth.isAuthenticated, userAuth.isBlocked, Profile.load_changeEmail);
 router.post('/profile/change-email/request-otp', userAuth.isAuthenticated, userAuth.isBlocked, Profile.requestChangeEmailOtp);
 router.post('/profile/change-email/verify-otp', userAuth.isAuthenticated, userAuth.isBlocked, Profile.verifyChangeEmailOtp);
 router.post('/profile/change-email', userAuth.isAuthenticated, userAuth.isBlocked, Profile.sendChangeEmailLink);
-router.get('/profile/change-email/verify/:token', Profile.verifyChangeEmailLink); // Doesn't strictly need isAuth middleware if we handle it in the controller, but good practice to have it on the session.
+router.post('/profile/change-email/verify', Profile.verifyChangeEmailLink);
 // Address
 router.get('/address', userAuth.isAuthenticated, Address.load_address);
 router.get('/address/add', userAuth.isAuthenticated, Address.load_addAddress);

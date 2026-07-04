@@ -6,36 +6,36 @@ const transporter = nodemailer.createTransport({
     auth: {
         user: process.env.NODEMAILER_EMAIL,
         pass: process.env.NODEMAILER_PASSWORD,
-    },
-    tls: {
-        rejectUnauthorized: false
     }
 });
 
 export const sendOtpEmail = async (email, otp) => {
     try {
         const mailOptions = {
-            from: process.env.NODEMAILER_EMAIL,
+            from: `"MH SPARE HUB" <${process.env.NODEMAILER_EMAIL}>`,
             to: email,
-            subject: "Your TechKart Premium OTP Code",
-            text: `Your TechKart Premium verification code is: ${otp}. It will expire in 2 minutes.`,
+            subject: "Your MH SPARE HUB Verification Code",
+            text: `Your MH SPARE HUB verification code is: ${otp}. It will expire in 2 minutes.`,
             html: `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-                    <div style="background-color: #0f1624; padding: 20px; text-align: center;">
-                        <span style="font-size: 32px; color: #0055ff;">⚡</span>
-                        <h2 style="color: white; margin-top: 10px; font-weight: 800; letter-spacing: -0.5px;">TechKart Premium</h2>
-                    </div>
-                    <div style="padding: 30px; background-color: #ffffff; color: #333333;">
-                        <p style="font-size: 16px; margin-bottom: 20px;">Hello,</p>
-                        <p style="font-size: 16px; margin-bottom: 30px;">Your secure verification code to join TechKart Premium is:</p>
-                        <div style="text-align: center; margin-bottom: 30px;">
-                            <span style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #0055ff; background-color: #f0f5ff; padding: 15px 30px; border-radius: 8px; display: inline-block;">${otp}</span>
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #09090b; border: 1px solid #27272a; border-radius: 12px; overflow: hidden; color: #ffffff;">
+                    <div style="padding: 32px 24px; text-align: center; border-bottom: 1px solid #27272a;">
+                        <div style="display: inline-block; background-color: rgba(6, 87, 249, 0.1); padding: 8px 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid rgba(6, 87, 249, 0.2);">
+                            <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #0657f9; letter-spacing: 1px;">MH <span style="color: #ffffff;">SPARE HUB</span></h1>
                         </div>
-                        <p style="font-size: 14px; color: #666666; margin-bottom: 10px;">This code will expire in exactly 2 minutes.</p>
-                        <p style="font-size: 14px; color: #666666;">If you didn't request this code, you can safely ignore this email.</p>
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff;">Verify Your Identity</h2>
                     </div>
-                    <div style="background-color: #f8fafc; padding: 15px; text-align: center; color: #94a3b8; font-size: 12px;">
-                        <p>© 2024 TechKart Inc. All rights reserved.</p>
+                    <div style="padding: 32px 24px;">
+                        <p style="font-size: 16px; color: #a1a1aa; margin-bottom: 24px; text-align: center; line-height: 1.5;">You are one step away from accessing your <strong style="color: white;">MH SPARE HUB</strong> account. Enter the verification code below.</p>
+                        <div style="text-align: center; margin-bottom: 32px;">
+                            <div style="display: inline-block; background-color: rgba(6, 87, 249, 0.1); border: 1px solid rgba(6, 87, 249, 0.3); padding: 16px 32px; border-radius: 12px;">
+                                <span style="font-size: 40px; font-weight: 800; letter-spacing: 12px; color: #0657f9;">${otp}</span>
+                            </div>
+                        </div>
+                        <p style="font-size: 14px; color: #71717a; text-align: center; margin-bottom: 8px;">This code will expire in 2 minutes.</p>
+                        <p style="font-size: 14px; color: #71717a; text-align: center; margin: 0;">If you didn't request this code, you can safely ignore this email.</p>
+                    </div>
+                    <div style="background-color: #000000; padding: 20px; text-align: center; border-top: 1px solid #27272a;">
+                        <p style="color: #71717a; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} MH SPARE HUB. All rights reserved.</p>
                     </div>
                 </div>
             `,
@@ -56,28 +56,29 @@ export const sendOtpEmail = async (email, otp) => {
 export const sendVerificationLink = async (email, link) => {
     try {
         const mailOptions = {
-            from: process.env.NODEMAILER_EMAIL,
+            from: `"MH SPARE HUB" <${process.env.NODEMAILER_EMAIL}>`,
             to: email,
-            subject: "Verify your new TechKart email address",
+            subject: "Verify your new MH SPARE HUB email address",
             text: `Please verify your new email address by clicking this link: ${link}. It will expire in 15 minutes.`,
             html: `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-                    <div style="background-color: #0f1624; padding: 20px; text-align: center;">
-                        <span style="font-size: 32px; color: #0055ff;">✉️</span>
-                        <h2 style="color: white; margin-top: 10px; font-weight: 800; letter-spacing: -0.5px;">TechKart Premium</h2>
-                    </div>
-                    <div style="padding: 30px; background-color: #ffffff; color: #333333;">
-                        <p style="font-size: 16px; margin-bottom: 20px;">Hello,</p>
-                        <p style="font-size: 16px; margin-bottom: 30px;">We received a request to change your TechKart account email to this address. Please verify it by clicking the secure link below:</p>
-                        <div style="text-align: center; margin-bottom: 30px;">
-                            <a href="${link}" style="font-size: 16px; font-weight: 600; color: #ffffff; background-color: #0657f9; padding: 15px 30px; border-radius: 8px; text-decoration: none; display: inline-block; transition: background-color 0.3s;">Verify Email Address</a>
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #09090b; border: 1px solid #27272a; border-radius: 12px; overflow: hidden; color: #ffffff;">
+                    <div style="padding: 32px 24px; text-align: center; border-bottom: 1px solid #27272a;">
+                        <div style="display: inline-block; background-color: rgba(6, 87, 249, 0.1); padding: 8px 16px; border-radius: 8px; margin-bottom: 24px; border: 1px solid rgba(6, 87, 249, 0.2);">
+                            <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #0657f9; letter-spacing: 1px;">MH <span style="color: #ffffff;">SPARE HUB</span></h1>
                         </div>
-                        <p style="font-size: 14px; color: #666666; margin-bottom: 10px;">This link will expire in exactly 15 minutes.</p>
-                        <p style="font-size: 14px; color: #666666; margin-bottom: 20px;">If the button doesn't work, copy and paste this link into your browser: <br><a href="${link}" style="color: #0657f9; word-break: break-all;">${link}</a></p>
-                        <p style="font-size: 14px; color: #666666;">If you didn't request this change, you can safely ignore this email.</p>
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff;">Email Update Request</h2>
                     </div>
-                    <div style="background-color: #f8fafc; padding: 15px; text-align: center; color: #94a3b8; font-size: 12px;">
-                        <p>© ${new Date().getFullYear()} TechKart Inc. All rights reserved.</p>
+                    <div style="padding: 32px 24px;">
+                        <p style="font-size: 16px; color: #a1a1aa; margin-bottom: 32px; text-align: center; line-height: 1.6;">We received a request to change your <strong style="color: white;">MH SPARE HUB</strong> account email to this address. Please verify it by clicking the secure button below.</p>
+                        <div style="text-align: center; margin-bottom: 32px;">
+                            <a href="${link}" style="display: inline-block; background-color: #0657f9; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; padding: 16px 32px; border-radius: 12px; transition: opacity 0.2s;">Verify Email Address</a>
+                        </div>
+                        <p style="font-size: 14px; color: #71717a; text-align: center; margin-bottom: 16px;">This link will expire in exactly 15 minutes.</p>
+                        <p style="font-size: 12px; color: #52525b; text-align: center; margin-bottom: 16px; word-break: break-all;">Or copy and paste this link: <br><a href="${link}" style="color: #0657f9; text-decoration: none;">${link}</a></p>
+                        <p style="font-size: 14px; color: #71717a; text-align: center; margin: 0;">If you didn't request this change, you can safely ignore this email.</p>
+                    </div>
+                    <div style="background-color: #000000; padding: 20px; text-align: center; border-top: 1px solid #27272a;">
+                        <p style="color: #71717a; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} MH SPARE HUB. All rights reserved.</p>
                     </div>
                 </div>
             `,
