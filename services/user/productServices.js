@@ -89,13 +89,14 @@ async function getProductDetails(productId) {
         .populate("category_id")
         .lean();
 
-    if (!product || product.is_blocked || (product.category_id && product.category_id.is_blocked)) return null;
+    if (!product || product.is_blocked || product.is_unlisted || (product.category_id && product.category_id.is_blocked)) return null;
 
     // Fetch related products (same category and not blocked)
     const relatedProducts = await Product.find({
         category_id: product.category_id?._id || product.category_id,
         _id: { $ne: product._id },
-        is_blocked: { $ne: true }
+        is_blocked: { $ne: true },
+        is_unlisted: { $ne: true }
     })
         .populate("category_id")
         .limit(4)
@@ -113,26 +114,30 @@ async function getProductDetails(productId) {
 const getShopData = async (queryParams) => {
     const { search, category, sort, page = 1, limit = 6 } = queryParams;
 
-    // Fetch active categories to filter products
+    // Fetch active categories for filter options. If the category list is empty,
+    // do not let it wipe out every product from the shop catalogue.
     const activeCategories = await Category.find({ is_blocked: false }).select('_id name');
     const activeCategoryIds = activeCategories.map(cat => cat._id);
 
     // 1. Build the Query Object
-    let query = { 
+    let query = {
         is_blocked: { $ne: true },
-        category_id: { $in: activeCategoryIds } // Only show products in active categories
+        is_unlisted: { $ne: true }
     };
+
+    if (activeCategoryIds.length > 0) {
+        query.category_id = { $in: activeCategoryIds };
+    }
 
     if (search) {
         query.name = { $regex: search, $options: "i" }; // Case insensitive search
     }
 
     if (category) {
-        // If a category filter is applied, it must also be in the active list
-        if (activeCategoryIds.some(id => id.toString() === category)) {
+        // If active categories exist, keep blocked categories out of the public shop.
+        if (activeCategoryIds.length === 0 || activeCategoryIds.some(id => id.toString() === category)) {
             query.category_id = category;
         } else {
-            // If the requested category is blocked, return no results
             return {
                 products: [],
                 categories: activeCategories,
@@ -244,10 +249,16 @@ async function getFeaturedProducts(limit = 3) {
     const activeCategories = await Category.find({ is_blocked: false }).select('_id name');
     const activeCategoryIds = activeCategories.map(cat => cat._id);
 
-    const products = await Product.find({ 
+    const query = {
         is_blocked: { $ne: true },
-        category_id: { $in: activeCategoryIds }
-    })
+        is_unlisted: { $ne: true }
+    };
+
+    if (activeCategoryIds.length > 0) {
+        query.category_id = { $in: activeCategoryIds };
+    }
+
+    const products = await Product.find(query)
         .populate("category_id")
         .sort({ createdAt: -1 })
         .limit(limit)
@@ -267,6 +278,9 @@ export {
     checkProductAvailability,
     applyOffers
 };
+
+
+
 
 
 
