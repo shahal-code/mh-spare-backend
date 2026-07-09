@@ -38,12 +38,12 @@ export const getOrderDetails = async (req, res) => {
         const orderId = req.params.orderId;
         const order = await OrderService.getOrderById(orderId);
         if (!order) {
-            return res.status(404).render("admin/error", { message: "Order not found" });
+            return res.status(404).json({ success: false, message: "Order not found" });
         }
-        res.render("admin/orders/orderDetails", { order, activePage: "orders" });
+        res.json({ success: true, order });
     } catch (error) {
         console.error("Error fetching order details:", error);
-        res.status(500).render("admin/error", { message: "Failed to fetch order details" });
+        res.status(500).json({ success: false, message: "Failed to fetch order details" });
     }
 };
 

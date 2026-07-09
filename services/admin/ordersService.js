@@ -3,7 +3,7 @@ import Order from "../../models/ordersModel.js";
 import Product from "../../models/productModel.js";
 import * as walletService from "../user/walletService.js";
 
-const ORDER_PROGRESS_STATUSES = ['Pending', 'Shipped', 'Out for Delivery', 'Delivered'];
+const ORDER_PROGRESS_STATUSES = ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered'];
 const RETURN_STATUSES = ['Return Request', 'Returned'];
 const TERMINAL_STATUSES = ['Cancelled', 'Returned'];
 const VALID_ORDER_STATUSES = [...ORDER_PROGRESS_STATUSES, 'Cancelled', ...RETURN_STATUSES];

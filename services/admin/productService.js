@@ -37,18 +37,24 @@ export const getProductById = async (id) => {
  * Create a new base product.
  */
 export const createProduct = async (productData) => {
-    const { name, description, category_id, price, adminId, approvalStatus } = productData;
+    const { name, description, category_id, price, adminId, approvalStatus, thumbnail } = productData;
+    const images = Array.isArray(productData.images) ? productData.images : [];
+
+    if (images.length < 3 || images.length > 5) {
+        throw new Error("Please upload between 3 and 5 product images.");
+    }
 
     const newProduct = new Product({
         name,
         description,
         category_id,
+        thumbnail: thumbnail || images[0] || "",
         adminId,
         approvalStatus: approvalStatus || 'pending',
         variants: price ? [{
             price: parseFloat(price),
             sku: `SKU-${Date.now()}`,
-            images: [], // Images will be added in Manage Variants
+            images,
             stock: 0
         }] : []
     });
@@ -64,7 +70,7 @@ export const addVariant = async (productId, variantData, files) => {
     if (!product) throw new Error("Product not found");
 
     const images = files ? files.map(file => file.path) : [];
-    if (images.length < 3) throw new Error("Please upload at least 3 images for the variant.");
+    if (images.length < 3 || images.length > 5) throw new Error("Please upload between 3 and 5 images for the variant.");
 
     const newVariant = {
         ...variantData,
@@ -102,7 +108,7 @@ export const updateVariant = async (productId, variantId, variantData, files) =>
         images = images.concat(files.map(f => f.path));
     }
 
-    if (images.length < 3) throw new Error("Variant must have at least 3 images.");
+    if (images.length < 3 || images.length > 5) throw new Error("Variant must have between 3 and 5 images.");
 
     product.variants[variantIndex] = {
         ...product.variants[variantIndex].toObject(),
@@ -129,14 +135,20 @@ export const deleteVariant = async (productId, variantId) => {
  * Update an existing base product info.
  */
 export const updateProduct = async (id, productData) => {
-    const { name, description, category_id, display, battery, price } = productData;
+    const { name, description, category_id, display, battery, price, thumbnail } = productData;
+    const images = Array.isArray(productData.images) ? productData.images : [];
 
     const product = await Product.findById(id);
     if (!product) throw new Error("Product not found");
 
+    if (images.length > 0 && (images.length < 3 || images.length > 5)) {
+        throw new Error("Please upload between 3 and 5 product images.");
+    }
+
     product.name = name;
     product.description = description;
     product.category_id = category_id;
+    if (thumbnail) product.thumbnail = thumbnail;
 
     // Update specifications
     product.specifications = {
@@ -145,6 +157,14 @@ export const updateProduct = async (id, productData) => {
         weight: product.specifications?.weight,
         os: product.specifications?.os
     };
+
+    if (images.length > 0) {
+        if (product.variants.length > 0) {
+            product.variants[0].images = images;
+        } else if (price) {
+            product.variants.push({ price: parseFloat(price), sku: `SKU-${Date.now()}`, images, stock: 0 });
+        }
+    }
 
     // Update primary variant price if it exists
     if (price && product.variants.length > 0) {
@@ -184,8 +204,5 @@ export const updateProductApproval = async (id, status) => {
     product.approvalStatus = status;
     return await product.save();
 };
-
-
-
 
 

@@ -36,7 +36,8 @@ connectDB().then(async () => {
 });
 const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:5173",
-  process.env.ADMIN_URL || "http://localhost:5174"
+  process.env.VENDOR_URL || process.env.ADMIN_URL || "http://localhost:5174",
+  process.env.SUPERADMIN_URL || "http://localhost:5175"
 ];
 app.use(cors({
   origin(origin, callback) {
@@ -105,3 +106,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+

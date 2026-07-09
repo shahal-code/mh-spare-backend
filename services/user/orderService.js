@@ -147,7 +147,7 @@ class OrderService {
             }
         }
 
-        let paymentStatus = paymentMethod === 'COD' ? 'Pending' : 'Paid';
+        let paymentStatus = ['COD', 'WhatsApp'].includes(paymentMethod) ? 'Pending' : 'Paid';
         if (paymentFailed) {
             paymentStatus = 'Failed';
         }
@@ -260,17 +260,23 @@ class OrderService {
             .lean();
 
         const totalOrders = await Order.countDocuments(query);
+
+
         const totalPages = Math.ceil(totalOrders / limit);
 
         return { orders, totalPages, totalOrders };
     }
 
     async getOrderById(orderId, userId) {
-        return await Order.findOne({ _id: orderId, userId }).populate('orderedItems.product');
+        return await Order.findOne({ _id: orderId, userId })
+            .populate('orderedItems.product')
+            .populate('orderedItems.adminId');
     }
 
     async getOrderByDisplayId(displayId, userId) {
-        return await Order.findOne({ orderId: displayId, userId }).populate('orderedItems.product');
+        return await Order.findOne({ orderId: displayId, userId })
+            .populate('orderedItems.product')
+            .populate('orderedItems.adminId');
     }
 
     async updatePaymentStatus(displayId, userId, status) {

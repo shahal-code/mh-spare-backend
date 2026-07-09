@@ -5,7 +5,7 @@ export const addReview = async (req, res) => {
     try {
         const { id: productId } = req.params;
         const { rating, comment } = req.body;
-        const userId = req.session.user; // Assuming userAuth sets req.session.user
+        const userId = req.user?._id || req.session?.user;
 
         if (!userId) {
             return res.status(401).json({ success: false, message: "Please log in to submit a review." });
@@ -45,7 +45,7 @@ export const addReview = async (req, res) => {
 export const deleteReview = async (req, res) => {
     try {
         const { id: productId, reviewId } = req.params;
-        const userId = req.session.user;
+        const userId = req.user?._id || req.session?.user;
 
         if (!userId) {
             return res.status(401).json({ success: false, message: "Please log in to delete a review." });

@@ -1,5 +1,8 @@
-﻿import * as ProductService from "../services/user/productServices.js";
+import * as ProductService from "../services/user/productServices.js";
 import * as CategoryService from "../services/user/categoryService.js";
+import Review from "../models/reviewModel.js";
+import Offer from "../models/offerModel.js";
+import Banner from "../models/bannerModel.js";
 
 const PLACEHOLDER_IMAGE = "/img/placeholder.jpg";
 
@@ -14,7 +17,8 @@ const normalizeCategory = (category) => {
     return {
         id: toId(category),
         name: category.name || "Uncategorized",
-        icon: category.icon || "package"
+        icon: category.icon || "package",
+        image: category.image || ""
     };
 };
 
@@ -27,6 +31,7 @@ const pickImage = (product, variant) => {
     if (variant?.images?.length) return variant.images[0];
     if (product.images?.length) return product.images[0];
     if (product.img) return product.img;
+    if (product.thumbnail) return product.thumbnail;
     if (product.image) return product.image;
     return PLACEHOLDER_IMAGE;
 };
@@ -63,6 +68,10 @@ const normalizeProduct = (product) => {
         img: pickImage(product, variant),
         image: pickImage(product, variant),
         images: product.images || [],
+        thumbnail: product.thumbnail || "",
+        highlights: Array.isArray(product.highlights) ? product.highlights : [],
+        specifications: product.specifications || {},
+        material: product.material || "",
         inStock,
         price,
         originalPrice,
@@ -109,20 +118,101 @@ export const getShopProducts = async (req, res) => {
     }
 };
 
+const normalizeReview = (review) => ({
+    id: toId(review),
+    _id: toId(review),
+    rating: Number(review.rating || 0),
+    comment: review.comment || "",
+    createdAt: review.createdAt || null,
+    user: review.user ? {
+        id: toId(review.user),
+        _id: toId(review.user),
+        fullname: review.user.fullname || "User",
+        profileImage: review.user.profileImage || ""
+    } : { fullname: "User", profileImage: "" }
+});
+
+const getReviewSummary = async (productId) => {
+    const reviews = await Review.find({ product: productId })
+        .populate("user", "fullname profileImage")
+        .sort({ createdAt: -1 })
+        .lean();
+    const averageRating = reviews.length
+        ? Math.round((reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length) * 10) / 10
+        : 0;
+
+    return {
+        reviews: reviews.map(normalizeReview),
+        averageRating,
+        totalRatings: reviews.length
+    };
+};
+
 export const getProductDetails = async (req, res) => {
     try {
         const data = await ProductService.getProductDetails(req.params.id);
         if (!data?.product) {
+            const productCheck = await ProductService.checkProductAvailability(req.params.id);
+            if (productCheck) {
+                return res.json({
+                    success: true,
+                    product: { ...normalizeProduct(productCheck), isUnavailable: true, unavailableMessage: "This product is currently unavailable." },
+                    relatedProducts: [],
+                    reviews: [],
+                    averageRating: 0,
+                    totalRatings: 0
+                });
+            }
             return res.status(404).json({ success: false, message: "Product not found" });
         }
 
+        const reviewSummary = await getReviewSummary(req.params.id);
         res.json({
             success: true,
             product: normalizeProduct(data.product),
-            relatedProducts: (data.relatedProducts || []).map(normalizeProduct)
+            relatedProducts: (data.relatedProducts || []).map(normalizeProduct),
+            ...reviewSummary
         });
     } catch (error) {
         console.error("API Error fetching product details:", error);
         res.status(500).json({ success: false, message: "Failed to fetch product details" });
     }
 };
+
+export const getActiveOffers = async (req, res) => {
+    try {
+        const currentDate = new Date();
+        const offers = await Offer.find({
+            isActive: true,
+            startDate: { $lte: currentDate },
+            endDate: { $gte: currentDate }
+        }).sort({ endDate: 1 }).lean();
+        
+        // Find the full product for each offer so we can render DealsCarousel
+        for (let offer of offers) {
+            if (offer.applicableModel === "Product" && offer.applicableTo) {
+                const productCheck = await ProductService.getProductDetails(offer.applicableTo);
+                if (productCheck?.product) {
+                    offer.productData = normalizeProduct(productCheck.product);
+                }
+            }
+        }
+
+        res.json({ success: true, offers });
+    } catch (error) {
+        console.error("API Error fetching active offers:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch active offers" });
+    }
+};
+
+export const getActiveBanners = async (req, res) => {
+    try {
+        const banners = await Banner.find({ isActive: true }).sort({ order: 1, createdAt: -1 }).lean();
+        res.json({ success: true, banners });
+    } catch (error) {
+        console.error("API Error fetching active banners:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch active banners" });
+    }
+};
+
+

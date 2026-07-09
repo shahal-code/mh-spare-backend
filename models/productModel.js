@@ -48,6 +48,9 @@ const productSchema = new mongoose.Schema({
     highlights: [{ 
         type: String 
     }],
+    thumbnail: {
+        type: String
+    },
     specifications: {
         display: { type: String },
         battery: { type: String },
@@ -68,3 +71,4 @@ const productSchema = new mongoose.Schema({
 const Product = mongoose.model("Product", productSchema);
 
 export default Product;
+

@@ -1,9 +1,11 @@
+import bcrypt from "bcryptjs";
 import Coupon from "../../models/couponModel.js";
 import Category from "../../models/categoryModel.js";
 import Offer from "../../models/offerModel.js";
 import Order from "../../models/ordersModel.js";
 import Product from "../../models/productModel.js";
 import { validateLogin } from "../../utils/validation.js";
+import Banner from "../../models/bannerModel.js";
 import * as DashboardService from "../../services/admin/dashboardService.js";
 import * as CustomerService from "../../services/admin/customerService.js";
 import * as CategoryService from "../../services/admin/categoryService.js";
@@ -23,6 +25,50 @@ const sendError = (res, error, status = 500) => {
 };
 
 // Owner routes for vendor management
+export const createVendor = async (req, res) => {
+  try {
+    const { fullname, email, password, storeName, phone, address } = req.body;
+
+    if (!fullname || !email || !password || !storeName) {
+      return res.status(400).json({ success: false, message: "Full name, email, password, and store name are required." });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ success: false, message: "Password must be at least 8 characters." });
+    }
+
+    const existingVendor = await Admin.findOne({ email: email.toLowerCase().trim() });
+    if (existingVendor) {
+      return res.status(400).json({ success: false, message: "Email already registered." });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    const vendor = await Admin.create({
+      fullname: fullname.trim(),
+      email: email.toLowerCase().trim(),
+      password: hashedPassword,
+      role: "vendor",
+      status: "active",
+      storeDetails: {
+        storeName: storeName.trim(),
+        phone: phone || "",
+        address: address || "",
+      },
+    });
+
+    const vendorData = vendor.toObject();
+    delete vendorData.password;
+    res.status(201).json({
+      success: true,
+      vendor: vendorData,
+      credentials: { email: vendor.email, password },
+      message: "Vendor account created successfully.",
+    });
+  } catch (error) {
+    sendError(res, error, 500);
+  }
+};
+
 export const getVendors = async (req, res) => {
   try {
     const vendors = await Admin.find({ role: { $ne: 'owner' } }).select('-password').sort({ createdAt: -1 });
@@ -32,6 +78,56 @@ export const getVendors = async (req, res) => {
   }
 };
 
+export const resetVendorPassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password || password.length < 8) {
+      return res.status(400).json({ success: false, message: "Password must be at least 8 characters." });
+    }
+
+    const vendor = await Admin.findOne({ _id: req.params.id, role: "vendor" });
+    if (!vendor) return res.status(404).json({ success: false, message: "Vendor not found" });
+
+    const salt = await bcrypt.genSalt(10);
+    vendor.password = await bcrypt.hash(password, salt);
+    vendor.status = vendor.status === "blocked" ? "blocked" : "active";
+    await vendor.save();
+
+    res.json({
+      success: true,
+      credentials: { email: vendor.email, password },
+      message: "Vendor password changed successfully.",
+    });
+  } catch (error) {
+    sendError(res, error, 500);
+  }
+};
+
+export const updateVendorPhone = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) {
+      return res.status(400).json({ success: false, message: "Phone number is required." });
+    }
+
+    const vendor = await Admin.findOne({ _id: req.params.id, role: "vendor" });
+    if (!vendor) return res.status(404).json({ success: false, message: "Vendor not found" });
+
+    if (!vendor.storeDetails) {
+      vendor.storeDetails = {};
+    }
+    vendor.storeDetails.phone = phone;
+    await vendor.save();
+
+    res.json({
+      success: true,
+      message: "Vendor phone number updated successfully.",
+      vendor
+    });
+  } catch (error) {
+    sendError(res, error, 500);
+  }
+};
 export const approveVendor = async (req, res) => {
   try {
     const vendor = await Admin.findById(req.params.id);
@@ -84,7 +180,7 @@ export const vendorProducts = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const vendorId = req.params.id;
-    
+
     const query = { adminId: vendorId };
     const products = await Product.find(query)
       .populate("category_id")
@@ -92,7 +188,7 @@ export const vendorProducts = async (req, res) => {
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
-    
+
     const totalProducts = await Product.countDocuments(query);
     res.json({ success: true, products, totalProducts, totalPages: Math.ceil(totalProducts / limit), page, limit });
   } catch (error) {
@@ -181,7 +277,10 @@ export const category = async (req, res) => {
 
 export const createCategory = async (req, res) => {
   try {
-    const category = await CategoryService.createCategory(req.body);
+    const category = await CategoryService.createCategory({
+      ...req.body,
+      image: req.file?.path || req.file?.secure_url || req.body.image,
+    });
     res.status(201).json({ success: true, category, message: "Category added successfully" });
   } catch (error) {
     sendError(res, error, error.message === "Category already exists" ? 400 : 500);
@@ -190,7 +289,10 @@ export const createCategory = async (req, res) => {
 
 export const updateCategory = async (req, res) => {
   try {
-    const category = await CategoryService.updateCategory(req.params.id, req.body);
+    const category = await CategoryService.updateCategory(req.params.id, {
+      ...req.body,
+      image: req.file?.path || req.file?.secure_url || req.body.image,
+    });
     res.json({ success: true, category, message: "Category updated successfully" });
   } catch (error) {
     const status = error.message === "Category not found" ? 404 : error.message === "Category name already exists" ? 400 : 500;
@@ -222,21 +324,21 @@ export const products = async (req, res) => {
     const limit = parseInt(req.query.limit) || 4;
     const search = req.query.search || "";
     const query = search ? { name: { $regex: search, $options: "i" } } : {};
-    
+
     // Filter by admin if vendor
     if (req.admin.role !== "owner") {
       query.adminId = req.admin._id;
     }
 
     const data = await ProductService.getAllProducts(query, page, limit);
-    
+
     const activeProductsQuery = { is_blocked: false };
     const inactiveProductsQuery = { is_blocked: true };
     if (req.admin.role !== "owner") {
       activeProductsQuery.adminId = req.admin._id;
       inactiveProductsQuery.adminId = req.admin._id;
     }
-    
+
     const activeProductsCount = await Product.countDocuments(activeProductsQuery);
     const inactiveProductsCount = await Product.countDocuments(inactiveProductsQuery);
     res.json({ ...data, page, limit, search, activeProductsCount, inactiveProductsCount });
@@ -266,7 +368,15 @@ export const product = async (req, res) => {
 
 export const createProduct = async (req, res) => {
   try {
-    const productData = { ...req.body, adminId: req.admin._id, approvalStatus: req.admin.role === 'owner' ? 'approved' : 'pending' };
+    const uploadedImages = req.files?.images?.map((file) => file.path) || [];
+    const thumbnailFile = req.files?.thumbnail?.[0];
+    const productData = {
+      ...req.body,
+      images: uploadedImages,
+      thumbnail: thumbnailFile?.path || uploadedImages[0] || req.body.thumbnail,
+      adminId: req.admin._id,
+      approvalStatus: req.admin.role === 'owner' ? 'approved' : 'pending'
+    };
     const product = await ProductService.createProduct(productData);
     res.status(201).json({ success: true, product });
   } catch (error) {
@@ -276,7 +386,13 @@ export const createProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
   try {
-    const product = await ProductService.updateProduct(req.params.id, req.body);
+    const uploadedImages = req.files?.images?.map((file) => file.path) || [];
+    const thumbnailFile = req.files?.thumbnail?.[0];
+    const product = await ProductService.updateProduct(req.params.id, {
+      ...req.body,
+      images: uploadedImages,
+      thumbnail: thumbnailFile?.path || uploadedImages[0] || req.body.thumbnail
+    });
     res.json({ success: true, product });
   } catch (error) {
     sendError(res, error, 400);
@@ -344,7 +460,7 @@ export const orders = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
-    
+
     // Add admin filtering to the query
     const filterQuery = { ...req.query };
     if (req.admin.role !== 'owner') {
@@ -536,8 +652,9 @@ export const createOffer = async (req, res) => {
       applicableTo,
       applicableModel: offerType === "product" ? "Product" : "Category",
       startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      endDate: new Date(endDate + "T23:59:59"),
       isActive: true,
+      image: req.file?.path || req.file?.secure_url || req.body.image || null,
     });
     res.status(201).json({ success: true, offer, message: "Offer created successfully!" });
   } catch (error) {
@@ -564,7 +681,8 @@ export const updateOffer = async (req, res) => {
       applicableTo,
       applicableModel: existingOffer.offerType === "product" ? "Product" : "Category",
       startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      endDate: new Date(endDate + "T23:59:59"),
+      image: req.file?.path || req.file?.secure_url || req.body.image || existingOffer.image,
     }, { new: true });
     res.json({ success: true, offer, message: "Offer updated successfully!" });
   } catch (error) {
@@ -612,3 +730,58 @@ export const reports = async (req, res) => {
     sendError(res, error);
   }
 };
+
+export const banners = async (req, res) => {
+  try {
+    const banners = await Banner.find().sort({ createdAt: -1 }).lean();
+    res.json({ success: true, banners });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+export const createBanner = async (req, res) => {
+  try {
+    const image = req.file?.path || req.file?.secure_url || req.body.image;
+    if (!image) {
+      return res.status(400).json({ success: false, message: "Banner image is required." });
+    }
+    const banner = await Banner.create({
+      title: req.body.title || "",
+      image,
+      isActive: true,
+      order: req.body.order || 0
+    });
+    res.status(201).json({ success: true, banner, message: "Banner created successfully!" });
+  } catch (error) {
+    sendError(res, error, 500);
+  }
+};
+
+export const updateBanner = async (req, res) => {
+  try {
+    const bannerData = {
+      title: req.body.title,
+      order: req.body.order,
+      isActive: req.body.isActive
+    };
+    if (req.file) {
+      bannerData.image = req.file.path || req.file.secure_url;
+    }
+    const banner = await Banner.findByIdAndUpdate(req.params.id, bannerData, { new: true });
+    res.json({ success: true, banner, message: "Banner updated successfully!" });
+  } catch (error) {
+    sendError(res, error, 500);
+  }
+};
+
+export const deleteBanner = async (req, res) => {
+  try {
+    await Banner.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: "Banner deleted successfully." });
+  } catch (error) {
+    sendError(res, error, 500);
+  }
+};
+
+

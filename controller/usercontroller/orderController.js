@@ -18,7 +18,12 @@ export const getOrderDetails = async (req, res) => {
     try {
         const userId = req.user._id;
         const orderId = req.params.orderId;
-        const order = await orderService.getOrderById(orderId, userId);
+        let order;
+        if (orderId.startsWith('ORD-')) {
+            order = await orderService.getOrderByDisplayId(orderId, userId);
+        } else {
+            order = await orderService.getOrderById(orderId, userId);
+        }
         if (!order) return res.status(404).json({ success: false, message: "Order not found" });
         res.json({ success: true, order });
     } catch (error) {

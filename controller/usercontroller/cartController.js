@@ -2,10 +2,10 @@ import * as cartService from "../../services/user/cartService.js";
 import CouponService from "../../services/user/couponService.js";
 import OrderService from "../../services/user/orderService.js";
 
-// Render Cart Page
+// Get Cart (JSON API)
 export const getCartView = async (req, res) => {
     try {
-        const userId = req.session.user;
+        const userId = req.user._id;
         const cart = await cartService.getCart(userId);
 
         let subtotal = 0;
@@ -26,31 +26,23 @@ export const getCartView = async (req, res) => {
         const tax = subtotal * 0.18; // 18% GST
         const total = subtotal + tax;
 
-        res.render("user/cart/cart", {
+        res.json({
+            success: true,
             cart,
             subtotal,
             tax,
-            total,
-            user: req.session.user || null,
-            path: "/user/cart"
+            total
         });
     } catch (error) {
         console.error("Cart Error:", error);
-        res.status(500).send("Failed to load shopping cart");
+        res.status(500).json({ success: false, message: "Failed to load shopping cart" });
     }
 };
 
 // API: Add Item
 export const addItem = async (req, res) => {
     try {
-        const userId = req.session.user;
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                message: "Please login to add items to cart",
-                redirect: "/user/login"
-            });
-        }
+        const userId = req.user._id;
 
         const { productId, variantId, quantity } = req.body;
 
@@ -64,25 +56,12 @@ export const addItem = async (req, res) => {
 // API: Update Quantity
 export const updateQuantity = async (req, res) => {
     try {
-        const userId = req.session.user;
+        const userId = req.user._id;
         const { itemId, quantity } = req.body;
 
         const cart = await cartService.updateQuantity(userId, itemId, Number(quantity));
 
-        // SECURITY: After quantity change, check if applied coupon is still valid
-        let couponRemoved = false;
-        let couponWarning = null;
-        if (req.session.appliedCoupon) {
-            const newTotal = await CouponService.getServerCartTotal(userId);
-            if (newTotal < req.session.appliedCoupon.minPurchaseAmount) {
-                couponWarning = `Coupon "${req.session.appliedCoupon.code}" removed: cart total dropped below the \u20b9${req.session.appliedCoupon.minPurchaseAmount} minimum.`;
-                delete req.session.appliedCoupon;
-                await new Promise((resolve) => req.session.save(resolve));
-                couponRemoved = true;
-            }
-        }
-
-        res.status(200).json({ success: true, cart, message: "Quantity updated", couponRemoved, couponWarning });
+        res.status(200).json({ success: true, cart, message: "Quantity updated" });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
@@ -91,26 +70,12 @@ export const updateQuantity = async (req, res) => {
 // API: Remove Item
 export const removeItem = async (req, res) => {
     try {
-        const userId = req.session.user;
+        const userId = req.user._id;
         const { itemId } = req.body;
 
         const cart = await cartService.removeItem(userId, itemId);
 
-        // SECURITY: After removal, immediately check if applied coupon is still valid.
-        // This is the primary fix for the "apply coupon → remove item" scam.
-        let couponRemoved = false;
-        let couponWarning = null;
-        if (req.session.appliedCoupon) {
-            const newTotal = await CouponService.getServerCartTotal(userId);
-            if (newTotal < req.session.appliedCoupon.minPurchaseAmount) {
-                couponWarning = `Coupon "${req.session.appliedCoupon.code}" removed: cart total dropped below the \u20b9${req.session.appliedCoupon.minPurchaseAmount} minimum.`;
-                delete req.session.appliedCoupon;
-                await new Promise((resolve) => req.session.save(resolve));
-                couponRemoved = true;
-            }
-        }
-
-        res.status(200).json({ success: true, cart, message: "Item removed from cart", couponRemoved, couponWarning });
+        res.status(200).json({ success: true, cart, message: "Item removed from cart" });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
     }
@@ -119,10 +84,10 @@ export const removeItem = async (req, res) => {
 // API: Validate Checkout
 export const validateCheckout = async (req, res) => {
     try {
-        const userId = req.session.user;
+        const userId = req.user._id;
         const { expectedTotal } = req.body;
 
-        const { finalAmount } = await OrderService.validateCartAndBuildOrder(userId, req.session.appliedCoupon);
+        const { finalAmount } = await OrderService.validateCartAndBuildOrder(userId, null);
 
         const expected = Math.round(Number(expectedTotal));
         const final = Math.round(Number(finalAmount));
