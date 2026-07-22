@@ -215,4 +215,13 @@ export const getActiveBanners = async (req, res) => {
     }
 };
 
-
+export const getBrands = async (req, res) => {
+    try {
+        const Brand = (await import('../models/brandModel.js')).default;
+        const brands = await Brand.find().sort({ createdAt: -1 });
+        res.json({ success: true, brands });
+    } catch (error) {
+        console.error("API Error fetching brands:", error);
+        res.status(500).json({ success: false, message: "Failed to fetch brands" });
+    }
+};

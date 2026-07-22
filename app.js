@@ -41,9 +41,10 @@ const allowedOrigins = [
 ];
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.devtunnels.ms')) {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.devtunnels.ms') || origin.endsWith('.vercel.app')) {
       return callback(null, true);
     }
+    console.error("CORS Blocked Origin:", origin);
     return callback(new Error("Not allowed by CORS"));
   },
   credentials: true

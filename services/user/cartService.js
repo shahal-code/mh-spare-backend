@@ -10,7 +10,7 @@ export const getCart = async (userId) => {
     let cart = await Cart.findOne({ userId })
         .populate({
             path: "items.productId",
-            populate: { path: "category_id" }
+            populate: [{ path: "category_id" }, { path: "adminId" }]
         })
         .lean();
 
@@ -25,7 +25,8 @@ export const getCart = async (userId) => {
         if (!item.productId || 
             item.productId.is_blocked === true || 
             !item.productId.category_id || 
-            item.productId.category_id.is_blocked === true) {
+            item.productId.category_id.is_blocked === true ||
+            (item.productId.adminId && item.productId.adminId.status === 'blocked')) {
             
             item.isUnavailable = true;
         } else {
@@ -48,9 +49,9 @@ export const addToCart = async (userId, productId, variantId, quantity = 1) => {
     }
 
     // Check if product exists and variant is valid
-    const product = await Product.findById(productId).populate('category_id');
+    const product = await Product.findById(productId).populate('category_id').populate('adminId');
     if (!product) throw new Error("Product not found");
-    if (product.is_blocked || (product.category_id && product.category_id.is_blocked)) {
+    if (product.is_blocked || (product.category_id && product.category_id.is_blocked) || (product.adminId && product.adminId.status === 'blocked')) {
         throw new Error("This product is currently unavailable");
     }
 
@@ -108,8 +109,8 @@ export const updateQuantity = async (userId, itemId, newQuantity) => {
     const item = cart.items.id(itemId);
     if (!item) throw new Error("Item not found in cart");
 
-    const product = await Product.findById(item.productId).populate('category_id');
-    if (!product || product.is_blocked || (product.category_id && product.category_id.is_blocked)) {
+    const product = await Product.findById(item.productId).populate('category_id').populate('adminId');
+    if (!product || product.is_blocked || (product.category_id && product.category_id.is_blocked) || (product.adminId && product.adminId.status === 'blocked')) {
         throw new Error("This product is currently unavailable");
     }
     const variant = product.variants.id(item.variantId);

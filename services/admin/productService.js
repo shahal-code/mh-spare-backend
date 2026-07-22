@@ -37,7 +37,7 @@ export const getProductById = async (id) => {
  * Create a new base product.
  */
 export const createProduct = async (productData) => {
-    const { name, description, category_id, price, adminId, approvalStatus, thumbnail } = productData;
+    const { name, description, category_id, price, stock, adminId, approvalStatus, thumbnail } = productData;
     const images = Array.isArray(productData.images) ? productData.images : [];
 
     if (images.length < 3 || images.length > 5) {
@@ -55,7 +55,7 @@ export const createProduct = async (productData) => {
             price: parseFloat(price),
             sku: `SKU-${Date.now()}`,
             images,
-            stock: 0
+            stock: stock ? parseInt(stock, 10) : 0
         }] : []
     });
 
@@ -135,7 +135,7 @@ export const deleteVariant = async (productId, variantId) => {
  * Update an existing base product info.
  */
 export const updateProduct = async (id, productData) => {
-    const { name, description, category_id, display, battery, price, thumbnail } = productData;
+    const { name, description, category_id, display, battery, price, stock, thumbnail } = productData;
     const images = Array.isArray(productData.images) ? productData.images : [];
 
     const product = await Product.findById(id);
@@ -162,13 +162,30 @@ export const updateProduct = async (id, productData) => {
         if (product.variants.length > 0) {
             product.variants[0].images = images;
         } else if (price) {
-            product.variants.push({ price: parseFloat(price), sku: `SKU-${Date.now()}`, images, stock: 0 });
+            product.variants.push({ price: parseFloat(price), sku: `SKU-${Date.now()}`, images, stock: stock ? parseInt(stock, 10) : 0 });
         }
     }
 
-    // Update primary variant price if it exists
-    if (price && product.variants.length > 0) {
-        product.variants[0].price = parseFloat(price);
+    // Ensure variant exists if price or stock is being updated
+    if (product.variants.length === 0 && (price || stock)) {
+        product.variants.push({ price: parseFloat(price || 0), sku: `SKU-${Date.now()}`, images: [], stock: stock ? parseInt(stock, 10) : 0 });
+        product.markModified('variants');
+    }
+
+    // Update primary variant price and stock if they exist
+    if (product.variants.length > 0) {
+        let variantChanged = false;
+        if (price !== undefined && price !== "") {
+            product.variants[0].price = parseFloat(price);
+            variantChanged = true;
+        }
+        if (stock !== undefined && stock !== "") {
+            product.variants[0].stock = parseInt(stock, 10);
+            variantChanged = true;
+        }
+        if (variantChanged) {
+            product.markModified('variants');
+        }
     }
 
     return await product.save();

@@ -8,7 +8,7 @@ export const getWishlist = async (userId) => {
     let wishlist = await Wishlist.findOne({ userId })
         .populate({
             path: "products.productId",
-            populate: { path: "category_id" }
+            populate: [{ path: "category_id" }, { path: "adminId" }]
         })
         .lean();
 
@@ -17,15 +17,13 @@ export const getWishlist = async (userId) => {
         return wishlist;
     }
 
-    // Flag blocked/unavailable products instead of silently removing them
-    // (same pattern as cartService) so the wishlist page can show "Product Unavailable"
-    wishlist.products = wishlist.products.filter(item => item && item.productId); // drop nulls only
-
     wishlist.products.forEach(item => {
         if (
+            !item.productId ||
             item.productId.is_blocked === true ||
             !item.productId.category_id ||
-            item.productId.category_id.is_blocked === true
+            item.productId.category_id.is_blocked === true ||
+            (item.productId.adminId && item.productId.adminId.status === 'blocked')
         ) {
             item.isUnavailable = true;
         }
@@ -37,11 +35,11 @@ export const getWishlist = async (userId) => {
 // Toggle product in wishlist
 export const toggleWishlist = async (userId, productId, variantId) => {
     // Check if product is available before adding to wishlist
-    const product = await Product.findById(productId).populate('category_id');
+    const product = await Product.findById(productId).populate('category_id').populate('adminId');
     if (!product) {
         throw new Error("Product not found");
     }
-    if (product.is_blocked || (product.category_id && product.category_id.is_blocked)) {
+    if (product.is_blocked || (product.category_id && product.category_id.is_blocked) || (product.adminId && product.adminId.status === 'blocked')) {
         throw new Error("This product is currently unavailable and cannot be added to wishlist");
     }
 

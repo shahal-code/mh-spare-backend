@@ -1,6 +1,7 @@
 import Product from "../../models/productModel.js";
 import Category from "../../models/categoryModel.js";
 import Offer from "../../models/offerModel.js";
+import Admin from "../../models/adminModel.js";
 
 async function applyOffers(products) {
     if (!products) return products;
@@ -87,14 +88,19 @@ async function applyOffers(products) {
 async function getProductDetails(productId) {
     const product = await Product.findById(productId)
         .populate("category_id")
+        .populate("adminId")
         .lean();
 
-    if (!product || product.is_blocked || product.is_unlisted || (product.category_id && product.category_id.is_blocked)) return null;
+    if (!product || product.is_blocked || product.is_unlisted || (product.category_id && product.category_id.is_blocked) || (product.adminId && product.adminId.status === 'blocked')) return null;
+
+    const activeAdmins = await Admin.find({ status: { $ne: 'blocked' } }).select('_id');
+    const activeAdminIds = activeAdmins.map(a => a._id);
 
     // Fetch related products (same category and not blocked)
     const relatedProducts = await Product.find({
         category_id: product.category_id?._id || product.category_id,
         _id: { $ne: product._id },
+        adminId: { $in: activeAdminIds },
         is_blocked: { $ne: true },
         is_unlisted: { $ne: true }
     })
@@ -119,10 +125,14 @@ const getShopData = async (queryParams) => {
     const activeCategories = await Category.find({ is_blocked: false }).select('_id name');
     const activeCategoryIds = activeCategories.map(cat => cat._id);
 
+    const activeAdmins = await Admin.find({ status: { $ne: 'blocked' } }).select('_id');
+    const activeAdminIds = activeAdmins.map(a => a._id);
+
     // 1. Build the Query Object
     let query = {
         is_blocked: { $ne: true },
-        is_unlisted: { $ne: true }
+        is_unlisted: { $ne: true },
+        adminId: { $in: activeAdminIds }
     };
 
     if (activeCategoryIds.length > 0) {
@@ -249,9 +259,13 @@ async function getFeaturedProducts(limit = 3) {
     const activeCategories = await Category.find({ is_blocked: false }).select('_id name');
     const activeCategoryIds = activeCategories.map(cat => cat._id);
 
+    const activeAdmins = await Admin.find({ status: { $ne: 'blocked' } }).select('_id');
+    const activeAdminIds = activeAdmins.map(a => a._id);
+
     const query = {
         is_blocked: { $ne: true },
-        is_unlisted: { $ne: true }
+        is_unlisted: { $ne: true },
+        adminId: { $in: activeAdminIds }
     };
 
     if (activeCategoryIds.length > 0) {
@@ -278,9 +292,3 @@ export {
     checkProductAvailability,
     applyOffers
 };
-
-
-
-
-
-

@@ -10,6 +10,7 @@ router.get("/shop", apiController.getShopProducts);
 router.get("/products/:id", apiController.getProductDetails);
 router.get("/offers", apiController.getActiveOffers);
 router.get("/banners", apiController.getActiveBanners);
+router.get("/brands", apiController.getBrands);
 router.post("/products/:id/reviews", userAuth.isAuthenticated, userAuth.isBlocked, ReviewController.addReview);
 router.delete("/products/:id/reviews/:reviewId", userAuth.isAuthenticated, userAuth.isBlocked, ReviewController.deleteReview);
 

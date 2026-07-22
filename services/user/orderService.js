@@ -8,7 +8,7 @@ import * as walletService from "./walletService.js";
 
 class OrderService {
     async validateCartAndBuildOrder(userId, appliedCoupon = null) {
-        const cart = await Cart.findOne({ userId }).populate({ path: 'items.productId', populate: { path: 'category_id' } });
+        const cart = await Cart.findOne({ userId }).populate({ path: 'items.productId', populate: [{ path: 'category_id' }, { path: 'adminId' }] });
         if (!cart || cart.items.length === 0) throw new Error("Your cart is empty.");
 
         const productsToApply = cart.items.map(item => item.productId).filter(Boolean);
@@ -21,7 +21,7 @@ class OrderService {
             const product = item.productId;
             const category = product?.category_id;
 
-            if (!product || product.is_blocked || product.is_unlisted || (category && category.is_blocked)) {
+            if (!product || product.is_blocked || product.is_unlisted || (category && category.is_blocked) || (product.adminId && product.adminId.status === 'blocked')) {
                 throw new Error(`Product ${product ? product.name : 'Unknown'} is no longer available.`);
             }
 

@@ -94,7 +94,8 @@ export const session = async (req, res) => {
         fullname: req.admin.fullname,
         email: req.admin.email,
         role: req.admin.role,
-        status: req.admin.status
+        status: req.admin.status,
+        storeDetails: req.admin.storeDetails
       }
     });
   } catch (error) {

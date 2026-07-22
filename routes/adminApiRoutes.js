@@ -17,11 +17,16 @@ router.use(verifyAdminJWT);
 
 router.get("/session", AuthApi.session);
 
+// Current Admin Profile Routes
+router.patch("/profile/phone", AdminApi.updateOwnPhone);
+router.patch("/profile/password", AdminApi.updateOwnPassword);
+
 // Owner-only routes for managing admins
 router.get("/vendors", enforceOwner, AdminApi.getVendors);
 router.post("/vendors", enforceOwner, AdminApi.createVendor);
 router.post("/vendors/:id/approve", enforceOwner, AdminApi.approveVendor);
 router.post("/vendors/:id/block", enforceOwner, AdminApi.blockVendor);
+router.delete("/vendors/:id", enforceOwner, AdminApi.deleteVendor);
 router.patch("/vendors/:id/password", enforceOwner, AdminApi.resetVendorPassword);
 router.patch("/vendors/:id/phone", enforceOwner, AdminApi.updateVendorPhone);
 router.get("/vendors/:id/stats", enforceOwner, AdminApi.vendorStats);
@@ -78,6 +83,11 @@ router.get("/banners", enforceOwner, AdminApi.banners);
 router.post("/banners", enforceOwner, uploadBanner.single("image"), AdminApi.createBanner);
 router.put("/banners/:id", enforceOwner, uploadBanner.single("image"), AdminApi.updateBanner);
 router.delete("/banners/:id", enforceOwner, AdminApi.deleteBanner);
+
+import { uploadBrand } from "../config/brandMulter.js";
+router.get("/brands", enforceOwner, AdminApi.brands);
+router.post("/brands", enforceOwner, uploadBrand.single("image"), AdminApi.createBrand);
+router.delete("/brands/:id", enforceOwner, AdminApi.deleteBrand);
 
 router.get("/reports", AdminApi.reports);
 

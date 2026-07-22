@@ -152,6 +152,20 @@ export const blockVendor = async (req, res) => {
   }
 };
 
+export const deleteVendor = async (req, res) => {
+  try {
+    const vendor = await Admin.findById(req.params.id);
+    if (!vendor) return res.status(404).json({ success: false, message: 'Vendor not found' });
+    
+    await Product.deleteMany({ adminId: vendor._id });
+    await Admin.findByIdAndDelete(vendor._id);
+    
+    res.json({ success: true, message: 'Vendor and associated products deleted successfully' });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
 export const vendorStats = async (req, res) => {
   try {
     const validStatuses = ['Delivered', 'Shipped', 'Out for Delivery'];
@@ -784,4 +798,85 @@ export const deleteBanner = async (req, res) => {
   }
 };
 
+// --- BRANDS MANAGEMENT ---
+export const brands = async (req, res) => {
+  try {
+    const Brand = (await import('../../models/brandModel.js')).default;
+    const allBrands = await Brand.find().sort({ createdAt: -1 });
+    res.json({ success: true, brands: allBrands });
+  } catch (error) {
+    sendError(res, error, 500);
+  }
+};
+
+export const createBrand = async (req, res) => {
+  try {
+    const { name } = req.body;
+    const image = req.file?.path || req.file?.secure_url;
+    
+    if (!name || !image) {
+      return res.status(400).json({ success: false, message: "Name and image are required" });
+    }
+
+    const Brand = (await import('../../models/brandModel.js')).default;
+    const newBrand = new Brand({ name, image });
+    await newBrand.save();
+    
+    res.status(201).json({ success: true, brand: newBrand });
+  } catch (error) {
+    sendError(res, error, 500);
+  }
+};
+
+export const deleteBrand = async (req, res) => {
+  try {
+    const Brand = (await import('../../models/brandModel.js')).default;
+    await Brand.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: "Brand deleted successfully" });
+  } catch (error) {
+    sendError(res, error, 500);
+  }
+};
+
+// --- PROFILE MANAGEMENT (SELF) ---
+export const updateOwnPhone = async (req, res) => {
+  try {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ success: false, message: "Phone number is required." });
+    
+    const admin = await Admin.findById(req.admin.id);
+    if (!admin) return res.status(404).json({ success: false, message: "Admin not found." });
+    
+    admin.storeDetails = admin.storeDetails || {};
+    admin.storeDetails.phone = phone;
+    await admin.save();
+    
+    res.json({ success: true, message: "Phone number updated successfully." });
+  } catch (err) {
+    sendError(res, err);
+  }
+};
+
+export const updateOwnPassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ success: false, message: "Both current and new passwords are required." });
+    
+    const admin = await Admin.findById(req.admin.id);
+    if (!admin) return res.status(404).json({ success: false, message: "Admin not found." });
+    
+    const isValid = await bcrypt.compare(currentPassword, admin.password);
+    if (!isValid) return res.status(400).json({ success: false, message: "Incorrect current password." });
+    
+    if (newPassword.length < 8) return res.status(400).json({ success: false, message: "New password must be at least 8 characters." });
+    
+    const salt = await bcrypt.genSalt(10);
+    admin.password = await bcrypt.hash(newPassword, salt);
+    await admin.save();
+    
+    res.json({ success: true, message: "Password updated successfully." });
+  } catch (err) {
+    sendError(res, err);
+  }
+};
 
