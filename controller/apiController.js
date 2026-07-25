@@ -123,6 +123,7 @@ const normalizeReview = (review) => ({
     _id: toId(review),
     rating: Number(review.rating || 0),
     comment: review.comment || "",
+    image: review.image || null,
     createdAt: review.createdAt || null,
     user: review.user ? {
         id: toId(review.user),

@@ -13,17 +13,9 @@ export const globalErrorHandler = (err, req, res, next) => {
 
     console.error("Error Caught:", err.message);
 
-    if (req.xhr || (req.headers.accept && req.headers.accept.indexOf('json') > -1)) {
-        return res.status(statusCode).json({
-            success: false,
-            message: process.env.NODE_ENV === 'production' ? "Request failed" : err.message
-        });
-    }
-
-    res.status(statusCode);
-
-    return res.render("error/404", {
-        title: "404 - Not Found",
-        message: process.env.NODE_ENV === 'production' ? "Page Not Found" : err.message
+    res.status(statusCode).json({
+        success: false,
+        message: process.env.NODE_ENV === 'production' ? "Request failed" : err.message,
+        stack: process.env.NODE_ENV === 'production' ? null : err.stack
     });
 };

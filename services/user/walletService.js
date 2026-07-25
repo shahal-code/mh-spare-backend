@@ -43,7 +43,7 @@ export const debitWallet = async (userId, amount, description, orderId = null) =
 };
 
 // Get wallet with paginated transactions
-export const getWalletWithTransactions = async (userId, page = 1, limit = 10) => {
+export const getWalletWithTransactions = async (userId, page = 1, limit = 5) => {
     const wallet = await getOrCreateWallet(userId);
     const allTransactions = [...wallet.transactions].sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)

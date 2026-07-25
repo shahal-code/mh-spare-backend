@@ -5,12 +5,11 @@ import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import apiRoutes from "./routes/apiRoutes.js";
 import cors from "cors";
-import session from "express-session";
 import passport from "passport";
 import './config/passport.js';
 import * as ErrorHandler from "./middleware/errorHandler.js";
 import { userContext } from "./middleware/userAuth.js";
-import { preventCache, setLocals } from "./middleware/commonMiddleware.js";
+import { preventCache } from "./middleware/commonMiddleware.js";
 const app = express();
 
 import bcrypt from "bcryptjs";
@@ -58,44 +57,12 @@ app.use("/api", apiRoutes);
 
 app.use(preventCache);
 
-//user session
-const userSession = session({
-  name: "user.id",
-  secret: process.env.SESSION_SECRET || "user-secret",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 24
-  }
-});
-
-//admin session
-const adminSession = session({
-  name: "admin.sid",
-  secret: process.env.ADMIN_SECRET || "admin-secret",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 1000 * 60 * 60 * 12
-  }
-});
-
 app.use(passport.initialize());
 
-app.get("/", (req, res) => {
-  res.redirect("/user");
-});
-
 //user routes
-app.use("/user", userSession, passport.session(), userContext, setLocals, userRoutes);
+app.use("/user", userContext, userRoutes);
 //admin routes
-app.use("/admin", adminSession, passport.session(), setLocals, adminRoutes);
-
-app.use(setLocals);
-
-app.set("view engine", "ejs");
-app.set("views", "./views");
-
+app.use("/admin", adminRoutes);
 // Error Handling Middleware
 app.use(ErrorHandler.notFound);
 app.use(ErrorHandler.globalErrorHandler);

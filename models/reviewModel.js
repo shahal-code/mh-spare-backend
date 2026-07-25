@@ -21,6 +21,15 @@ const reviewSchema = new mongoose.Schema({
         type: String,
         required: true,
         trim: true
+    },
+    image: {
+        type: String,
+        required: false
+    },
+    status: {
+        type: String,
+        enum: ['visible', 'hidden'],
+        default: 'visible'
     }
 }, { timestamps: true });
 

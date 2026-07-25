@@ -4,9 +4,3 @@ export const preventCache = (req, res, next) => {
     res.setHeader("Expires", "-1");
     next();
 };
-
-export const setLocals = (req, res, next) => {
-    res.locals.loginMethod = req.session ? req.session.loginMethod : null;
-    res.locals.path = req.path;
-    next();
-};

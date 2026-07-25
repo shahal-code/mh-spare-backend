@@ -1,5 +1,0 @@
-
-    @media(max-width: 900px) {
-        .hidden-on-mobile { display: none !important; }
-        #mobileMenuBtn { display: flex !important; }
-    }

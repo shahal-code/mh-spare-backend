@@ -1,21 +1,6 @@
 import * as wishlistService from "../../services/user/wishlistServices.js";
 
-// Render Wishlist Page
-export const getWishlistView = async (req, res) => {
-    try {
-        const userId = req.session.user;
-        const wishlist = await wishlistService.getWishlist(userId);
 
-        res.render("user/wishlist/wishlist", {
-            wishlist,
-            user: req.session.user || null,
-            path: "/user/wishlist"
-        });
-    } catch (error) {
-        console.error("Wishlist Error:", error);
-        res.status(500).send("Failed to load wishlist");
-    }
-};
 
 // API: Toggle Wishlist
 export const toggleWishlist = async (req, res) => {

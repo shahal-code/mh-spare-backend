@@ -9,7 +9,17 @@ const createToken = (payload, expiresIn) => jwt.sign(payload, JWT_SECRET, { expi
 
 export const getProfileDetails = async (req, res) => {
     try {
-        const user = await ProfileService.getProfile(req.user._id);
+        let user = await ProfileService.getProfile(req.user._id);
+        
+        // Auto-fill phone from address if missing
+        if (!user.phone) {
+            const Address = (await import('../../models/addressModel.js')).default;
+            const userAddress = await Address.findOne({ user_id: req.user._id });
+            if (userAddress && userAddress.phone) {
+                user = await ProfileService.updateProfile(req.user._id, { phone: userAddress.phone });
+            }
+        }
+        
         res.status(200).json({ success: true, user });
     } catch (error) {
         console.error("Error loading profile:", error.message);

@@ -1,9 +1,10 @@
 import express from "express";
-import adminApiRoutes from "./adminApiRoutes.js";
+import superadminApiRoutes from "./superadminApiRoutes.js";
+import vendorApiRoutes from "./vendorApiRoutes.js";
 
 const router = express.Router();
 
-// Mount the admin API routes
-router.use("/api", adminApiRoutes);
+router.use("/api/superadmin", superadminApiRoutes);
+router.use("/api/vendor", vendorApiRoutes);
 
 export default router;

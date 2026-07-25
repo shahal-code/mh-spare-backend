@@ -146,6 +146,46 @@ export const placeOrder = async (req, res) => {
         // Use the service to handle logic
         const order = await OrderService.createOrder(userId, address, paymentMethod, false, appliedCoupon, expectedTotal);
 
+        try {
+            const { notifySuperAdmins, notifyAdmin } = await import('../../services/superadmin/notificationService.js');
+            const { sendVendorOrderEmail } = await import('../../config/nodemailer.js');
+            const Admin = (await import('../../models/adminModel.js')).default;
+            const Product = (await import('../../models/productModel.js')).default;
+
+            await notifySuperAdmins('New Order Received', `Order #${order.orderId} placed for ₹${order.finalAmount}`, 'order', `/superadmin/orders`);
+            
+            // Group items by vendor
+            const vendorItemsMap = {};
+            for (const item of order.orderedItems) {
+                if (item.adminId) {
+                    const vId = item.adminId._id ? item.adminId._id.toString() : item.adminId.toString();
+                    if (!vendorItemsMap[vId]) vendorItemsMap[vId] = [];
+                    vendorItemsMap[vId].push(item);
+                }
+            }
+
+            for (const [vId, items] of Object.entries(vendorItemsMap)) {
+                // 1. Send in-app SSE notification to the vendor
+                await notifyAdmin(vId, 'New Order Received', `You have new items to fulfill in Order #${order.orderId}`, 'order', `/vendor/orders`);
+                
+                // 2. Send email to the vendor
+                const vendor = await Admin.findById(vId).select('email fullname');
+                if (vendor && vendor.email) {
+                    // Populate product names for these items for the email
+                    const populatedItems = await Promise.all(items.map(async (it) => {
+                        const product = await Product.findById(it.product).select('name');
+                        return { 
+                            ...it.toObject ? it.toObject() : it, 
+                            productName: product ? product.name : 'Product' 
+                        };
+                    }));
+                    await sendVendorOrderEmail(vendor.email, vendor.fullname || 'Vendor', order, populatedItems);
+                }
+            }
+        } catch (err) {
+            console.error("Notification/Email Error:", err);
+        }
+
         res.json({
             success: true,
             message: "Order placed successfully!",

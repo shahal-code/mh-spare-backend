@@ -5,7 +5,7 @@ export const getWalletView = async (req, res) => {
     try {
         const userId = req.user._id;
         const page = parseInt(req.query.page) || 1;
-        const limit = 10;
+        const limit = 5;
 
         const walletData = await walletService.getWalletWithTransactions(userId, page, limit);
 

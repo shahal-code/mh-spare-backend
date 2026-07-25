@@ -233,7 +233,7 @@ class OrderService {
         return order;
     }
 
-    async getOrders(userId, queryParams = {}, page = 1, limit = 10) {
+    async getOrders(userId, queryParams = {}, page = 1, limit = 5) {
         const { search } = queryParams;
         const skip = (page - 1) * limit;
 

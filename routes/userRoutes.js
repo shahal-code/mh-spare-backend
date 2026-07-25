@@ -5,7 +5,6 @@ const router = express.Router();
 import * as userAuth from "../middleware/userAuth.js";
 router.use(userAuth.noCache);
 import * as usercontroller from "../controller/usercontroller/user.auth.js";
-import * as PageController from "../controller/usercontroller/pages.controller.js";
 import * as Profile from "../controller/usercontroller/profile.js";
 import * as Address from "../controller/usercontroller/address.js";
 import * as Checkout from "../controller/usercontroller/checkoutController.js"
@@ -39,13 +38,8 @@ router.get(
   }
 );
 
-// Pages
-router.get('/', userAuth.isBlocked, PageController.LandingOrHome_load);
-router.get('/shop', userAuth.isBlocked, PageController.ShopPage_load);
-router.get('/product/:id', userAuth.isBlocked, PageController.ProductDetails_load);
-router.get('/contact', userAuth.isBlocked, PageController.ContactPage_load);
-router.get('/about', userAuth.isBlocked, PageController.AboutPage_load);
-router.post('/product/:id/review', userAuth.isAuthenticated, userAuth.isBlocked, ReviewController.addReview);
+// Pages - Removed EJS Routes
+router.post('/product/:id/review', userAuth.isAuthenticated, userAuth.isBlocked, upload.single("image"), ReviewController.addReview);
 router.delete('/product/:id/review/:reviewId', userAuth.isAuthenticated, userAuth.isBlocked, ReviewController.deleteReview);
 
 import * as cartController from "../controller/usercontroller/cartController.js";
@@ -84,13 +78,11 @@ router.get('/orders/:orderId/invoice', userAuth.isAuthenticated, userAuth.isBloc
 
 
 // Wishlist
-router.get('/wishlist', userAuth.isAuthenticated, userAuth.isBlocked, WishlistController.getWishlistView);
 router.post('/wishlist/add', userAuth.isAuthenticated, userAuth.isBlocked, WishlistController.toggleWishlist);
 router.post('/wishlist/remove', userAuth.isAuthenticated, userAuth.isBlocked, WishlistController.removeFromWishlist);
 
 
-router.get('/dashboard', userAuth.isAuthenticated, PageController.Dashboard_load);
-
+// Dashboard - Removed EJS Route
 // Profile
 router.get('/profile', userAuth.isAuthenticated, userAuth.isBlocked, Profile.getProfileDetails);
 router.put('/profile/edit', userAuth.isAuthenticated, userAuth.isBlocked, upload.single("avatar"), Profile.editProfile);
@@ -112,7 +104,6 @@ router.get('/delete-address/:id', userAuth.isAuthenticated, Address.deleteAddres
 router.delete('/address/delete/:id', userAuth.isAuthenticated, Address.deleteAddress);
 
 router.get('/address/set-default/:id', userAuth.isAuthenticated, Address.setDefaultAddress);
-router.get('/settings', userAuth.isAuthenticated);
 
 router.get('/logout', userAuth.isAuthenticated, usercontroller.isLogout);
 

@@ -25,6 +25,15 @@ const adminSchema = new mongoose.Schema(
       enum: ["pending", "active", "blocked", "rejected"],
       default: "pending",
     },
+    kycStatus: {
+      type: String,
+      enum: ["unverified", "pending", "verified"],
+      default: "unverified",
+    },
+    kycDocuments: {
+      idProof: String,
+      businessLicense: String,
+    },
     storeDetails: {
       storeName: String,
       description: String,

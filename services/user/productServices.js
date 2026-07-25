@@ -91,7 +91,7 @@ async function getProductDetails(productId) {
         .populate("adminId")
         .lean();
 
-    if (!product || product.is_blocked || product.is_unlisted || (product.category_id && product.category_id.is_blocked) || (product.adminId && product.adminId.status === 'blocked')) return null;
+    if (!product || product.is_blocked || product.is_unlisted || product.approvalStatus !== 'approved' || (product.category_id && product.category_id.is_blocked) || (product.adminId && product.adminId.status === 'blocked')) return null;
 
     const activeAdmins = await Admin.find({ status: { $ne: 'blocked' } }).select('_id');
     const activeAdminIds = activeAdmins.map(a => a._id);
@@ -102,7 +102,8 @@ async function getProductDetails(productId) {
         _id: { $ne: product._id },
         adminId: { $in: activeAdminIds },
         is_blocked: { $ne: true },
-        is_unlisted: { $ne: true }
+        is_unlisted: { $ne: true },
+        approvalStatus: 'approved'
     })
         .populate("category_id")
         .limit(4)
@@ -118,7 +119,7 @@ async function getProductDetails(productId) {
 }
 
 const getShopData = async (queryParams) => {
-    const { search, category, sort, page = 1, limit = 6 } = queryParams;
+    const { search, category, sort, page = 1, limit = 5 } = queryParams;
 
     // Fetch active categories for filter options. If the category list is empty,
     // do not let it wipe out every product from the shop catalogue.
@@ -132,6 +133,7 @@ const getShopData = async (queryParams) => {
     let query = {
         is_blocked: { $ne: true },
         is_unlisted: { $ne: true },
+        approvalStatus: 'approved',
         adminId: { $in: activeAdminIds }
     };
 
@@ -225,10 +227,15 @@ const getShopData = async (queryParams) => {
         } else if (queryParams.price === "over200000") {
             query["variants.price"] = { $gt: 200000 };
         }
-    } else if (queryParams.maxPrice) {
+    } else if (queryParams.minPrice || queryParams.maxPrice) {
+        query["variants.price"] = {};
+        const min = parseInt(queryParams.minPrice);
         const max = parseInt(queryParams.maxPrice);
-        if (!isNaN(max)) {
-            query["variants.price"] = { $lte: max };
+        if (!isNaN(min)) query["variants.price"].$gte = min;
+        if (!isNaN(max)) query["variants.price"].$lte = max;
+        // If empty object, delete it
+        if (Object.keys(query["variants.price"]).length === 0) {
+            delete query["variants.price"];
         }
     }
 
@@ -265,6 +272,7 @@ async function getFeaturedProducts(limit = 3) {
     const query = {
         is_blocked: { $ne: true },
         is_unlisted: { $ne: true },
+        approvalStatus: 'approved',
         adminId: { $in: activeAdminIds }
     };
 
