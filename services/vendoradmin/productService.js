@@ -1,5 +1,10 @@
 import { Query } from "mongoose";
 import Product from "../../models/productModel.js";
+import Category from "../../models/categoryModel.js";
+
+export const getCategories = async () => {
+    return await Category.find({ is_blocked: false }).select("name _id").sort({ name: 1 }).lean();
+};
 
 export const getProductOptions = async () => {
     return await Product.find({ is_unlisted: false, is_blocked: false }).select("name _id").sort({ name: 1 }).lean();
@@ -11,6 +16,8 @@ export const getProductStats = async (admin) => {
     const pendingQuery = { approvalStatus: 'pending' };
     const approvedQuery = { approvalStatus: 'approved' };
     const rejectedQuery = { approvalStatus: 'rejected' };
+    const outOfStockQuery = { 'variants.0.stock': { $lte: 0 } };
+    const lowStockQuery = { 'variants.0.stock': { $gt: 0, $lte: 10 } };
     
     if (admin.role !== "owner") {
       activeProductsQuery.adminId = admin._id;
@@ -18,6 +25,8 @@ export const getProductStats = async (admin) => {
       pendingQuery.adminId = admin._id;
       approvedQuery.adminId = admin._id;
       rejectedQuery.adminId = admin._id;
+      outOfStockQuery.adminId = admin._id;
+      lowStockQuery.adminId = admin._id;
     }
 
     return {
@@ -25,7 +34,9 @@ export const getProductStats = async (admin) => {
       inactiveProductsCount: await Product.countDocuments(inactiveProductsQuery),
       pendingCount: await Product.countDocuments(pendingQuery),
       approvedCount: await Product.countDocuments(approvedQuery),
-      rejectedCount: await Product.countDocuments(rejectedQuery)
+      rejectedCount: await Product.countDocuments(rejectedQuery),
+      outOfStockCount: await Product.countDocuments(outOfStockQuery),
+      lowStockCount: await Product.countDocuments(lowStockQuery)
     };
 };
 
@@ -45,12 +56,71 @@ export const bulkApproveProducts = async (data, admin) => {
     return await Product.updateMany(query, { $set: { approvalStatus: status } });
 };
 
+export const bulkDeleteProducts = async (data, admin) => {
+    const { productIds, selectAll, search, statusFilter, stockLevelFilter } = data;
+    let query = {};
+    if (selectAll) {
+      if (search) query.name = { $regex: search, $options: "i" };
+      if (statusFilter && statusFilter !== 'all') {
+        if (statusFilter === 'blocked') query.is_blocked = true;
+        else if (statusFilter === 'active') query.is_blocked = false;
+        else query.approvalStatus = statusFilter;
+      }
+      if (stockLevelFilter && stockLevelFilter !== 'all') {
+        if (stockLevelFilter === 'out_of_stock') query['variants.0.stock'] = { $lte: 0 };
+        else if (stockLevelFilter === 'low_stock') query['variants.0.stock'] = { $gt: 0, $lte: 10 };
+        else if (stockLevelFilter === 'in_stock') query['variants.0.stock'] = { $gt: 10 };
+      }
+      if (admin.role !== "owner") query.adminId = admin._id;
+    } else {
+      if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+        throw new Error('No products selected');
+      }
+      query._id = { $in: productIds };
+    }
+    return await Product.deleteMany(query);
+};
+
+export const bulkToggleProducts = async (data, isBlocked, admin) => {
+    const { productIds, selectAll, search, statusFilter, stockLevelFilter } = data;
+    let query = {};
+    if (selectAll) {
+      if (search) query.name = { $regex: search, $options: "i" };
+      if (statusFilter && statusFilter !== 'all') {
+        if (statusFilter === 'blocked') query.is_blocked = true;
+        else if (statusFilter === 'active') query.is_blocked = false;
+        else query.approvalStatus = statusFilter;
+      }
+      if (stockLevelFilter && stockLevelFilter !== 'all') {
+        if (stockLevelFilter === 'out_of_stock') query['variants.0.stock'] = { $lte: 0 };
+        else if (stockLevelFilter === 'low_stock') query['variants.0.stock'] = { $gt: 0, $lte: 10 };
+        else if (stockLevelFilter === 'in_stock') query['variants.0.stock'] = { $gt: 10 };
+      }
+      if (admin.role !== "owner") query.adminId = admin._id;
+    } else {
+      if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+        throw new Error('No products selected');
+      }
+      query._id = { $in: productIds };
+    }
+    return await Product.updateMany(query, { $set: { is_blocked: isBlocked } });
+};
+
 // Get all products with pagination and category populate.
-export const getAllProducts = async (query, page, limit) => {
+export const getAllProducts = async (query, page, limit, sortBy) => {
+    let sortObj = { createdAt: -1 };
+    if (sortBy === "price_asc") sortObj = { 'variants.price': 1 };
+    else if (sortBy === "price_desc") sortObj = { 'variants.price': -1 };
+    else if (sortBy === "stock_asc") sortObj = { 'variants.stock': 1 };
+    else if (sortBy === "stock_desc") sortObj = { 'variants.stock': -1 };
+    else if (sortBy === "name_asc") sortObj = { name: 1 };
+    else if (sortBy === "name_desc") sortObj = { name: -1 };
+    else if (sortBy === "oldest") sortObj = { createdAt: 1 };
+
     const products = await Product.find(query)
         .populate("category_id")
         .populate("adminId", "fullname email storeDetails")
-        .sort({ createdAt: -1 })
+        .sort(sortObj)
         .skip((page - 1) * limit)
         .limit(limit)
         .lean();
@@ -59,6 +129,23 @@ export const getAllProducts = async (query, page, limit) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     return { products, totalProducts, totalPages };
+};
+
+export const quickEditProduct = async (id, { price, stock }) => {
+    const product = await Product.findById(id);
+    if (!product) throw new Error("Product not found");
+    
+    if (price !== undefined) {
+      if (product.variants && product.variants.length > 0) {
+        product.variants[0].price = Number(price);
+      }
+    }
+    if (stock !== undefined) {
+      if (product.variants && product.variants.length > 0) {
+        product.variants[0].stock = Number(stock);
+      }
+    }
+    return await product.save();
 };
 
 export const getProductById = async (id) => {
@@ -73,11 +160,16 @@ export const createProduct = async (productData) => {
     }
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
     const newProduct = new Product({
-        name, description, category_id, price: Number(price), stock: Number(stock),
+        name, description, category_id,
         slug,
-        images,
         thumbnail: thumbnail || images[0],
-        adminId, approvalStatus
+        adminId, approvalStatus,
+        variants: [{
+            price: Number(price) || 0,
+            stock: Number(stock) || 0,
+            images,
+            sku: slug + '-' + Date.now()
+        }]
     });
     return await newProduct.save();
 };
@@ -91,11 +183,22 @@ export const updateProduct = async (id, updateData) => {
     }
     if (updateData.description) product.description = updateData.description;
     if (updateData.category_id) product.category_id = updateData.category_id;
-    if (updateData.price) product.price = Number(updateData.price);
-    if (updateData.stock) product.stock = Number(updateData.stock);
     if (updateData.thumbnail) product.thumbnail = updateData.thumbnail;
 
-    let currentImages = product.images || [];
+    if (!product.variants || product.variants.length === 0) {
+        product.variants = [{ sku: product.slug + '-' + Date.now() }];
+    }
+    const variant = product.variants[0];
+
+    if (updateData.price !== undefined) variant.price = Number(updateData.price);
+    if (updateData.stock !== undefined) variant.stock = Number(updateData.stock);
+
+    let currentImages = variant.images ? [...variant.images] : [];
+    // Include thumbnail in the pool of current images for legacy products that only saved a thumbnail
+    if (product.thumbnail && !currentImages.includes(product.thumbnail)) {
+        currentImages.push(product.thumbnail);
+    }
+
     if (updateData.existingImages) {
         let existingToKeep = [];
         try {
@@ -111,12 +214,12 @@ export const updateProduct = async (id, updateData) => {
     if (updateData.images && updateData.images.length > 0) {
         currentImages = [...currentImages, ...updateData.images];
     }
+
     if (currentImages.length < 3 || currentImages.length > 5) {
         throw new Error("Product must have between 3 and 5 images.");
     }
-    product.images = currentImages;
+    variant.images = currentImages;
 
-    // Remove existing thumbnail logic handling from controller
     return await product.save();
 };
 

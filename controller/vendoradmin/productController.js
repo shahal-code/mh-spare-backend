@@ -22,20 +22,62 @@ export const products = async (req, res) => {
     const limit = parseInt(req.query.limit) || 5;
     const search = req.query.search || "";
     const status = req.query.status || "all";
+    const stockLevel = req.query.stockLevel || "all";
+    const category = req.query.category || "all";
+    const priceRange = req.query.priceRange || "all";
+    const dateAdded = req.query.dateAdded || "all";
+    const sortBy = req.query.sortBy || "newest";
+
     const query = search ? { name: { $regex: search, $options: "i" } } : {};
 
+    if (category !== "all") {
+      query.category_id = category;
+    }
+
+    if (priceRange !== "all") {
+      if (priceRange === "under_500") query['variants.0.price'] = { $lt: 500 };
+      else if (priceRange === "500_2000") query['variants.0.price'] = { $gte: 500, $lte: 2000 };
+      else if (priceRange === "above_2000") query['variants.0.price'] = { $gt: 2000 };
+    }
+
+    if (dateAdded !== "all") {
+      const now = new Date();
+      if (dateAdded === "today") {
+        query.createdAt = { $gte: new Date(now.setHours(0,0,0,0)) };
+      } else if (dateAdded === "this_week") {
+        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+        startOfWeek.setHours(0,0,0,0);
+        query.createdAt = { $gte: startOfWeek };
+      } else if (dateAdded === "this_month") {
+        query.createdAt = { $gte: new Date(now.getFullYear(), now.getMonth(), 1) };
+      }
+    }
+
     if (status !== 'all') {
-      query.approvalStatus = status;
+      if (status === 'blocked') query.is_blocked = true;
+      else if (status === 'active') query.is_blocked = false;
+      else query.approvalStatus = status;
+    }
+
+    if (stockLevel !== 'all') {
+      if (stockLevel === 'out_of_stock') {
+        query['variants.0.stock'] = { $lte: 0 };
+      } else if (stockLevel === 'low_stock') {
+        query['variants.0.stock'] = { $gt: 0, $lte: 10 };
+      } else if (stockLevel === 'in_stock') {
+        query['variants.0.stock'] = { $gt: 10 };
+      }
     }
 
     if (req.admin.role !== "owner") {
       query.adminId = req.admin._id;
     }
 
-    const data = await ProductService.getAllProducts(query, page, limit);
+    const data = await ProductService.getAllProducts(query, page, limit, sortBy);
     const stats = await ProductService.getProductStats(req.admin);
+    const categories = await ProductService.getCategories();
     
-    res.json({ ...data, page, limit, search, ...stats });
+    res.json({ ...data, page, limit, search, ...stats, categories });
   } catch (error) {
     sendError(res, error);
   }
@@ -50,11 +92,39 @@ export const bulkApproveProducts = async (req, res) => {
   }
 };
 
+export const bulkDeleteProducts = async (req, res) => {
+  try {
+    await ProductService.bulkDeleteProducts(req.body, req.admin);
+    res.json({ success: true, message: "Products deleted successfully" });
+  } catch (error) {
+    sendError(res, error, 400);
+  }
+};
+
+export const bulkToggleProducts = async (req, res) => {
+  try {
+    const isBlocked = req.body.action === 'block';
+    await ProductService.bulkToggleProducts(req.body, isBlocked, req.admin);
+    res.json({ success: true, message: `Products ${isBlocked ? 'blocked' : 'unblocked'} successfully` });
+  } catch (error) {
+    sendError(res, error, 400);
+  }
+};
+
 export const product = async (req, res) => {
   try {
     const data = await ProductService.getProductById(req.params.id);
     if (!data) return res.status(404).json({ success: false, message: "Product not found" });
     res.json({ product: data });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+export const quickEditProduct = async (req, res) => {
+  try {
+    const product = await ProductService.quickEditProduct(req.params.id, req.body);
+    res.json({ success: true, message: "Product updated successfully", product });
   } catch (error) {
     sendError(res, error);
   }

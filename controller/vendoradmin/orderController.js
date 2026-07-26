@@ -106,3 +106,36 @@ export const updateOrderItemStatus = async (req, res) => {
   }
 };
 
+export const updateStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await OrderService.updateOrderStatus(req.params.id, status);
+    if (!order) return sendError(res, new Error("Order not found"), 404);
+    res.json({ success: true, message: `Order status updated to ${status}` });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+export const bulkUpdateStatus = async (req, res) => {
+  try {
+    const { orderIds, status } = req.body;
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+      return sendError(res, new Error("No orders selected"), 400);
+    }
+    const result = await OrderService.bulkUpdateOrderStatus(orderIds, status);
+    res.json({ success: true, message: `Bulk update complete. Success: ${result.successCount}, Failed: ${result.failedCount}` });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+export const updateItemTracking = async (req, res) => {
+  try {
+    const { trackingNumber, courierName } = req.body;
+    const order = await OrderService.updateOrderItemTracking(req.params.id, req.params.itemId, { trackingNumber, courierName });
+    res.json({ success: true, message: "Tracking info updated" });
+  } catch (error) {
+    sendError(res, error);
+  }
+};

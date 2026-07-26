@@ -57,6 +57,14 @@ const orderSchema = new mongoose.Schema({
         returnReason: {
             type: String,
             default: null
+        },
+        trackingNumber: {
+            type: String,
+            default: null
+        },
+        courierName: {
+            type: String,
+            default: null
         }
     }],
     totalPrice: {

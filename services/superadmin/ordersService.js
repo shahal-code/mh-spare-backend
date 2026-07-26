@@ -107,10 +107,14 @@ export const getAllOrders = async (queryParams, page, limit, adminContext = null
         
     // Filter items to only show the vendor's items if not owner
     if (adminContext && adminContext.role !== 'owner') {
+        const adminIdStr = adminContext._id.toString();
         orders.forEach(order => {
-            order.orderedItems = order.orderedItems.filter(item => 
-                item.adminId && item.adminId.toString() === adminContext._id.toString()
-            );
+            order.orderedItems = order.orderedItems.filter(item => {
+                if (!item.adminId) return false;
+                // After lean(), populated adminId is a plain object with _id field
+                const itemAdminId = item.adminId._id ? item.adminId._id.toString() : item.adminId.toString();
+                return itemAdminId === adminIdStr;
+            });
         });
     }
 
@@ -143,6 +147,24 @@ export const getOrderStats = async (adminContext = null) => {
     const canceledOrdersCount = await Order.countDocuments({ status: "Cancelled" });
     const completedOrdersCount = await Order.countDocuments({ status: "Delivered" });
     return { totalOrdersCount, pendingOrdersCount, canceledOrdersCount, completedOrdersCount };
+};
+
+export const bulkUpdateOrderStatus = async (orderIds, status) => {
+    let successCount = 0;
+    let failedCount = 0;
+    const errors = [];
+
+    for (const orderId of orderIds) {
+        try {
+            await updateOrderStatus(orderId, status);
+            successCount++;
+        } catch (error) {
+            failedCount++;
+            errors.push(`Order ${orderId}: ${error.message}`);
+        }
+    }
+
+    return { successCount, failedCount, errors };
 };
 
 export const getOrderById = async (orderId) => {
@@ -341,4 +363,23 @@ export const getReturnRequests = async (queryParams ,page, limit) => {
     const totalPages = Math.ceil(totalOrders / limit);
 
     return { orders, totalPages, totalOrders };
+};
+
+export const updateOrderItemTracking = async (orderId, itemId, trackingData) => {
+    const order = await Order.findById(orderId);
+    if (!order) throw new Error("Order not found.");
+
+    const item = order.orderedItems.id(itemId);
+    if (!item) throw new Error("Item not found in order.");
+
+    if (trackingData.trackingNumber !== undefined) {
+        item.trackingNumber = trackingData.trackingNumber;
+    }
+    if (trackingData.courierName !== undefined) {
+        item.courierName = trackingData.courierName;
+    }
+
+    order.markModified("orderedItems");
+    await order.save();
+    return order;
 };

@@ -76,20 +76,46 @@ export const getDashboardStats = async (adminContext = null) => {
       { $project: { name: "$categoryDetails.name", totalQuantity: 1, _id: 0 } }
     ]);
 
-    // Top 10 Brands (Extracting first word of product name as brand)
-    const topBrands = await Order.aggregate([
-      { $match: matchQuery },
-      { $unwind: "$orderedItems" },
-      ...(adminContext && adminContext.role !== 'owner' ? [{ $match: { "orderedItems.adminId": adminContext._id } }] : []),
-      { $match: { "orderedItems.status": { $in: validStatuses } } },
-      { $lookup: { from: "products", localField: "orderedItems.product", foreignField: "_id", as: "productDetails" } },
-      { $unwind: "$productDetails" },
-      { $addFields: { brandName: { $arrayElemAt: [{ $split: ["$productDetails.name", " "] }, 0] } } },
-      { $group: { _id: "$brandName", totalQuantity: { $sum: "$orderedItems.quantity" } } },
-      { $sort: { totalQuantity: -1 } },
+    // Recent Orders (Last 10)
+    const recentOrders = await Order.aggregate([
+      ...(adminContext && adminContext.role !== 'owner' ? [
+        { $match: { "orderedItems.adminId": adminContext._id } }
+      ] : []),
+      { $sort: { createdAt: -1 } },
       { $limit: 10 },
-      { $project: { name: "$_id", totalQuantity: 1, _id: 0 } }
+      { $project: { name: "$orderId", totalQuantity: "$status", _id: 0 } }
     ]);
+    const baseProductQuery = {};
+    if (adminContext && adminContext.role !== 'owner') {
+      baseProductQuery.adminId = adminContext._id;
+    }
+    
+    // Low Stock Products (Total stock across variants < 10)
+    const lowStockThreshold = 10;
+    const lowStockProducts = await Product.aggregate([
+      { $match: baseProductQuery },
+      { $unwind: { path: "$variants", preserveNullAndEmptyArrays: true } },
+      { $group: { 
+          _id: "$_id", 
+          name: { $first: "$name" }, 
+          thumbnail: { $first: "$thumbnail" }, 
+          totalStock: { $sum: { $ifNull: ["$variants.stock", 0] } } 
+      } },
+      { $match: { totalStock: { $lt: lowStockThreshold } } },
+      { $sort: { totalStock: 1 } },
+      { $limit: 10 }
+    ]);
+
+    // Product Status Breakdown
+    const activeProducts = await Product.countDocuments({ ...baseProductQuery, approvalStatus: 'approved', is_blocked: false, is_unlisted: false });
+    const pendingProducts = await Product.countDocuments({ ...baseProductQuery, approvalStatus: 'pending' });
+    const draftProducts = await Product.countDocuments({ ...baseProductQuery, is_unlisted: true });
+    
+    const productStatusBreakdown = {
+      active: activeProducts,
+      pending: pendingProducts,
+      draft: draftProducts
+    };
 
     // Super Admin specific stats
     let superAdminStats = null;
@@ -149,7 +175,9 @@ export const getDashboardStats = async (adminContext = null) => {
       totalProducts,
       topProducts,
       topCategories,
-      topBrands,
+      recentOrders,
+      lowStockProducts,
+      productStatusBreakdown,
       superAdminStats,
       activePage: "dashboard",
       pageTitle: "Global Overview",

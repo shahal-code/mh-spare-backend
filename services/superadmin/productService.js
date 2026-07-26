@@ -45,6 +45,56 @@ export const bulkApproveProducts = async (data, admin) => {
     return await Product.updateMany(query, { $set: { approvalStatus: status } });
 };
 
+export const bulkDeleteProducts = async (data, admin) => {
+    const { productIds, selectAll, search, statusFilter, stockLevelFilter } = data;
+    let query = {};
+    if (selectAll) {
+      if (search) query.name = { $regex: search, $options: "i" };
+      if (statusFilter && statusFilter !== 'all') {
+        if (statusFilter === 'blocked') query.is_blocked = true;
+        else if (statusFilter === 'active') query.is_blocked = false;
+        else query.approvalStatus = statusFilter;
+      }
+      if (stockLevelFilter && stockLevelFilter !== 'all') {
+        if (stockLevelFilter === 'out_of_stock') query['variants.0.stock'] = { $lte: 0 };
+        else if (stockLevelFilter === 'low_stock') query['variants.0.stock'] = { $gt: 0, $lte: 10 };
+        else if (stockLevelFilter === 'in_stock') query['variants.0.stock'] = { $gt: 10 };
+      }
+      if (admin.role !== "owner") query.adminId = admin._id;
+    } else {
+      if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+        throw new Error('No products selected');
+      }
+      query._id = { $in: productIds };
+    }
+    return await Product.deleteMany(query);
+};
+
+export const bulkToggleProducts = async (data, isBlocked, admin) => {
+    const { productIds, selectAll, search, statusFilter, stockLevelFilter } = data;
+    let query = {};
+    if (selectAll) {
+      if (search) query.name = { $regex: search, $options: "i" };
+      if (statusFilter && statusFilter !== 'all') {
+        if (statusFilter === 'blocked') query.is_blocked = true;
+        else if (statusFilter === 'active') query.is_blocked = false;
+        else query.approvalStatus = statusFilter;
+      }
+      if (stockLevelFilter && stockLevelFilter !== 'all') {
+        if (stockLevelFilter === 'out_of_stock') query['variants.0.stock'] = { $lte: 0 };
+        else if (stockLevelFilter === 'low_stock') query['variants.0.stock'] = { $gt: 0, $lte: 10 };
+        else if (stockLevelFilter === 'in_stock') query['variants.0.stock'] = { $gt: 10 };
+      }
+      if (admin.role !== "owner") query.adminId = admin._id;
+    } else {
+      if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+        throw new Error('No products selected');
+      }
+      query._id = { $in: productIds };
+    }
+    return await Product.updateMany(query, { $set: { is_blocked: isBlocked } });
+};
+
 // Get all products with pagination and category populate.
 export const getAllProducts = async (query, page, limit) => {
     const products = await Product.find(query)
@@ -59,6 +109,23 @@ export const getAllProducts = async (query, page, limit) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     return { products, totalProducts, totalPages };
+};
+
+export const quickEditProduct = async (id, { price, stock }) => {
+    const product = await Product.findById(id);
+    if (!product) throw new Error("Product not found");
+    
+    if (price !== undefined) {
+      if (product.variants && product.variants.length > 0) {
+        product.variants[0].price = Number(price);
+      }
+    }
+    if (stock !== undefined) {
+      if (product.variants && product.variants.length > 0) {
+        product.variants[0].stock = Number(stock);
+      }
+    }
+    return await product.save();
 };
 
 export const getProductById = async (id) => {

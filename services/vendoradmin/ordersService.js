@@ -107,10 +107,14 @@ export const getAllOrders = async (queryParams, page, limit, adminContext = null
         
     // Filter items to only show the vendor's items if not owner
     if (adminContext && adminContext.role !== 'owner') {
+        const adminIdStr = adminContext._id.toString();
         orders.forEach(order => {
-            order.orderedItems = order.orderedItems.filter(item => 
-                item.adminId && item.adminId.toString() === adminContext._id.toString()
-            );
+            order.orderedItems = order.orderedItems.filter(item => {
+                if (!item.adminId) return false;
+                // After lean(), populated adminId is a plain object with _id field
+                const itemAdminId = item.adminId._id ? item.adminId._id.toString() : item.adminId.toString();
+                return itemAdminId === adminIdStr;
+            });
         });
     }
 
@@ -134,15 +138,37 @@ export const getOrderStats = async (adminContext = null) => {
     // We count based on item status if vendor
     if (adminContext && adminContext.role !== 'owner') {
         const pendingOrdersCount = await Order.countDocuments({ ...query, "orderedItems.status": "Pending" });
-        const canceledOrdersCount = await Order.countDocuments({ ...query, "orderedItems.status": "Cancelled" });
+        const confirmedOrdersCount = await Order.countDocuments({ ...query, "orderedItems.status": "Confirmed" });
+        const shippedOrdersCount = await Order.countDocuments({ ...query, "orderedItems.status": "Shipped" });
+        const outForDeliveryOrdersCount = await Order.countDocuments({ ...query, "orderedItems.status": "Out for Delivery" });
         const completedOrdersCount = await Order.countDocuments({ ...query, "orderedItems.status": "Delivered" });
-        return { totalOrdersCount, pendingOrdersCount, canceledOrdersCount, completedOrdersCount };
+        return { totalOrdersCount, pendingOrdersCount, confirmedOrdersCount, shippedOrdersCount, outForDeliveryOrdersCount, completedOrdersCount };
     }
     
     const pendingOrdersCount = await Order.countDocuments({ status: "Pending" });
-    const canceledOrdersCount = await Order.countDocuments({ status: "Cancelled" });
+    const confirmedOrdersCount = await Order.countDocuments({ status: "Confirmed" });
+    const shippedOrdersCount = await Order.countDocuments({ status: "Shipped" });
+    const outForDeliveryOrdersCount = await Order.countDocuments({ status: "Out for Delivery" });
     const completedOrdersCount = await Order.countDocuments({ status: "Delivered" });
-    return { totalOrdersCount, pendingOrdersCount, canceledOrdersCount, completedOrdersCount };
+    return { totalOrdersCount, pendingOrdersCount, confirmedOrdersCount, shippedOrdersCount, outForDeliveryOrdersCount, completedOrdersCount };
+};
+
+export const bulkUpdateOrderStatus = async (orderIds, status) => {
+    let successCount = 0;
+    let failedCount = 0;
+    const errors = [];
+
+    for (const orderId of orderIds) {
+        try {
+            await updateOrderStatus(orderId, status);
+            successCount++;
+        } catch (error) {
+            failedCount++;
+            errors.push(`Order ${orderId}: ${error.message}`);
+        }
+    }
+
+    return { successCount, failedCount, errors };
 };
 
 export const getOrderById = async (orderId) => {

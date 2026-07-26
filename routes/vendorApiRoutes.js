@@ -46,6 +46,9 @@ router.get("/products/:id", ProductApi.product);
 router.post("/products", uploadProduct.fields([{ name: "thumbnail", maxCount: 1 }, { name: "images", maxCount: 5 }]), ProductApi.createProduct);
 router.put("/products/:id", uploadProduct.fields([{ name: "thumbnail", maxCount: 1 }, { name: "images", maxCount: 5 }]), ProductApi.updateProduct);
 router.patch("/products/:id/toggle", ProductApi.toggleProduct);
+router.patch("/products/:id/quick-edit", ProductApi.quickEditProduct);
+router.post("/products/bulk/toggle", ProductApi.bulkToggleProducts);
+router.post("/products/bulk/delete", ProductApi.bulkDeleteProducts);
 router.delete("/products/:id", ProductApi.deleteProduct);
 router.post("/products/:id/variants", uploadProduct.array("images", 5), ProductApi.createVariant);
 router.put("/products/:id/variants/:variantId", uploadProduct.array("images", 5), ProductApi.updateVariant);
@@ -57,6 +60,8 @@ router.get("/orders", OrderApi.orders);
 router.get("/orders/:orderId", OrderApi.order);
 router.post("/orders/update-status", OrderApi.updateOrderStatus);
 router.post("/orders/update-item-status", OrderApi.updateOrderItemStatus);
+router.post("/orders/bulk/status", OrderApi.bulkUpdateStatus);
+router.patch("/orders/:id/tracking/:itemId", OrderApi.updateItemTracking);
 
 // Marketing (Coupons, Offers)
 router.get("/coupons", MarketingApi.coupons);
