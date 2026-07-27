@@ -3,6 +3,9 @@ import * as CategoryService from "../services/user/categoryService.js";
 import Review from "../models/reviewModel.js";
 import Offer from "../models/offerModel.js";
 import Banner from "../models/bannerModel.js";
+import mongoose from "mongoose";
+
+const { Types } = mongoose;
 
 const PLACEHOLDER_IMAGE = "/img/placeholder.jpg";
 
@@ -52,17 +55,19 @@ const normalizeVariant = (variant) => ({
     color: variant?.color || ""
 });
 
-const normalizeProduct = (product) => {
+const normalizeProduct = (product, ratingMap = {}) => {
     const variant = pickVariant(product);
     const variants = Array.isArray(product.variants) ? product.variants.map(normalizeVariant) : [];
     const category = normalizeCategory(product.category_id || product.category);
     const inStock = variants.length ? variants.some(v => v.stock > 0) : Boolean(product.inStock);
     const price = variant ? Number(variant.price || 0) : Number(product.price || 0);
     const originalPrice = variant?.originalPrice ? Number(variant.originalPrice) : (product.originalPrice || null);
+    const productId = toId(product);
+    const ratingData = ratingMap[productId] || {};
 
     return {
-        id: toId(product),
-        _id: toId(product),
+        id: productId,
+        _id: productId,
         name: product.name || "Unnamed product",
         description: product.description || "",
         img: pickImage(product, variant),
@@ -82,14 +87,36 @@ const normalizeProduct = (product) => {
         variants,
         popular: inStock,
         createdAt: product.createdAt || null,
-        offer: product.offer || null
+        offer: product.offer || null,
+        averageRating: ratingData.avg || 0,
+        totalRatings: ratingData.count || 0
     };
+};
+
+// Batch fetch average ratings for a list of product ids
+const batchGetRatings = async (productIds) => {
+    if (!productIds || !productIds.length) return {};
+    const objectIds = productIds
+        .map(id => { try { return new Types.ObjectId(id); } catch { return null; } })
+        .filter(Boolean);
+    if (!objectIds.length) return {};
+    const results = await Review.aggregate([
+        { $match: { product: { $in: objectIds } } },
+        { $group: { _id: '$product', avg: { $avg: '$rating' }, count: { $sum: 1 } } }
+    ]);
+    const map = {};
+    results.forEach(r => {
+        map[r._id.toString()] = { avg: Math.round(r.avg * 10) / 10, count: r.count };
+    });
+    return map;
 };
 
 export const getLandingProducts = async (req, res) => {
     try {
         const featuredProducts = await ProductService.getFeaturedProducts(10);
-        const productsData = featuredProducts.map(normalizeProduct);
+        const productIds = featuredProducts.map(p => toId(p));
+        const ratingMap = await batchGetRatings(productIds);
+        const productsData = featuredProducts.map(p => normalizeProduct(p, ratingMap));
 
         const activeCategories = await CategoryService.getActiveCategories(10);
         const categoriesData = activeCategories.map(normalizeCategory);
@@ -104,9 +131,13 @@ export const getLandingProducts = async (req, res) => {
 export const getShopProducts = async (req, res) => {
     try {
         const data = await ProductService.getShopData(req.query);
+        const products = data.products || [];
+        const productIds = products.map(p => toId(p));
+        const ratingMap = await batchGetRatings(productIds);
+        
         res.json({
             success: true,
-            products: (data.products || []).map(normalizeProduct),
+            products: products.map(p => normalizeProduct(p, ratingMap)),
             categories: (data.categories || []).map(normalizeCategory),
             totalProducts: data.totalProducts || 0,
             currentPage: data.currentPage || 1,

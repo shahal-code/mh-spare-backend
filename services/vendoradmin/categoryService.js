@@ -55,7 +55,7 @@ export const getCategoryById = async (id) => {
 
 // Create a new category.
 export const createCategory = async (categoryData) => {
-    const { name, description, thumbnail } = categoryData;
+    const { name, description, image, url_slug } = categoryData;
     
     if (!name || name.trim() === "") {
         throw new Error("Category name is required");
@@ -69,7 +69,8 @@ export const createCategory = async (categoryData) => {
     const newCategory = new Category({
         name,
         description,
-        thumbnail
+        image,
+        url_slug
     });
 
     return await newCategory.save();
@@ -77,7 +78,7 @@ export const createCategory = async (categoryData) => {
 
 // Update an existing category.
 export const updateCategory = async (id, updateData) => {
-    const { name, description, thumbnail } = updateData;
+    const { name, description, image, url_slug } = updateData;
 
     const category = await Category.findById(id);
     if (!category) {
@@ -93,7 +94,8 @@ export const updateCategory = async (id, updateData) => {
     }
 
     if (description) category.description = description;
-    if (thumbnail) category.thumbnail = thumbnail;
+    if (image) category.image = image;
+    if (url_slug) category.url_slug = url_slug;
 
     return await category.save();
 };

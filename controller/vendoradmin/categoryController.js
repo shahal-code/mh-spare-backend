@@ -40,11 +40,15 @@ export const category = async (req, res) => {
 
 export const createCategory = async (req, res) => {
   try {
-    const thumbnailPath = req.file ? `/uploads/categories/${req.file.filename}` : "";
+    const imagePath = req.file ? req.file.path : "";
     const categoryData = {
       ...req.body,
-      thumbnail: thumbnailPath
+      image: imagePath
     };
+    
+    if (!categoryData.url_slug && categoryData.name) {
+      categoryData.url_slug = categoryData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    }
     
     const newCategory = await CategoryService.createCategory(categoryData);
     res.status(201).json({ success: true, message: "Category created successfully", category: newCategory });
@@ -57,7 +61,7 @@ export const updateCategory = async (req, res) => {
   try {
     const updateData = { ...req.body };
     if (req.file) {
-      updateData.thumbnail = `/uploads/categories/${req.file.filename}`;
+      updateData.image = req.file.path;
     }
     
     const updatedCategory = await CategoryService.updateCategory(req.params.id, updateData);
