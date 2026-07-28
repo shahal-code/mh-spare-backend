@@ -53,6 +53,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static("public"));
 
+app.get("/", (req, res) => {
+  res.status(200).json({ success: true, message: "Welcome to MH-Spare API" });
+});
+
 app.use("/api", apiRoutes);
 
 app.use(preventCache);
