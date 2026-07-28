@@ -16,6 +16,7 @@ import * as NotificationApi from "../controller/vendoradmin/notificationControll
 import { uploadProduct } from "../config/productMulter.js";
 import { uploadCategory } from "../config/categoryMulter.js";
 import { uploadOffer } from "../config/offerMulter.js";
+import { uploadKyc } from "../config/kycMulter.js";
 
 const router = express.Router();
 
@@ -29,6 +30,7 @@ router.get("/session", AuthApi.session);
 // Current Vendor Profile Routes
 router.patch("/profile/phone", ProfileApi.updateOwnPhone);
 router.patch("/profile/password", ProfileApi.updateOwnPassword);
+router.post("/profile/kyc", uploadKyc.fields([{ name: "idProof", maxCount: 1 }, { name: "businessLicense", maxCount: 1 }]), ProfileApi.uploadKycDocuments);
 
 // Dashboard
 router.get("/dashboard", DashboardApi.dashboard);
@@ -59,6 +61,7 @@ router.get("/orders/returns", OrderApi.returns);
 router.get("/orders", OrderApi.orders);
 router.get("/orders/:orderId", OrderApi.order);
 router.post("/orders/update-status", OrderApi.updateOrderStatus);
+router.post("/orders/update-payment-status", OrderApi.updatePaymentStatus);
 router.post("/orders/update-item-status", OrderApi.updateOrderItemStatus);
 router.post("/orders/bulk/status", OrderApi.bulkUpdateStatus);
 router.patch("/orders/:id/tracking/:itemId", OrderApi.updateItemTracking);

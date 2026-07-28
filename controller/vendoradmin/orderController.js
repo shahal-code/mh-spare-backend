@@ -106,17 +106,6 @@ export const updateOrderItemStatus = async (req, res) => {
   }
 };
 
-export const updateStatus = async (req, res) => {
-  try {
-    const { status } = req.body;
-    const order = await OrderService.updateOrderStatus(req.params.id, status);
-    if (!order) return sendError(res, new Error("Order not found"), 404);
-    res.json({ success: true, message: `Order status updated to ${status}` });
-  } catch (error) {
-    sendError(res, error);
-  }
-};
-
 export const bulkUpdateStatus = async (req, res) => {
   try {
     const { orderIds, status } = req.body;
@@ -134,7 +123,18 @@ export const updateItemTracking = async (req, res) => {
   try {
     const { trackingNumber, courierName } = req.body;
     const order = await OrderService.updateOrderItemTracking(req.params.id, req.params.itemId, { trackingNumber, courierName });
-    res.json({ success: true, message: "Tracking info updated" });
+    res.json({ success: true, message: "Order status updated", order });
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+export const updatePaymentStatus = async (req, res) => {
+  try {
+    const { orderId, paymentStatus } = req.body;
+    if (!orderId || !paymentStatus) return res.status(400).json({ success: false, message: "Missing required fields" });
+    const order = await OrderService.updatePaymentStatus(orderId, paymentStatus);
+    res.json({ success: true, message: "Payment status updated", order });
   } catch (error) {
     sendError(res, error);
   }

@@ -16,7 +16,7 @@ import OfferService from "../../services/vendoradmin/offerService.js";
 import { addClient, removeClient } from "../../utils/sseManager.js";
 import * as ReportService from "../../services/vendoradmin/reportService.js";
 import ActivityLog from "../../models/activityLogModel.js";
-
+import Notification from "../../models/notificationModel.js";
 import Admin from "../../models/adminModel.js";
 
 const ADMIN_OFFER_TYPES = ["product", "category"];
@@ -61,10 +61,78 @@ export const updateOwnPassword = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     admin.password = await bcrypt.hash(newPassword, salt);
     await admin.save();
+
+    await ActivityLog.create({
+      adminId: admin._id,
+      role: admin.role,
+      action: "UPDATED_PROFILE",
+      details: "Updated password",
+      ipAddress: req.ip
+    });
     
     res.json({ success: true, message: "Password updated successfully." });
   } catch (err) {
     sendError(res, err);
+  }
+};
+
+export const uploadKycDocuments = async (req, res) => {
+  try {
+    const adminId = req.admin.id;
+    const admin = await Admin.findById(adminId);
+    
+    if (!admin) {
+      return res.status(404).json({ success: false, message: "Admin not found" });
+    }
+
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).json({ success: false, message: "No documents provided" });
+    }
+
+    if (!admin.kycDocuments) admin.kycDocuments = {};
+
+    if (req.files.idProof && req.files.idProof.length > 0) {
+      admin.kycDocuments.idProof = req.files.idProof[0].path;
+    }
+    
+    if (req.files.businessLicense && req.files.businessLicense.length > 0) {
+      admin.kycDocuments.businessLicense = req.files.businessLicense[0].path;
+    }
+
+    admin.kycStatus = 'pending';
+    await admin.save();
+
+    await ActivityLog.create({
+      adminId: admin._id,
+      role: admin.role,
+      action: "UPDATED_PROFILE",
+      details: "Uploaded KYC documents",
+      ipAddress: req.ip
+    });
+
+    const superAdmins = await Admin.find({ role: "owner" });
+    const notifications = superAdmins.map(sa => ({
+      adminId: sa._id,
+      title: "KYC Pending Review",
+      message: `Vendor ${admin.fullname || admin.storeDetails?.storeName || 'Unknown'} has uploaded KYC documents for review.`,
+      type: "warning",
+      link: `/superadmin/vendors/${admin._id}`
+    }));
+    
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
+    }
+
+    res.json({ 
+      success: true, 
+      message: "KYC documents uploaded successfully. Your status is now pending review.",
+      kycDocuments: admin.kycDocuments,
+      kycStatus: admin.kycStatus
+    });
+
+  } catch (error) {
+    console.error("Upload KYC error:", error);
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
 

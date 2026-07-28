@@ -234,6 +234,14 @@ export const updateOrderStatus = async (orderId, status) => {
     return order;
 };
 
+export const updatePaymentStatus = async (orderId, paymentStatus) => {
+    const order = await Order.findById(orderId);
+    if (!order) throw new Error("Order not found.");
+    order.paymentStatus = paymentStatus;
+    await order.save();
+    return order;
+};
+
 export const updateOrderItemStatus = async (orderId, itemId, status) => {
     const order = await Order.findById(orderId);
     if (!order) throw new Error("Order not found.");

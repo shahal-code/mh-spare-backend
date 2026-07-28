@@ -37,7 +37,13 @@ export const getDashboardStats = async (adminContext = null) => {
     const totalVendorEarnings = totalRevenueAggr.length > 0 ? totalRevenueAggr[0].totalVendorEarning : 0;
     
     const totalOrders = await Order.countDocuments(matchQuery);
-    const totalUsers = await User.countDocuments({});
+    let totalUsers = 0;
+    if (adminContext && adminContext.role !== 'owner') {
+      const distinctUsers = await Order.distinct('userId', matchQuery);
+      totalUsers = distinctUsers.length;
+    } else {
+      totalUsers = await User.countDocuments({});
+    }
     
     // Total products for vendor
     const productQuery = { is_blocked: false };

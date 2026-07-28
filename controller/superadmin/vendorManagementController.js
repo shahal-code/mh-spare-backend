@@ -1,5 +1,6 @@
 import { validateLogin } from "../../utils/validation.js";
-import { addClient, removeClient } from "../../utils/sseManager.js";
+import { addClient, removeClient, sendToClient } from "../../utils/sseManager.js";
+import Notification from "../../models/notificationModel.js";
 import * as VendorManagementService from "../../services/superadmin/vendorManagementService.js";
 
 const sendError = (res, error, status = 500) => {
@@ -95,7 +96,36 @@ export const updateVendorProfile = async (req, res) => {
 
 export const updateKycStatus = async (req, res) => {
   try {
-    const vendor = await VendorManagementService.updateKycStatus(req.params.id, req.body.kycStatus);
+    const kycStatus = req.body.kycStatus;
+    const vendor = await VendorManagementService.updateKycStatus(req.params.id, kycStatus);
+    
+    // Notify the vendor
+    let title = "";
+    let message = "";
+    let type = "info";
+    
+    if (kycStatus === "verified") {
+      title = "KYC Approved";
+      message = "Congratulations! Your KYC documents have been verified and approved.";
+      type = "success";
+    } else if (kycStatus === "unverified") {
+      title = "KYC Rejected";
+      message = "Your KYC documents were rejected. Please upload valid identity and business proofs.";
+      type = "danger";
+    }
+
+    if (title) {
+      const newNotification = await Notification.create({
+        adminId: vendor._id,
+        title,
+        message,
+        type,
+        link: "/admin/profile"
+      });
+      // Push via SSE
+      sendToClient(vendor._id, "new_notification", newNotification);
+    }
+
     res.json({ success: true, message: "KYC Status updated successfully.", vendor });
   } catch (error) {
     sendError(res, error, error.message.includes("not found") ? 404 : 500);

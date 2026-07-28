@@ -72,7 +72,9 @@ export const login = async (req, res) => {
         fullname: admin.fullname,
         email: admin.email,
         role: admin.role,
-        status: admin.status
+        status: admin.status,
+        kycStatus: admin.kycStatus,
+        kycDocuments: admin.kycDocuments
       }
     });
   } catch (error) {
@@ -95,7 +97,9 @@ export const session = async (req, res) => {
         email: req.admin.email,
         role: req.admin.role,
         status: req.admin.status,
-        storeDetails: req.admin.storeDetails
+        storeDetails: req.admin.storeDetails,
+        kycStatus: req.admin.kycStatus,
+        kycDocuments: req.admin.kycDocuments
       }
     });
   } catch (error) {

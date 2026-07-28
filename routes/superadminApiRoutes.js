@@ -95,6 +95,7 @@ router.get("/orders/returns", OrderApi.returns);
 router.get("/orders", OrderApi.orders);
 router.get("/orders/:orderId", OrderApi.order);
 router.post("/orders/update-status", OrderApi.updateOrderStatus);
+router.post("/orders/update-payment-status", OrderApi.updatePaymentStatus);
 router.post("/orders/update-item-status", OrderApi.updateOrderItemStatus);
 router.post("/orders/bulk/status", OrderApi.bulkUpdateStatus);
 router.patch("/orders/:id/tracking/:itemId", OrderApi.updateItemTracking);
