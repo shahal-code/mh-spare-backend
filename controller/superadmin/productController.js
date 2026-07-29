@@ -103,12 +103,12 @@ export const quickEditProduct = async (req, res) => {
 
 export const createProduct = async (req, res) => {
   try {
-    const uploadedImages = req.files?.images?.map((file) => file.path) || [];
+    const uploadedImages = req.files?.images?.map((file) => (file.location || file.path)) || [];
     const thumbnailFile = req.files?.thumbnail?.[0];
     const productData = {
       ...req.body,
       images: uploadedImages,
-      thumbnail: thumbnailFile?.path || uploadedImages[0] || req.body.thumbnail,
+      thumbnail: (thumbnailFile?.location || thumbnailFile?.path) || uploadedImages[0] || req.body.thumbnail,
       adminId: req.admin._id,
       approvalStatus: req.admin.role === 'owner' ? 'approved' : 'pending'
     };
@@ -132,12 +132,12 @@ export const createProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
   try {
-    const uploadedImages = req.files?.images?.map((file) => file.path) || [];
+    const uploadedImages = req.files?.images?.map((file) => (file.location || file.path)) || [];
     const thumbnailFile = req.files?.thumbnail?.[0];
     const product = await ProductService.updateProduct(req.params.id, {
       ...req.body,
       images: uploadedImages,
-      thumbnail: thumbnailFile?.path || uploadedImages[0] || req.body.thumbnail
+      thumbnail: (thumbnailFile?.location || thumbnailFile?.path) || uploadedImages[0] || req.body.thumbnail
     });
 
     if (req.admin.role === 'vendor') {

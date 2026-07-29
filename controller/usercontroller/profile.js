@@ -34,7 +34,7 @@ export const editProfile = async (req, res) => {
         const updateData = { fullname, phone };
 
         if (req.file) {
-            updateData.profileImage = req.file.path;
+            updateData.profileImage = (req.file.location || req.(file.location || file.path));
         }
 
         const updatedUser = await ProfileService.updateProfile(userId, updateData);

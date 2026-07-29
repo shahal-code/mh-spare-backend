@@ -1,13 +1,15 @@
-import { CloudinaryStorage } from "multer-storage-cloudinary";
-import cloudinary from "./cloudinary.js";
-import multer from "multer";
+import multerS3 from 'multer-s3';
+import s3 from './s3.js';
+import multer from 'multer';
 
-const storage = new CloudinaryStorage({
-    cloudinary,
-    params: {
-        folder: "techkart/products",
-        allowed_formats: ["jpg", "jpeg", "png", "webp", "avif"],
-    },
+const storage = multerS3({
+    s3: s3,
+    bucket: process.env.AWS_S3_BUCKET || 'techkart-bucket',
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'techkart/products/' + uniqueSuffix + '-' + file.originalname);
+    }
 });
 
 const fileFilter = (req, file, cb) => {
@@ -22,7 +24,5 @@ const fileFilter = (req, file, cb) => {
 export const uploadProduct = multer({ 
     storage,
     fileFilter,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
-    }
+    limits: { fileSize: 5 * 1024 * 1024 }
 });

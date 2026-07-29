@@ -1,24 +1,21 @@
+import multerS3 from 'multer-s3';
+import s3 from './s3.js';
 import multer from 'multer';
-import path from 'path';
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'public/brands');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
+const storage = multerS3({
+    s3: s3,
+    bucket: process.env.AWS_S3_BUCKET || 'techkart-bucket',
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'techkart/uploads/' + uniqueSuffix + '-' + file.originalname);
+    }
 });
 
-export const uploadBrand = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only images are allowed'));
-    }
-  }
+
+
+export const uploadBrand = multer({ 
+    storage,
+    
+    limits: { fileSize: 5 * 1024 * 1024 }
 });

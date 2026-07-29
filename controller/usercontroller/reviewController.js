@@ -31,7 +31,7 @@ export const addReview = async (req, res) => {
             product: productId,
             rating: Number(rating),
             comment: comment.trim(),
-            image: req.file ? req.file.path : null
+            image: req.file ? (req.file.location || req.(file.location || file.path)) : null
         });
 
         await review.save();

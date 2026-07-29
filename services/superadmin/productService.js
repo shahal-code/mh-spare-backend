@@ -213,7 +213,7 @@ export const addVariant = async (productId, data, files) => {
     
     let images = [];
     if (files && files.images) {
-        images = files.images.map(f => f.path);
+        images = files.images.map(f => (f.location || f.path));
     }
     
     const newVariant = {
@@ -254,7 +254,7 @@ export const updateVariant = async (productId, variantId, data, files) => {
     }
     
     if (files && files.images) {
-        const newImages = files.images.map(f => f.path);
+        const newImages = files.images.map(f => (f.location || f.path));
         currentImages = [...currentImages, ...newImages];
     }
     

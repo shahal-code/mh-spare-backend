@@ -40,7 +40,7 @@ export const category = async (req, res) => {
 
 export const createCategory = async (req, res) => {
   try {
-    const imagePath = req.file ? req.file.path : "";
+    const imagePath = req.file ? (req.file.location || req.(file.location || file.path)) : "";
     const categoryData = {
       ...req.body,
       image: imagePath
@@ -61,7 +61,7 @@ export const updateCategory = async (req, res) => {
   try {
     const updateData = { ...req.body };
     if (req.file) {
-      updateData.image = req.file.path;
+      updateData.image = (req.file.location || req.(file.location || file.path));
     }
     
     const updatedCategory = await CategoryService.updateCategory(req.params.id, updateData);
