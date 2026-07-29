@@ -53,6 +53,7 @@ export const validateLoginData = (data) => {
     const emailErr = validateEmail(email);
     if (emailErr) errors.push(emailErr);
 
+    // Only check presence — do NOT enforce complexity rules on login
     if (!password) errors.push("Password is required");
 
     return errors.length > 0 ? errors : null;
