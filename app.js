@@ -33,10 +33,13 @@ connectDB().then(async () => {
     console.log("Super Admin seeded: " + ownerEmail);
   }
 });
+const splitOrigins = (val, fallback) =>
+  (val || fallback).split(",").map(u => u.trim()).filter(Boolean);
+
 const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:5173",
-  process.env.VENDOR_URL || process.env.ADMIN_URL || "http://localhost:5174",
-  process.env.SUPERADMIN_URL || "http://localhost:5175"
+  ...splitOrigins(process.env.FRONTEND_URL, "http://localhost:5173"),
+  ...splitOrigins(process.env.VENDOR_URL || process.env.ADMIN_URL, "http://localhost:5174"),
+  ...splitOrigins(process.env.SUPERADMIN_URL, "http://localhost:5175"),
 ];
 app.use(cors({
   origin(origin, callback) {
