@@ -11,6 +11,7 @@ import * as ErrorHandler from "./middleware/errorHandler.js";
 import { userContext } from "./middleware/userAuth.js";
 import { preventCache } from "./middleware/commonMiddleware.js";
 import mongoSanitize from 'express-mongo-sanitize';
+import helmet from 'helmet';
 import { apiLimiter } from './middleware/rateLimiter.js';
 const app = express();
 import bcrypt from "bcryptjs";
@@ -61,6 +62,9 @@ app.use(cors({
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(mongoSanitize());
 app.use(express.static("public"));
 
