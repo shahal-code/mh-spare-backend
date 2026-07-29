@@ -15,27 +15,8 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { apiLimiter } from './middleware/rateLimiter.js';
 const app = express();
-import bcrypt from "bcryptjs";
-import Admin from "./models/adminModel.js";
 
-connectDB().then(async () => {
-  // Seed Super Admin if it doesn't exist
-  const ownerEmail = process.env.ADMIN_EMAIL || "admin@gmail.com";
-  const ownerPassword = process.env.ADMIN_PASSWORD || "12345";
-  const existingOwner = await Admin.findOne({ role: "owner" });
-  if (!existingOwner) {
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(ownerPassword, salt);
-    await Admin.create({
-      fullname: "Super Admin",
-      email: ownerEmail,
-      password: hashedPassword,
-      role: "owner",
-      status: "active"
-    });
-    console.log("Super Admin seeded: " + ownerEmail);
-  }
-});
+connectDB();
 const splitOrigins = (val, fallback) =>
   (val || fallback).split(",").map(u => u.trim()).filter(Boolean);
 
