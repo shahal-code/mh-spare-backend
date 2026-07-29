@@ -12,6 +12,7 @@ import { userContext } from "./middleware/userAuth.js";
 import { preventCache } from "./middleware/commonMiddleware.js";
 import mongoSanitize from 'express-mongo-sanitize';
 import helmet from 'helmet';
+import morgan from 'morgan';
 import { apiLimiter } from './middleware/rateLimiter.js';
 const app = express();
 import bcrypt from "bcryptjs";
@@ -59,6 +60,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
   credentials: true
 }));
+
+app.use(morgan('combined'));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
