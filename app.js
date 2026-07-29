@@ -10,8 +10,8 @@ import './config/passport.js';
 import * as ErrorHandler from "./middleware/errorHandler.js";
 import { userContext } from "./middleware/userAuth.js";
 import { preventCache } from "./middleware/commonMiddleware.js";
+import mongoSanitize from 'express-mongo-sanitize';
 const app = express();
-
 import bcrypt from "bcryptjs";
 import Admin from "./models/adminModel.js";
 
@@ -54,6 +54,7 @@ app.use(cors({
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(mongoSanitize());
 app.use(express.static("public"));
 
 app.get("/", (req, res) => {
