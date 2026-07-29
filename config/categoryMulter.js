@@ -4,11 +4,11 @@ import multer from 'multer';
 
 const storage = multerS3({
     s3: s3,
-    bucket: process.env.AWS_S3_BUCKET || 'esparehub-bucket',
+    bucket: process.env.AWS_S3_BUCKET || 'mhspare-admin-2026',
     contentType: multerS3.AUTO_CONTENT_TYPE,
     key: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'esparehub/categories/' + uniqueSuffix + '-' + file.originalname);
+        cb(null, 'categories/' + uniqueSuffix + '-' + file.originalname);
     }
 });
 
