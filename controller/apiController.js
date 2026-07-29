@@ -182,6 +182,9 @@ const getReviewSummary = async (productId) => {
 
 export const getProductDetails = async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ success: false, message: "Invalid product ID format" });
+        }
         const data = await ProductService.getProductDetails(req.params.id);
         if (!data?.product) {
             const productCheck = await ProductService.checkProductAvailability(req.params.id);
