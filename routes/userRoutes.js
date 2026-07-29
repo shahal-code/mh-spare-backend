@@ -3,6 +3,7 @@ import passport from "passport";
 import { upload } from "../config/multer.js";
 const router = express.Router();
 import * as userAuth from "../middleware/userAuth.js";
+import { authLimiter } from "../middleware/rateLimiter.js";
 router.use(userAuth.noCache);
 import * as usercontroller from "../controller/usercontroller/user.auth.js";
 import * as Profile from "../controller/usercontroller/profile.js";
@@ -15,12 +16,12 @@ import * as ReviewController from "../controller/usercontroller/reviewController
 
 
 // Authentication
-router.post('/login', userAuth.isAlreadyLoggedIn, usercontroller.login);
-router.post('/signup', userAuth.isAlreadyLoggedIn, usercontroller.signup);
-router.post('/otp', userAuth.isAlreadyLoggedIn, usercontroller.Verifyotp);
-router.post('/resend-otp', usercontroller.resendOTP);
-router.post('/forgot-password', userAuth.isAlreadyLoggedIn, usercontroller.fogotPassword);
-router.post('/reset-password', userAuth.isAlreadyLoggedIn, usercontroller.reset_Password);
+router.post('/login', authLimiter, userAuth.isAlreadyLoggedIn, usercontroller.login);
+router.post('/signup', authLimiter, userAuth.isAlreadyLoggedIn, usercontroller.signup);
+router.post('/otp', authLimiter, userAuth.isAlreadyLoggedIn, usercontroller.Verifyotp);
+router.post('/resend-otp', authLimiter, usercontroller.resendOTP);
+router.post('/forgot-password', authLimiter, userAuth.isAlreadyLoggedIn, usercontroller.fogotPassword);
+router.post('/reset-password', authLimiter, userAuth.isAlreadyLoggedIn, usercontroller.reset_Password);
 
 // Google OAuth
 router.get(

@@ -11,7 +11,7 @@ import * as ErrorHandler from "./middleware/errorHandler.js";
 import { userContext } from "./middleware/userAuth.js";
 import { preventCache } from "./middleware/commonMiddleware.js";
 import mongoSanitize from 'express-mongo-sanitize';
-import rateLimit from 'express-rate-limit';
+import { apiLimiter } from './middleware/rateLimiter.js';
 const app = express();
 import bcrypt from "bcryptjs";
 import Admin from "./models/adminModel.js";
@@ -66,14 +66,6 @@ app.use(express.static("public"));
 
 app.get("/", (req, res) => {
   res.status(200).json({ success: true, message: "Welcome to MH-Spare API" });
-});
-
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP
-  message: { success: false, message: 'Too many requests' },
-  standardHeaders: true,
-  legacyHeaders: false,
 });
 
 app.use("/api", apiLimiter, apiRoutes);

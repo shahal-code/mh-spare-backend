@@ -1,5 +1,6 @@
 import express from "express";
 import { verifyAdminJWT } from "../middleware/jwtMiddleware.js";
+import { authLimiter } from "../middleware/rateLimiter.js";
 
 // Import Modular Controllers
 import * as AuthApi from "../controller/superadmin/admin.auth.js";
@@ -20,8 +21,10 @@ import { uploadKyc } from "../config/kycMulter.js";
 
 const router = express.Router();
 
-// Auth (Using SuperAdmin auth for now, as they share the same adminModel)
-router.post("/login", AuthApi.login);
+// ========================
+// Authentication & Profile
+// ========================
+router.post("/login", authLimiter, AuthApi.login);
 router.post("/logout", AuthApi.logout);
 
 router.use(verifyAdminJWT);
