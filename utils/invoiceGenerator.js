@@ -6,7 +6,7 @@ export const generateInvoice = (res, order) => {
     // Header
     doc.fillColor("#0055ff")
        .fontSize(24)
-       .text("TECHKART", 50, 45)
+       .text("ESPAREHUB", 50, 45)
        .fillColor("#444444")
        .fontSize(10)
        .text("Tax Invoice / Bill of Supply", 200, 50, { align: "right" })
@@ -32,7 +32,7 @@ export const generateInvoice = (res, order) => {
     doc.fontSize(12).fillColor("#000")
        .text("Sold By:", 50, 120, { underline: true })
        .fontSize(10)
-       .text("TechKart E-commerce Solutions", 50, 135)
+       .text("ESpareHub E-commerce Solutions", 50, 135)
        .text("123 Tech Park, Silicon Valley", 50, 150)
        .text("Bangalore, KA, 560001", 50, 165)
        .text("GSTIN: 29AAAAA0000A1Z5", 50, 180);

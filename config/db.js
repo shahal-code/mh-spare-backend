@@ -10,7 +10,7 @@ const connectDB = async () => {
     mongoose.connection.on('error', (err) => console.error('MongoDB connection error:', err));
     mongoose.connection.on('disconnected', () => console.warn('MongoDB disconnected'));
 
-    await mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/techkart")
+    await mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/esparehub")
     console.log("MongoDB Connected Successfully!")
 
     // Seed Super Admin if it doesn't exist

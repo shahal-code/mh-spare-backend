@@ -16,7 +16,7 @@ const generateReferralCode = async () => {
     let exists = true;
     while (exists) {
         const random = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-        code = `TECHKART${random}`;
+        code = `ESPAREHUB${random}`;
         exists = await User.exists({ referralCode: code });
     }
     return code;

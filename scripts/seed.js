@@ -6,7 +6,7 @@ import Admin from "../models/adminModel.js";
 
 const seedDatabase = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/techkart");
+        await mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/esparehub");
         console.log("MongoDB Connected for Seeding");
 
         // 1. Get Super Admin
