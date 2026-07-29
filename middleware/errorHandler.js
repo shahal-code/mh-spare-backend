@@ -13,9 +13,14 @@ export const globalErrorHandler = (err, req, res, next) => {
 
     console.error("Error Caught:", err.message);
 
-    res.status(statusCode).json({
+    const errorResponse = {
         success: false,
-        message: process.env.NODE_ENV === 'production' ? "Request failed" : err.message,
-        stack: process.env.NODE_ENV === 'production' ? null : err.stack
-    });
+        message: err.message || 'Internal Server Error'
+    };
+    
+    if (process.env.NODE_ENV === 'development') {
+        errorResponse.stack = err.stack;
+    }
+
+    res.status(statusCode).json(errorResponse);
 };
