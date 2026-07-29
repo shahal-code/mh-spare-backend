@@ -4,8 +4,11 @@ import * as ReviewController from "../controller/usercontroller/reviewController
 import * as userAuth from "../middleware/userAuth.js";
 
 import { upload } from "../config/multer.js";
+import { apiAuth } from "../middleware/apiAuth.js";
 
 const router = express.Router();
+
+router.use(apiAuth);
 
 router.get("/products", apiController.getLandingProducts);
 router.get("/shop", apiController.getShopProducts);
