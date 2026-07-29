@@ -43,6 +43,9 @@ const allowedOrigins = [
   ...splitOrigins(process.env.FRONTEND_URL, "http://localhost:5173"),
   ...splitOrigins(process.env.VENDOR_URL || process.env.ADMIN_URL, "http://localhost:5174"),
   ...splitOrigins(process.env.SUPERADMIN_URL, "http://localhost:5175"),
+  "https://mhsparehub.shop",
+  "https://vendor.mhsparehub.shop",
+  "https://superadmin.mhsparehub.shop"
 ];
 app.use(cors({
   origin(origin, callback) {
