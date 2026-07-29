@@ -18,6 +18,10 @@ import * as NotificationApi from "../controller/superadmin/notificationControlle
 import * as PayoutApi from "../controller/superadmin/payoutController.js";
 import * as ReviewApi from "../controller/superadmin/reviewController.js";
 
+// Validation Middleware
+import { validateRequest } from "../middleware/validationMiddleware.js";
+import { validateProductId, validateProductBody, validateVariantParams } from "../middleware/productValidation.js";
+
 // Config
 import { uploadProduct } from "../config/productMulter.js";
 import { uploadCategory } from "../config/categoryMulter.js";
@@ -80,18 +84,18 @@ router.delete("/categories/:id", CategoryApi.deleteCategory);
 router.get("/products/options", ProductApi.productOptions);
 router.get("/products", ProductApi.products);
 router.patch("/products/bulk-approval", enforceOwner, ProductApi.bulkApproveProducts);
-router.get("/products/:id", ProductApi.product);
-router.post("/products", uploadProduct.fields([{ name: "thumbnail", maxCount: 1 }, { name: "images", maxCount: 5 }]), ProductApi.createProduct);
-router.put("/products/:id", uploadProduct.fields([{ name: "thumbnail", maxCount: 1 }, { name: "images", maxCount: 5 }]), ProductApi.updateProduct);
-router.patch("/products/:id/toggle", ProductApi.toggleProduct);
-router.patch("/products/:id/quick-edit", ProductApi.quickEditProduct);
+router.get("/products/:id", validateProductId, validateRequest, ProductApi.product);
+router.post("/products", uploadProduct.fields([{ name: "thumbnail", maxCount: 1 }, { name: "images", maxCount: 5 }]), validateProductBody, validateRequest, ProductApi.createProduct);
+router.put("/products/:id", validateProductId, validateRequest, uploadProduct.fields([{ name: "thumbnail", maxCount: 1 }, { name: "images", maxCount: 5 }]), validateProductBody, validateRequest, ProductApi.updateProduct);
+router.patch("/products/:id/toggle", validateProductId, validateRequest, ProductApi.toggleProduct);
+router.patch("/products/:id/quick-edit", validateProductId, validateRequest, ProductApi.quickEditProduct);
 router.post("/products/bulk/toggle", ProductApi.bulkToggleProducts);
 router.post("/products/bulk/delete", ProductApi.bulkDeleteProducts);
-router.patch("/products/:id/approval", enforceOwner, ProductApi.updateProductApproval);
-router.delete("/products/:id", ProductApi.deleteProduct);
-router.post("/products/:id/variants", uploadProduct.array("images", 5), ProductApi.createVariant);
-router.put("/products/:id/variants/:variantId", uploadProduct.array("images", 5), ProductApi.updateVariant);
-router.delete("/products/:id/variants/:variantId", ProductApi.deleteVariant);
+router.patch("/products/:id/approval", enforceOwner, validateProductId, validateRequest, ProductApi.updateProductApproval);
+router.delete("/products/:id", validateProductId, validateRequest, ProductApi.deleteProduct);
+router.post("/products/:id/variants", validateProductId, validateRequest, uploadProduct.array("images", 5), ProductApi.createVariant);
+router.put("/products/:id/variants/:variantId", validateVariantParams, validateRequest, uploadProduct.array("images", 5), ProductApi.updateVariant);
+router.delete("/products/:id/variants/:variantId", validateVariantParams, validateRequest, ProductApi.deleteVariant);
 
 // Orders
 router.get("/orders/returns", OrderApi.returns);
