@@ -43,12 +43,18 @@ const allowedOrigins = [
 ];
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.devtunnels.ms') || origin.endsWith('.vercel.app')) {
+    if (!origin) return callback(null, true); // Allow non-browser requests
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true); // Allow all in dev
+    }
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     console.error("CORS Blocked Origin:", origin);
     return callback(new Error("Not allowed by CORS"));
   },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
   credentials: true
 }));
 
