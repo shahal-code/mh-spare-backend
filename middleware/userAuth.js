@@ -28,8 +28,10 @@ export const isAuthenticated = async (req, res, next) => {
         res.locals.user = user;
         req.user = user;
         return next();
+      } else if (user && user.isBlocked) {
+        return res.status(403).json({ success: false, isBlocked: true, message: 'Your account has been blocked by an administrator' });
       } else {
-        return res.status(403).json({ success: false, message: 'Account blocked by administrator' });
+        return res.status(401).json({ success: false, message: 'Authentication failed' });
       }
     } catch (error) {
       console.error("Middleware Error:", error);
@@ -61,7 +63,7 @@ export const isBlocked = async (req, res, next) => {
     try {
       const user = await User.findById(userId);
       if (user && user.isBlocked) {
-        return res.status(403).json({ success: false, message: 'Account blocked' });
+        return res.status(403).json({ success: false, isBlocked: true, message: 'Your account has been blocked by an administrator' });
       }
     } catch (error) {
       console.error(error);
