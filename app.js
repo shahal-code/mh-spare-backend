@@ -17,32 +17,73 @@ import { apiLimiter } from './middleware/rateLimiter.js';
 const app = express();
 
 connectDB();
-const splitOrigins = (val, fallback) =>
+const splitOrigins = (val, fallback = "") =>
   (val || fallback).split(",").map(u => u.trim()).filter(Boolean);
 
-const allowedOrigins = [
+const getDomainVariants = (urlStr) => {
+  if (!urlStr) return [];
+  try {
+    const url = new URL(urlStr);
+    const origin = url.origin;
+    const hostname = url.hostname;
+    if (hostname.startsWith("www.")) {
+      const nonWwwHost = hostname.slice(4);
+      return [origin, `${url.protocol}//${nonWwwHost}${url.port ? ':' + url.port : ''}`];
+    } else if (hostname !== "localhost" && !hostname.match(/^127\./)) {
+      return [origin, `${url.protocol}//www.${hostname}${url.port ? ':' + url.port : ''}`];
+    }
+    return [origin];
+  } catch (e) {
+    return [urlStr];
+  }
+};
+
+const rawOrigins = [
   ...splitOrigins(process.env.FRONTEND_URL, "http://localhost:5173"),
   ...splitOrigins(process.env.VENDOR_URL || process.env.ADMIN_URL, "http://localhost:5174"),
   ...splitOrigins(process.env.SUPERADMIN_URL, "http://localhost:5175"),
+  "https://esparehub.shop",
+  "https://www.esparehub.shop",
+  "https://backendapi.esparehub.shop",
+  "https://vendor.esparehub.shop",
+  "https://admin.esparehub.shop",
+  "https://superadmin.esparehub.shop",
   "https://mhsparehub.shop",
+  "https://www.mhsparehub.shop",
   "https://vendor.mhsparehub.shop",
   "https://superadmin.mhsparehub.shop"
 ];
+
+const allowedOriginsSet = new Set(rawOrigins.flatMap(getDomainVariants));
+
+const isOriginAllowed = (origin) => {
+  if (allowedOriginsSet.has(origin)) return true;
+  try {
+    const hostname = new URL(origin).hostname;
+    if (hostname.endsWith(".esparehub.shop") || hostname === "esparehub.shop") return true;
+    if (hostname.endsWith(".mhsparehub.shop") || hostname === "mhsparehub.shop") return true;
+  } catch (e) {
+    // Ignore URL parse error
+  }
+  return false;
+};
+
 app.use(cors({
   origin(origin, callback) {
     if (!origin) return callback(null, true); // Allow non-browser requests
     if (process.env.NODE_ENV !== 'production') {
-      return callback(null, true); // Allow all in dev
+      return callback(null, true); // Allow all in development
     }
-    if (allowedOrigins.includes(origin)) {
+    if (isOriginAllowed(origin)) {
       return callback(null, true);
     }
     console.error("CORS Blocked Origin:", origin);
-    return callback(new Error("Not allowed by CORS"));
+    return callback(null, false);
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
-  credentials: true
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 
 app.use(morgan('combined'));
