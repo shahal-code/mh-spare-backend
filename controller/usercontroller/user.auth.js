@@ -26,9 +26,12 @@ export const login = async (req, res) => {
         const user = await AuthService.login(email, password);
         const token = createToken({ id: user._id, type: "user" }, "24h");
         
-        res.status(200).json({ success: true, message: "Login successful", token, user: { id: user._id, fullname: user.fullname, email: user.email, isGoogleAuth: !!user.googleId } });
+        res.status(200).json({ success: true, message: "Login successful", token, user: { id: user._id, fullname: user.fullname, email: user.email, isBlocked: user.isBlocked, isGoogleAuth: !!user.googleId } });
     } catch (error) {
         console.error("Login Error:", error.message);
+        if (error.isBlocked || error.message.toLowerCase().includes("blocked")) {
+            return res.status(403).json({ success: false, isBlocked: true, message: error.message });
+        }
         res.status(401).json({ success: false, message: error.message });
     }
 };

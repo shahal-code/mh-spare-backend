@@ -50,6 +50,12 @@ export const login = async (email, password) => {
     const user = await User.findOne({ email });
     if (!user) throw new Error("User not found");
 
+    if (user.isBlocked) {
+        const err = new Error("Your account has been blocked by an administrator");
+        err.isBlocked = true;
+        throw err;
+    }
+
     if (!user.password) {
         throw new Error("This account was created with Google. Please use 'Sign in with Google'.");
     }
