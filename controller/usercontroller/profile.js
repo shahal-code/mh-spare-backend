@@ -144,8 +144,9 @@ export const sendChangeEmailLink = async (req, res) => {
 
         const changeEmailLinkToken = createToken({ type: "change_email_link", newEmail, userId }, "15m");
 
-        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-        const verificationLink = `${frontendUrl}/profile/change-email/verify?token=${changeEmailLinkToken}`;
+        const rawFrontend = process.env.FRONTEND_URL || "https://esparehub.shop";
+        const frontendUrl = rawFrontend.split(",")[0].trim().replace(/\/$/, "");
+        const verificationLink = `${frontendUrl}/user/profile/change-email/verify?token=${changeEmailLinkToken}`;
 
         await sendVerificationLink(newEmail, verificationLink);
 

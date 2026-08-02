@@ -252,7 +252,7 @@ export const sendVendorOrderEmail = async (vendorEmail, vendorName, order, items
 
                     <!-- CTA -->
                     <div style="padding: 0 28px 32px; text-align: center;">
-                        <a href="${process.env.ADMIN_URL || 'http://localhost:5174'}/vendor/orders" style="display: inline-block; background: linear-gradient(135deg, #0657f9 0%, #0040c1 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 14px 36px; border-radius: 12px; box-shadow: 0 4px 20px rgba(6, 87, 249, 0.35);">View Order in Dashboard →</a>
+                        <a href="${(process.env.ADMIN_URL || 'http://localhost:5174').split(',')[0].trim().replace(/\/$/, '')}/vendor/orders" style="display: inline-block; background: linear-gradient(135deg, #0657f9 0%, #0040c1 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 14px 36px; border-radius: 12px; box-shadow: 0 4px 20px rgba(6, 87, 249, 0.35);">View Order in Dashboard →</a>
                         <p style="margin: 16px 0 0; font-size: 13px; color: #52525b;">Please process this order promptly to ensure customer satisfaction.</p>
                     </div>
 
@@ -392,7 +392,7 @@ export const sendUserOrderStatusEmail = async (userEmail, userName, order, newSt
 
                     <!-- CTA -->
                     <div style="padding: 0 28px 32px; text-align: center;">
-                        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/user/orders" style="display: inline-block; background: linear-gradient(135deg, ${cfg.color} 0%, ${cfg.color}cc 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 13px 32px; border-radius: 12px; box-shadow: 0 4px 20px ${cfg.color}44;">Track My Order →</a>
+                        <a href="${(process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0].trim().replace(/\/$/, '')}/user/orders" style="display: inline-block; background: linear-gradient(135deg, ${cfg.color} 0%, ${cfg.color}cc 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 13px 32px; border-radius: 12px; box-shadow: 0 4px 20px ${cfg.color}44;">Track My Order →</a>
                     </div>
 
                     <!-- Footer -->
