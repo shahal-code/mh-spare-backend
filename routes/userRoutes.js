@@ -89,7 +89,9 @@ router.get('/profile', userAuth.isAuthenticated, userAuth.isBlocked, Profile.get
 router.put('/profile/edit', userAuth.isAuthenticated, userAuth.isBlocked, upload.single("avatar"), Profile.editProfile);
 router.post('/profile/change-password', userAuth.isAuthenticated, userAuth.isBlocked, Profile.changePassword);
 router.post('/profile/change-email/request-otp', userAuth.isAuthenticated, userAuth.isBlocked, Profile.requestChangeEmailOtp);
+router.post('/profile/change-email-otp', userAuth.isAuthenticated, userAuth.isBlocked, Profile.requestChangeEmailOtp);
 router.post('/profile/change-email/verify-otp', userAuth.isAuthenticated, userAuth.isBlocked, Profile.verifyChangeEmailOtp);
+router.post('/profile/verify-email-otp', userAuth.isAuthenticated, userAuth.isBlocked, Profile.verifyChangeEmailOtp);
 router.post('/profile/change-email', userAuth.isAuthenticated, userAuth.isBlocked, Profile.sendChangeEmailLink);
 router.post('/profile/change-email/verify', Profile.verifyChangeEmailLink);
 // Address
