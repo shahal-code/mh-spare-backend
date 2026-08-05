@@ -10,6 +10,10 @@ export const register = async (req, res) => {
   try {
     const { fullname, email, password, storeDetails } = req.body;
 
+    if (!email || !email.toLowerCase().trim().endsWith("@gmail.com")) {
+      return res.status(400).json({ message: "Only @gmail.com email addresses are allowed." });
+    }
+
     // Check if email exists
     const existingAdmin = await Admin.findOne({ email });
     if (existingAdmin) {

@@ -21,6 +21,10 @@ passport.use(
           return done(new Error("No email found from Google"), null);
         }
 
+        if (!email.toLowerCase().trim().endsWith("@gmail.com")) {
+          return done(new Error("Only @gmail.com email accounts are allowed"), null);
+        }
+
         //  Get HD profile image
         let image = profile.photos?.[0]?.value || "";
 

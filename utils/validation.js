@@ -2,6 +2,9 @@ export const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email) return "Email is required";
     if (!emailRegex.test(email)) return "Invalid email format";
+    if (!email.toLowerCase().trim().endsWith("@gmail.com")) {
+        return "Only @gmail.com email addresses are allowed";
+    }
     return null;
 };
 

@@ -9,6 +9,9 @@ export const createVendor = async (data) => {
   if (!fullname || !email || !password || !storeName) {
     throw new Error("Full name, email, password, and store name are required.");
   }
+  if (!email.toLowerCase().trim().endsWith("@gmail.com")) {
+    throw new Error("Only @gmail.com email addresses are allowed for vendor accounts.");
+  }
   if (password.length < 8) {
     throw new Error("Password must be at least 8 characters.");
   }
