@@ -5,8 +5,8 @@ const authMaxAttempts = parseInt(process.env.AUTH_LOCKOUT_MAX_ATTEMPTS || '10', 
 
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP
-  message: { success: false, message: 'Too many requests' },
+  max: 3000, // allow storefront browsing and live updates
+  message: { success: false, message: 'Too many requests, please slow down' },
   standardHeaders: true,
   legacyHeaders: false,
 });
