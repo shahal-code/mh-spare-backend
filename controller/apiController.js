@@ -65,6 +65,15 @@ const normalizeProduct = (product, ratingMap = {}) => {
     const productId = toId(product);
     const ratingData = ratingMap[productId] || {};
 
+    const isUnavailable = Boolean(
+        product.isUnavailable ||
+        product.is_blocked === true ||
+        product.is_unlisted === true ||
+        (product.approvalStatus && product.approvalStatus !== 'approved') ||
+        (product.category_id && product.category_id.is_blocked === true) ||
+        (product.adminId && product.adminId.status === 'blocked')
+    );
+
     return {
         id: productId,
         _id: productId,
@@ -77,7 +86,7 @@ const normalizeProduct = (product, ratingMap = {}) => {
         highlights: Array.isArray(product.highlights) ? product.highlights : [],
         specifications: product.specifications || {},
         material: product.material || "",
-        inStock,
+        inStock: isUnavailable ? false : inStock,
         price,
         originalPrice,
         variantId: toId(variant),
@@ -85,11 +94,15 @@ const normalizeProduct = (product, ratingMap = {}) => {
         categoryName: category.name,
         categoryData: category,
         variants,
-        popular: inStock,
+        popular: isUnavailable ? false : inStock,
         createdAt: product.createdAt || null,
         offer: product.offer || null,
         averageRating: ratingData.avg || 0,
-        totalRatings: ratingData.count || 0
+        totalRatings: ratingData.count || 0,
+        isUnavailable,
+        is_blocked: Boolean(product.is_blocked),
+        is_unlisted: Boolean(product.is_unlisted),
+        approvalStatus: product.approvalStatus || 'approved'
     };
 };
 
