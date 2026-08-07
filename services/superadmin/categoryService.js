@@ -8,6 +8,7 @@ export const getCategoryOptions = async () => {
 
 export const getAllCategories = async (query, page, limit) => {
     const categories = await Category.find(query)
+        .populate("createdBy", "fullname email role")
         .sort({ created_at: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
@@ -50,11 +51,11 @@ export const getCategoryStats = async () => {
 
 // Get category by ID.
 export const getCategoryById = async (id) => {
-    return await Category.findById(id);
+    return await Category.findById(id).populate("createdBy", "fullname email role");
 };
 
 // Create a new category.
-export const createCategory = async (categoryData) => {
+export const createCategory = async (categoryData, adminUser = null) => {
     const { name, description, image, url_slug } = categoryData;
     
     if (!name || name.trim() === "") {
@@ -70,19 +71,27 @@ export const createCategory = async (categoryData) => {
         name,
         description,
         image,
-        url_slug
+        url_slug,
+        createdBy: adminUser?._id || categoryData.createdBy || null
     });
 
     return await newCategory.save();
 };
 
 // Update an existing category.
-export const updateCategory = async (id, updateData) => {
+export const updateCategory = async (id, updateData, adminUser = null) => {
     const { name, description, image, url_slug } = updateData;
 
     const category = await Category.findById(id);
     if (!category) {
         throw new Error("Category not found");
+    }
+
+    // Permission check for non-owners: Cannot update categories created by others
+    if (adminUser && adminUser.role !== 'owner') {
+        if (category.createdBy && category.createdBy.toString() !== adminUser._id.toString()) {
+            throw new Error("Permission denied. You can only update categories created by your account.");
+        }
     }
 
     if (name) {
@@ -101,10 +110,17 @@ export const updateCategory = async (id, updateData) => {
 };
 
 // Toggle category block status.
-export const toggleCategoryStatus = async (id) => {
+export const toggleCategoryStatus = async (id, adminUser = null) => {
     const category = await Category.findById(id);
     if (!category) {
         throw new Error("Category not found");
+    }
+
+    // Permission check for non-owners
+    if (adminUser && adminUser.role !== 'owner') {
+        if (category.createdBy && category.createdBy.toString() !== adminUser._id.toString()) {
+            throw new Error("Permission denied. You can only toggle categories created by your account.");
+        }
     }
     
     category.is_blocked = !category.is_blocked;
@@ -112,16 +128,25 @@ export const toggleCategoryStatus = async (id) => {
 };
 
 // Delete a category.
-export const deleteCategory = async (id) => {
-    const productsUsingCategory = await Product.findOne({ category_id: id });
-    if (productsUsingCategory) {
-        throw new Error("Cannot delete category. It is being used by one or more products.");
-    }
-    
-    const category = await Category.findByIdAndDelete(id);
+export const deleteCategory = async (id, adminUser = null) => {
+    const category = await Category.findById(id);
     if (!category) {
         throw new Error("Category not found");
     }
+
+    // Permission check for non-owners: Cannot delete categories created by others
+    if (adminUser && adminUser.role !== 'owner') {
+        if (category.createdBy && category.createdBy.toString() !== adminUser._id.toString()) {
+            throw new Error("Permission denied. You can only delete categories created by your account.");
+        }
+    }
+
+    // In-Use Category Protection: Cannot delete if linked to products
+    const productCount = await Product.countDocuments({ category_id: id });
+    if (productCount > 0) {
+        throw new Error(`Cannot delete category "${category.name}". It is currently linked to ${productCount} active product(s). Please reassign or delete those products first.`);
+    }
     
+    await Category.findByIdAndDelete(id);
     return category;
 };

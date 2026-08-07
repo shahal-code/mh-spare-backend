@@ -2,8 +2,8 @@ import * as reviewService from "../../services/superadmin/reviewService.js";
 
 export const getReviews = async (req, res, next) => {
   try {
-    const { page, limit, search, status } = req.query;
-    const data = await reviewService.getReviews(page, limit, search, status);
+    const { page, limit, search, status, rating } = req.query;
+    const data = await reviewService.getReviews(page, limit, search, status, rating);
     res.status(200).json({ success: true, ...data });
   } catch (error) {
     next(error);

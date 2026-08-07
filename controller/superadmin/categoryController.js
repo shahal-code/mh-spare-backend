@@ -50,7 +50,7 @@ export const createCategory = async (req, res) => {
       categoryData.url_slug = categoryData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
     }
     
-    const newCategory = await CategoryService.createCategory(categoryData);
+    const newCategory = await CategoryService.createCategory(categoryData, req.admin);
     res.status(201).json({ success: true, message: "Category created successfully", category: newCategory });
   } catch (error) {
     sendError(res, error, 400);
@@ -64,7 +64,7 @@ export const updateCategory = async (req, res) => {
       updateData.image = (req.file.location || req.file.path);
     }
     
-    const updatedCategory = await CategoryService.updateCategory(req.params.id, updateData);
+    const updatedCategory = await CategoryService.updateCategory(req.params.id, updateData, req.admin);
     res.json({ success: true, message: "Category updated successfully", category: updatedCategory });
   } catch (error) {
     sendError(res, error, 400);
@@ -73,16 +73,16 @@ export const updateCategory = async (req, res) => {
 
 export const toggleCategory = async (req, res) => {
   try {
-    const category = await CategoryService.toggleCategoryStatus(req.params.id);
+    const category = await CategoryService.toggleCategoryStatus(req.params.id, req.admin);
     res.json({ success: true, category, is_blocked: category.is_blocked });
   } catch (error) {
-    sendError(res, error, 404);
+    sendError(res, error, 400);
   }
 };
 
 export const deleteCategory = async (req, res) => {
   try {
-    await CategoryService.deleteCategory(req.params.id);
+    await CategoryService.deleteCategory(req.params.id, req.admin);
     res.json({ success: true, message: "Category deleted successfully" });
   } catch (error) {
     sendError(res, error, 400);

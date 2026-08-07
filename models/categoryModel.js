@@ -12,7 +12,7 @@ const categorySchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    url_slug: { // URL slug based on your design
+    url_slug: { // URL slug based on design
       type: String,
       required: true,
       unique: true,
@@ -23,7 +23,12 @@ const categorySchema = new mongoose.Schema(
       type: String,
       required: false
     },
-    is_blocked: { // Soft-delete flag
+    createdBy: { // Admin / Vendor who created this category
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin',
+      required: false
+    },
+    is_blocked: { // Soft-delete / block flag
       type: Boolean,
       default: false,
     },

@@ -1,6 +1,7 @@
 import * as ProductService from "../../services/vendoradmin/productService.js";
 import ActivityLog from "../../models/activityLogModel.js";
 import * as NotificationService from "../../services/vendoradmin/notificationService.js";
+import Product from "../../models/productModel.js";
 
 const sendError = (res, error, status = 500) => {
   const message = error?.message || "Internal Server Error";
@@ -94,7 +95,51 @@ export const bulkApproveProducts = async (req, res) => {
 
 export const bulkDeleteProducts = async (req, res) => {
   try {
+    const { productIds, selectAll, search, statusFilter, stockLevelFilter } = req.body;
+    let query = {};
+    if (selectAll) {
+      if (search) query.name = { $regex: search, $options: "i" };
+      if (statusFilter && statusFilter !== 'all') {
+        if (statusFilter === 'blocked') query.is_blocked = true;
+        else if (statusFilter === 'active') query.is_blocked = false;
+        else query.approvalStatus = statusFilter;
+      }
+      if (stockLevelFilter && stockLevelFilter !== 'all') {
+        if (stockLevelFilter === 'out_of_stock') query['variants.0.stock'] = { $lte: 0 };
+        else if (stockLevelFilter === 'low_stock') query['variants.0.stock'] = { $gt: 0, $lte: 10 };
+        else if (stockLevelFilter === 'in_stock') query['variants.0.stock'] = { $gt: 10 };
+      }
+      if (req.admin.role !== "owner") query.adminId = req.admin._id;
+    } else {
+      if (productIds && Array.isArray(productIds) && productIds.length > 0) {
+        query._id = { $in: productIds };
+      }
+    }
+
+    const productsToDelete = await Product.find(query).select("name").lean();
     await ProductService.bulkDeleteProducts(req.body, req.admin);
+
+    if (req.admin.role !== 'owner' && productsToDelete.length > 0) {
+      const names = productsToDelete.map(p => p.name);
+      let message = "";
+      let title = "Product Deleted";
+
+      if (names.length === 1) {
+        title = "Product Deleted";
+        message = `Vendor deleted product: ${names[0]}`;
+      } else {
+        title = "Products Deleted";
+        const displayNames = names.length <= 3 ? names.join(", ") : `${names.slice(0, 3).join(", ")} +${names.length - 3} more`;
+        message = `Vendor deleted ${names.length} products: ${displayNames}`;
+      }
+
+      await NotificationService.notifySuperAdmins(
+        title,
+        message,
+        'product',
+        '/superadmin/products'
+      );
+    }
     res.json({ success: true, message: "Products deleted successfully" });
   } catch (error) {
     sendError(res, error, 400);
@@ -104,7 +149,52 @@ export const bulkDeleteProducts = async (req, res) => {
 export const bulkToggleProducts = async (req, res) => {
   try {
     const isBlocked = req.body.action === 'block';
+    const { productIds, selectAll, search, statusFilter, stockLevelFilter } = req.body;
+    let query = {};
+    if (selectAll) {
+      if (search) query.name = { $regex: search, $options: "i" };
+      if (statusFilter && statusFilter !== 'all') {
+        if (statusFilter === 'blocked') query.is_blocked = true;
+        else if (statusFilter === 'active') query.is_blocked = false;
+        else query.approvalStatus = statusFilter;
+      }
+      if (stockLevelFilter && stockLevelFilter !== 'all') {
+        if (stockLevelFilter === 'out_of_stock') query['variants.0.stock'] = { $lte: 0 };
+        else if (stockLevelFilter === 'low_stock') query['variants.0.stock'] = { $gt: 0, $lte: 10 };
+        else if (stockLevelFilter === 'in_stock') query['variants.0.stock'] = { $gt: 10 };
+      }
+      if (req.admin.role !== "owner") query.adminId = req.admin._id;
+    } else {
+      if (productIds && Array.isArray(productIds) && productIds.length > 0) {
+        query._id = { $in: productIds };
+      }
+    }
+
+    const productsToToggle = await Product.find(query).select("name").lean();
     await ProductService.bulkToggleProducts(req.body, isBlocked, req.admin);
+
+    if (req.admin.role !== 'owner' && productsToToggle.length > 0) {
+      const actionText = isBlocked ? 'blocked' : 'unblocked';
+      const names = productsToToggle.map(p => p.name);
+      
+      let message = "";
+      let title = `Product ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}`;
+
+      if (names.length === 1) {
+        message = `Vendor ${actionText} product: ${names[0]}`;
+      } else {
+        title = `Products ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}`;
+        const displayNames = names.length <= 3 ? names.join(", ") : `${names.slice(0, 3).join(", ")} +${names.length - 3} more`;
+        message = `Vendor ${actionText} ${names.length} products: ${displayNames}`;
+      }
+
+      await NotificationService.notifySuperAdmins(
+        title,
+        message,
+        'product',
+        '/superadmin/products'
+      );
+    }
     res.json({ success: true, message: `Products ${isBlocked ? 'blocked' : 'unblocked'} successfully` });
   } catch (error) {
     sendError(res, error, 400);
@@ -143,7 +233,7 @@ export const createProduct = async (req, res) => {
     };
     const product = await ProductService.createProduct(productData);
     
-    if (req.admin.role === 'vendor') {
+    if (req.admin.role !== 'owner') {
       await ActivityLog.create({
         adminId: req.admin._id,
         role: 'vendor',
@@ -169,7 +259,7 @@ export const updateProduct = async (req, res) => {
       thumbnail: (thumbnailFile?.location || thumbnailFile?.path) || uploadedImages[0] || req.body.thumbnail
     });
 
-    if (req.admin.role === 'vendor') {
+    if (req.admin.role !== 'owner') {
       await NotificationService.notifySuperAdmins('Product Updated', `Vendor updated product: ${product.name}`, 'product', `/superadmin/products`);
     }
 
@@ -182,6 +272,15 @@ export const updateProduct = async (req, res) => {
 export const toggleProduct = async (req, res) => {
   try {
     const product = await ProductService.toggleProductStatus(req.params.id);
+    if (req.admin.role !== 'owner') {
+      const statusText = product.is_blocked ? 'blocked' : 'unblocked';
+      await NotificationService.notifySuperAdmins(
+        `Product ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}`,
+        `Vendor ${statusText} product: ${product.name}`,
+        'product',
+        `/superadmin/products`
+      );
+    }
     res.json({ success: true, product, is_blocked: product.is_blocked });
   } catch (error) {
     sendError(res, error);
@@ -203,7 +302,16 @@ export const updateProductApproval = async (req, res) => {
 
 export const deleteProduct = async (req, res) => {
   try {
+    const productToDelete = await ProductService.getProductById(req.params.id);
     await ProductService.deleteProduct(req.params.id);
+    if (req.admin.role !== 'owner' && productToDelete) {
+      await NotificationService.notifySuperAdmins(
+        'Product Deleted',
+        `Vendor deleted product: ${productToDelete.name}`,
+        'product',
+        `/superadmin/products`
+      );
+    }
     res.json({ success: true, message: "Product deleted successfully" });
   } catch (error) {
     sendError(res, error, error.message.includes("not found") ? 404 : 500);

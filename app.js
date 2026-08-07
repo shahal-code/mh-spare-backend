@@ -38,18 +38,12 @@ const getDomainVariants = (urlStr) => {
   }
 };
 
-const rawOrigins = [
-  ...splitOrigins(process.env.FRONTEND_URL, "http://localhost:5173"),
-  ...splitOrigins(process.env.VENDOR_URL || process.env.ADMIN_URL, "http://localhost:5174"),
-  ...splitOrigins(process.env.SUPERADMIN_URL, "http://localhost:5175"),
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:5175",
-  "http://localhost:3000",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174",
-  "http://127.0.0.1:5175",
-  "http://127.0.0.1:3000",
+const isProd = process.env.NODE_ENV === 'production';
+
+const prodOrigins = [
+  ...splitOrigins(process.env.FRONTEND_URL),
+  ...splitOrigins(process.env.VENDOR_URL || process.env.ADMIN_URL),
+  ...splitOrigins(process.env.SUPERADMIN_URL),
   "https://esparehub.shop",
   "https://www.esparehub.shop",
   "https://backendapi.esparehub.shop",
@@ -62,6 +56,19 @@ const rawOrigins = [
   "https://superadmin.mhsparehub.shop"
 ];
 
+const devOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://localhost:3000",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "http://127.0.0.1:5175",
+  "http://127.0.0.1:3000"
+];
+
+const rawOrigins = isProd ? prodOrigins : [...prodOrigins, ...devOrigins];
+
 const allowedOriginsSet = new Set(rawOrigins.flatMap(getDomainVariants));
 
 const isOriginAllowed = (origin) => {
@@ -69,7 +76,7 @@ const isOriginAllowed = (origin) => {
   if (allowedOriginsSet.has(origin)) return true;
   try {
     const hostname = new URL(origin).hostname;
-    if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+    if (!isProd && (hostname === "localhost" || hostname === "127.0.0.1")) return true;
     if (hostname.endsWith(".esparehub.shop") || hostname === "esparehub.shop") return true;
     if (hostname.endsWith(".mhsparehub.shop") || hostname === "mhsparehub.shop") return true;
   } catch (e) {
