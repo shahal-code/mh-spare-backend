@@ -21,8 +21,8 @@ class OrderService {
             const product = item.productId;
             const category = product?.category_id;
 
-            if (!product || product.is_blocked || product.is_unlisted || (category && category.is_blocked) || (product.adminId && product.adminId.status === 'blocked')) {
-                throw new Error(`Product ${product ? product.name : 'Unknown'} is no longer available.`);
+            if (!product || product.is_blocked || product.is_unlisted || product.approvalStatus !== 'approved' || (category && category.is_blocked) || (product.adminId && product.adminId.status === 'blocked')) {
+                throw new Error(`Product "${product ? product.name : 'Item'}" is no longer available.`);
             }
 
             const variant = product.variants.find(v => v._id.toString() === item.variantId.toString());

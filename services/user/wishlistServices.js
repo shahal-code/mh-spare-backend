@@ -1,6 +1,16 @@
 import Wishlist from "../../models/wishlistModel.js";
 import Product from "../../models/productModel.js";
 
+// Helper to check product availability
+const isProductAvailable = (product) => {
+    if (!product) return false;
+    if (product.is_blocked === true || product.is_unlisted === true) return false;
+    if (product.approvalStatus && product.approvalStatus !== 'approved') return false;
+    if (!product.category_id || product.category_id.is_blocked === true) return false;
+    if (product.adminId && product.adminId.status === 'blocked') return false;
+    return true;
+};
+
 // Fetch user's wishlist
 export const getWishlist = async (userId) => {
     if (!userId) return { products: [] };
@@ -18,13 +28,7 @@ export const getWishlist = async (userId) => {
     }
 
     wishlist.products.forEach(item => {
-        if (
-            !item.productId ||
-            item.productId.is_blocked === true ||
-            !item.productId.category_id ||
-            item.productId.category_id.is_blocked === true ||
-            (item.productId.adminId && item.productId.adminId.status === 'blocked')
-        ) {
+        if (!isProductAvailable(item.productId)) {
             item.isUnavailable = true;
         }
     });
@@ -39,8 +43,8 @@ export const toggleWishlist = async (userId, productId, variantId) => {
     if (!product) {
         throw new Error("Product not found");
     }
-    if (product.is_blocked || (product.category_id && product.category_id.is_blocked) || (product.adminId && product.adminId.status === 'blocked')) {
-        throw new Error("This product is currently unavailable and cannot be added to wishlist");
+    if (!isProductAvailable(product)) {
+        throw new Error("This product is currently unavailable and cannot be added to wishlist.");
     }
 
     let wishlist = await Wishlist.findOne({ userId });
