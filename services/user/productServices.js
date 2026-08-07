@@ -91,13 +91,17 @@ async function getProductDetails(productId) {
         .populate("adminId")
         .lean();
 
-    if (!product || product.is_blocked || product.is_unlisted || product.approvalStatus !== 'approved' || (product.category_id && product.category_id.is_blocked) || (product.adminId && product.adminId.status === 'blocked')) return null;
+    if (!product) return null;
+
+    if (product.is_blocked || product.is_unlisted || product.approvalStatus !== 'approved' || (product.category_id && product.category_id.is_blocked) || (product.adminId && product.adminId.status === 'blocked')) {
+        product.isUnavailable = true;
+    }
 
     const activeAdmins = await Admin.find({ status: { $ne: 'blocked' } }).select('_id');
     const activeAdminIds = activeAdmins.map(a => a._id);
 
     // Fetch related products (same category and not blocked)
-    const relatedProducts = await Product.find({
+    const relatedProducts = product.isUnavailable ? [] : await Product.find({
         category_id: product.category_id?._id || product.category_id,
         _id: { $ne: product._id },
         adminId: { $in: activeAdminIds },
