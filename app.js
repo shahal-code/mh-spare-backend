@@ -73,25 +73,28 @@ const allowedOriginsSet = new Set(rawOrigins.flatMap(getDomainVariants));
 
 const isOriginAllowed = (origin) => {
   if (!origin) return true;
+  if (allowedOriginsSet.has(origin)) return true;
   try {
     const hostname = new URL(origin).hostname;
     if (hostname === "localhost" || hostname === "127.0.0.1") return true;
-    if (hostname.endsWith("esparehub.shop") || hostname.endsWith("mhsparehub.shop")) return true;
+    if (hostname === "esparehub.shop" || hostname.endsWith(".esparehub.shop")) return true;
+    if (hostname === "mhsparehub.shop" || hostname.endsWith(".mhsparehub.shop")) return true;
   } catch (e) {
-    // Ignore URL parse error
+    // Ignore parse error
   }
-  if (allowedOriginsSet.has(origin)) return true;
-  return true;
+  return false;
 };
 
-// Global CORS Middleware to guarantee Access-Control headers on every response
+// Global CORS Middleware - strictly scopes headers to authorized domains
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && isOriginAllowed(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (origin) {
+    if (isOriginAllowed(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, X-Requested-With, Accept, Origin, Access-Control-Allow-Origin');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, X-Requested-With, Accept, Origin');
   }
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -101,11 +104,14 @@ app.use((req, res, next) => {
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin) return callback(null, true);
-    return callback(null, true);
+    if (!origin || isOriginAllowed(origin)) {
+      return callback(null, true);
+    }
+    console.warn("Blocked Unauthorized CORS Origin:", origin);
+    return callback(null, false);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,
   optionsSuccessStatus: 200
 }));
