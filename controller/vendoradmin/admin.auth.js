@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import Admin from "../../models/adminModel.js";
 import { generateToken } from "../../middleware/jwtMiddleware.js";
@@ -8,6 +9,9 @@ import { validateLogin } from "../../utils/validation.js";
  */
 export const register = async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ message: "Database connection unavailable. Please check MONGO_URI in server .env file." });
+    }
     const { fullname, email, password, storeDetails } = req.body;
 
     if (!email || !email.toLowerCase().trim().endsWith("@gmail.com")) {
@@ -27,7 +31,7 @@ export const register = async (req, res) => {
     // Create admin (default role 'admin', status 'pending')
     const admin = new Admin({
       fullname,
-      email,
+      email: email.toLowerCase().trim(),
       password: hashedPassword,
       storeDetails
     });
@@ -45,6 +49,10 @@ export const register = async (req, res) => {
  */
 export const login = async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ message: "Database connection unavailable. Please check MONGO_URI in server .env file." });
+    }
+
     const { email, password } = req.body;
 
     const validationError = validateLogin(req.body);
@@ -89,6 +97,9 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error("Admin login error:", error);
+    if (error.name === 'MongooseError' || error.message.includes('buffering timed out')) {
+      return res.status(503).json({ message: "Database connection timed out. Please check MONGO_URI in server .env file." });
+    }
     res.status(500).json({ message: error?.message || "Server error during login" });
   }
 };
