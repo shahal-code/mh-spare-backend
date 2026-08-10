@@ -146,7 +146,13 @@ const getShopData = async (queryParams) => {
     }
 
     if (search) {
-        query.name = { $regex: search, $options: "i" }; // Case insensitive search
+        query.$or = [
+            { name: { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } },
+            { "specifications.partNumber": { $regex: search, $options: "i" } },
+            { "specifications.compatibility": { $regex: search, $options: "i" } },
+            { "specifications.brand": { $regex: search, $options: "i" } }
+        ];
     }
 
     if (category) {
