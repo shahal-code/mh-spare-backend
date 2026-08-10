@@ -153,10 +153,18 @@ export const getProductById = async (id) => {
 };
 
 export const createProduct = async (productData) => {
-    const { name, description, category_id, price, stock, adminId, approvalStatus, thumbnail } = productData;
+    const { name, description, category_id, price, stock, adminId, approvalStatus, thumbnail, specifications } = productData;
     const images = Array.isArray(productData.images) ? productData.images : [];
     if (images.length < 3 || images.length > 5) {
         throw new Error("Please upload between 3 and 5 product images.");
+    }
+    let parsedSpecs = {};
+    if (specifications) {
+        try {
+            parsedSpecs = typeof specifications === 'string' ? JSON.parse(specifications) : specifications;
+        } catch (e) {
+            parsedSpecs = {};
+        }
     }
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
     const newProduct = new Product({
@@ -164,6 +172,7 @@ export const createProduct = async (productData) => {
         slug,
         thumbnail: thumbnail || images[0],
         adminId, approvalStatus,
+        specifications: parsedSpecs,
         variants: [{
             price: Number(price) || 0,
             stock: Number(stock) || 0,
@@ -184,6 +193,14 @@ export const updateProduct = async (id, updateData) => {
     if (updateData.description) product.description = updateData.description;
     if (updateData.category_id) product.category_id = updateData.category_id;
     if (updateData.thumbnail) product.thumbnail = updateData.thumbnail;
+
+    if (updateData.specifications !== undefined) {
+        try {
+            product.specifications = typeof updateData.specifications === 'string' ? JSON.parse(updateData.specifications) : updateData.specifications;
+        } catch (e) {
+            // Keep existing specifications if parsing fails
+        }
+    }
 
     if (!product.variants || product.variants.length === 0) {
         product.variants = [{ sku: product.slug + '-' + Date.now() }];

@@ -52,9 +52,15 @@ const productSchema = new mongoose.Schema({
         type: String
     },
     specifications: {
+        partNumber: { type: String },
+        compatibility: { type: String },
+        brand: { type: String },
+        condition: { type: String },
+        material: { type: String },
+        warranty: { type: String },
+        weight: { type: String },
         display: { type: String },
         battery: { type: String },
-        weight: { type: String },
         os: { type: String }
     },
     variants: [productVariantSchema],
