@@ -76,38 +76,25 @@ const isOriginAllowed = (origin) => {
   if (allowedOriginsSet.has(origin)) return true;
   try {
     const hostname = new URL(origin).hostname;
-    if (hostname === "localhost" || hostname === "127.0.0.1") return true;
-    if (hostname === "esparehub.shop" || hostname.endsWith(".esparehub.shop")) return true;
-    if (hostname === "mhsparehub.shop" || hostname.endsWith(".mhsparehub.shop")) return true;
+    if (!isProd && (hostname === "localhost" || hostname === "127.0.0.1")) return true;
+    if (hostname.endsWith(".esparehub.shop") || hostname === "esparehub.shop") return true;
+    if (hostname.endsWith(".mhsparehub.shop") || hostname === "mhsparehub.shop") return true;
   } catch (e) {
-    // Ignore parse error
+    // Ignore URL parse error
   }
   return false;
 };
 
-// Global CORS Middleware - strictly scopes headers to authorized domains
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    if (isOriginAllowed(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, X-Requested-With, Accept, Origin');
-  }
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
-});
-
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || isOriginAllowed(origin)) {
+    if (!origin) return callback(null, true); // Allow non-browser requests
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true); // Allow all in development
+    }
+    if (isOriginAllowed(origin)) {
       return callback(null, true);
     }
-    console.warn("Blocked Unauthorized CORS Origin:", origin);
+    console.error("CORS Blocked Origin:", origin);
     return callback(null, false);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -115,8 +102,6 @@ app.use(cors({
   credentials: true,
   optionsSuccessStatus: 200
 }));
-
-app.options('*', cors());
 
 app.use(morgan('combined'));
 

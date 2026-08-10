@@ -52,14 +52,8 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: validationError });
     }
 
-    const cleanEmail = email ? String(email).toLowerCase().trim() : '';
-
-    const admin = await Admin.findOne({ email: cleanEmail });
+    const admin = await Admin.findOne({ email });
     if (!admin) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-
-    if (!admin.password) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
@@ -68,15 +62,13 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const statusLower = (admin.status || '').toLowerCase();
-    if (statusLower !== "active" && statusLower !== "approved" && admin.role !== "owner" && admin.role !== "superadmin") {
-      return res.status(403).json({ message: `Your account is ${admin.status || 'pending'}. Please contact the Super Admin.` });
+    if (admin.status !== "active" && admin.role !== "owner") {
+      return res.status(403).json({ message: `Your account is ${admin.status}. Please contact the owner.` });
     }
 
     const token = generateToken(admin._id, "admin");
 
     res.json({
-      success: true,
       message: "Login successful",
       token,
       admin: {
@@ -91,7 +83,7 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error("Admin login error:", error);
-    res.status(500).json({ message: error?.message || "Server error during login" });
+    res.status(500).json({ message: "Server error during login" });
   }
 };
 
@@ -100,25 +92,22 @@ export const login = async (req, res) => {
  */
 export const session = async (req, res) => {
   try {
-    if (!req.admin) {
-      return res.status(401).json({ success: false, authenticated: false, message: "No active admin session" });
-    }
+    // verifyAdminJWT already checks the token and sets req.admin
     res.json({
-      success: true,
       authenticated: true,
       admin: {
-        id: req.admin._id || req.admin.id,
-        fullname: req.admin.fullname || '',
-        email: req.admin.email || '',
-        role: req.admin.role || 'superadmin',
-        status: req.admin.status || 'Active',
-        storeDetails: req.admin.storeDetails || {},
-        kycStatus: req.admin.kycStatus || 'Approved',
-        kycDocuments: req.admin.kycDocuments || []
+        id: req.admin._id,
+        fullname: req.admin.fullname,
+        email: req.admin.email,
+        role: req.admin.role,
+        status: req.admin.status,
+        storeDetails: req.admin.storeDetails,
+        kycStatus: req.admin.kycStatus,
+        kycDocuments: req.admin.kycDocuments
       }
     });
   } catch (error) {
-    res.status(401).json({ success: false, authenticated: false });
+    res.status(401).json({ authenticated: false });
   }
 };
 
