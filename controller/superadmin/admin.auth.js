@@ -52,8 +52,14 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: validationError });
     }
 
-    const admin = await Admin.findOne({ email });
+    const cleanEmail = email ? String(email).toLowerCase().trim() : '';
+
+    const admin = await Admin.findOne({ email: cleanEmail });
     if (!admin) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    if (!admin.password) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
@@ -62,13 +68,15 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    if (admin.status !== "active" && admin.role !== "owner") {
-      return res.status(403).json({ message: `Your account is ${admin.status}. Please contact the owner.` });
+    const statusLower = (admin.status || '').toLowerCase();
+    if (statusLower !== "active" && statusLower !== "approved" && admin.role !== "owner" && admin.role !== "superadmin") {
+      return res.status(403).json({ message: `Your account is ${admin.status || 'pending'}. Please contact the Super Admin.` });
     }
 
     const token = generateToken(admin._id, "admin");
 
     res.json({
+      success: true,
       message: "Login successful",
       token,
       admin: {
@@ -83,7 +91,7 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error("Admin login error:", error);
-    res.status(500).json({ message: "Server error during login" });
+    res.status(500).json({ message: error?.message || "Server error during login" });
   }
 };
 
