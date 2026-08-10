@@ -90,20 +90,23 @@ export const login = async (req, res) => {
  */
 export const session = async (req, res) => {
   try {
-    // verifyAdminJWT already checks the token and sets req.admin
+    if (!req.admin) {
+      return res.status(401).json({ success: false, authenticated: false, message: "No active admin session" });
+    }
     res.json({
+      success: true,
       authenticated: true,
       admin: {
-        id: req.admin._id,
-        fullname: req.admin.fullname,
-        email: req.admin.email,
-        role: req.admin.role,
-        status: req.admin.status,
-        storeDetails: req.admin.storeDetails
+        id: req.admin._id || req.admin.id,
+        fullname: req.admin.fullname || '',
+        email: req.admin.email || '',
+        role: req.admin.role || 'vendor',
+        status: req.admin.status || 'Active',
+        storeDetails: req.admin.storeDetails || {}
       }
     });
   } catch (error) {
-    res.status(401).json({ authenticated: false });
+    res.status(401).json({ success: false, authenticated: false });
   }
 };
 

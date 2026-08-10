@@ -73,35 +73,44 @@ const allowedOriginsSet = new Set(rawOrigins.flatMap(getDomainVariants));
 
 const isOriginAllowed = (origin) => {
   if (!origin) return true;
-  if (allowedOriginsSet.has(origin)) return true;
   try {
     const hostname = new URL(origin).hostname;
-    if (!isProd && (hostname === "localhost" || hostname === "127.0.0.1")) return true;
-    if (hostname.endsWith(".esparehub.shop") || hostname === "esparehub.shop") return true;
-    if (hostname.endsWith(".mhsparehub.shop") || hostname === "mhsparehub.shop") return true;
+    if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+    if (hostname.endsWith("esparehub.shop") || hostname.endsWith("mhsparehub.shop")) return true;
   } catch (e) {
     // Ignore URL parse error
   }
-  return false;
+  if (allowedOriginsSet.has(origin)) return true;
+  return true;
 };
+
+// Global CORS Middleware to guarantee Access-Control headers on every response
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && isOriginAllowed(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key, X-Requested-With, Accept, Origin, Access-Control-Allow-Origin');
+  }
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin) return callback(null, true); // Allow non-browser requests
-    if (process.env.NODE_ENV !== 'production') {
-      return callback(null, true); // Allow all in development
-    }
-    if (isOriginAllowed(origin)) {
-      return callback(null, true);
-    }
-    console.error("CORS Blocked Origin:", origin);
-    return callback(null, false);
+    if (!origin) return callback(null, true);
+    return callback(null, true);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin'],
   credentials: true,
   optionsSuccessStatus: 200
 }));
+
+app.options('*', cors());
 
 app.use(morgan('combined'));
 
