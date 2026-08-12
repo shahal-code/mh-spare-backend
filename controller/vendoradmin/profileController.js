@@ -86,6 +86,13 @@ export const uploadKycDocuments = async (req, res) => {
       return res.status(404).json({ success: false, message: "Admin not found" });
     }
 
+    if (admin.kycStatus === 'pending' || admin.kycStatus === 'verified') {
+      return res.status(403).json({
+        success: false,
+        message: `Your KYC status is currently ${admin.kycStatus}. Document re-upload is locked while under review or verified.`
+      });
+    }
+
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ success: false, message: "No documents provided" });
     }
