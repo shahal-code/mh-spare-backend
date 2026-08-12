@@ -43,29 +43,31 @@ router.post("/profile/kyc", uploadKyc.fields([{ name: "idProof", maxCount: 1 }, 
 router.get("/dashboard", DashboardApi.dashboard);
 router.get("/dashboard/chart", DashboardApi.dashboardChart);
 
+import { requireVerifiedKyc } from "../middleware/rbacMiddleware.js";
+
 // Categories
 router.get("/categories/options", CategoryApi.categoryOptions);
 router.get("/categories", CategoryApi.categories);
 router.get("/categories/:id", CategoryApi.category);
-router.post("/categories", uploadCategory.single("image"), CategoryApi.createCategory);
-router.put("/categories/:id", uploadCategory.single("image"), CategoryApi.updateCategory);
-router.patch("/categories/:id/toggle", CategoryApi.toggleCategory);
-router.delete("/categories/:id", CategoryApi.deleteCategory);
+router.post("/categories", requireVerifiedKyc, uploadCategory.single("image"), CategoryApi.createCategory);
+router.put("/categories/:id", requireVerifiedKyc, uploadCategory.single("image"), CategoryApi.updateCategory);
+router.patch("/categories/:id/toggle", requireVerifiedKyc, CategoryApi.toggleCategory);
+router.delete("/categories/:id", requireVerifiedKyc, CategoryApi.deleteCategory);
 
 // Products
 router.get("/products/options", ProductApi.productOptions);
 router.get("/products", ProductApi.products);
 router.get("/products/:id", validateProductId, validateRequest, ProductApi.product);
-router.post("/products", uploadProduct.fields([{ name: "thumbnail", maxCount: 1 }, { name: "images", maxCount: 5 }]), validateProductBody, validateRequest, ProductApi.createProduct);
-router.put("/products/:id", validateProductId, validateRequest, uploadProduct.fields([{ name: "thumbnail", maxCount: 1 }, { name: "images", maxCount: 5 }]), validateProductBody, validateRequest, ProductApi.updateProduct);
-router.patch("/products/:id/toggle", validateProductId, validateRequest, ProductApi.toggleProduct);
-router.patch("/products/:id/quick-edit", validateProductId, validateRequest, ProductApi.quickEditProduct);
-router.post("/products/bulk/toggle", ProductApi.bulkToggleProducts);
-router.post("/products/bulk/delete", ProductApi.bulkDeleteProducts);
-router.delete("/products/:id", validateProductId, validateRequest, ProductApi.deleteProduct);
-router.post("/products/:id/variants", validateProductId, validateRequest, uploadProduct.array("images", 5), ProductApi.createVariant);
-router.put("/products/:id/variants/:variantId", validateVariantParams, validateRequest, uploadProduct.array("images", 5), ProductApi.updateVariant);
-router.delete("/products/:id/variants/:variantId", validateVariantParams, validateRequest, ProductApi.deleteVariant);
+router.post("/products", requireVerifiedKyc, uploadProduct.fields([{ name: "thumbnail", maxCount: 1 }, { name: "images", maxCount: 5 }]), validateProductBody, validateRequest, ProductApi.createProduct);
+router.put("/products/:id", requireVerifiedKyc, validateProductId, validateRequest, uploadProduct.fields([{ name: "thumbnail", maxCount: 1 }, { name: "images", maxCount: 5 }]), validateProductBody, validateRequest, ProductApi.updateProduct);
+router.patch("/products/:id/toggle", requireVerifiedKyc, validateProductId, validateRequest, ProductApi.toggleProduct);
+router.patch("/products/:id/quick-edit", requireVerifiedKyc, validateProductId, validateRequest, ProductApi.quickEditProduct);
+router.post("/products/bulk/toggle", requireVerifiedKyc, ProductApi.bulkToggleProducts);
+router.post("/products/bulk/delete", requireVerifiedKyc, ProductApi.bulkDeleteProducts);
+router.delete("/products/:id", requireVerifiedKyc, validateProductId, validateRequest, ProductApi.deleteProduct);
+router.post("/products/:id/variants", requireVerifiedKyc, validateProductId, validateRequest, uploadProduct.array("images", 5), ProductApi.createVariant);
+router.put("/products/:id/variants/:variantId", requireVerifiedKyc, validateVariantParams, validateRequest, uploadProduct.array("images", 5), ProductApi.updateVariant);
+router.delete("/products/:id/variants/:variantId", requireVerifiedKyc, validateVariantParams, validateRequest, ProductApi.deleteVariant);
 
 // Orders
 router.get("/orders/returns", OrderApi.returns);
@@ -80,18 +82,18 @@ router.patch("/orders/:id/tracking/:itemId", OrderApi.updateItemTracking);
 // Marketing (Coupons, Offers)
 router.get("/coupons", MarketingApi.coupons);
 router.get("/coupons/:id", MarketingApi.coupon);
-router.post("/coupons", MarketingApi.createCoupon);
-router.put("/coupons/:id", MarketingApi.updateCoupon);
-router.patch("/coupons/:id/toggle", MarketingApi.toggleCoupon);
-router.delete("/coupons/:id", MarketingApi.deleteCoupon);
+router.post("/coupons", requireVerifiedKyc, MarketingApi.createCoupon);
+router.put("/coupons/:id", requireVerifiedKyc, MarketingApi.updateCoupon);
+router.patch("/coupons/:id/toggle", requireVerifiedKyc, MarketingApi.toggleCoupon);
+router.delete("/coupons/:id", requireVerifiedKyc, MarketingApi.deleteCoupon);
 
 router.get("/offers/meta", MarketingApi.offerMeta);
 router.get("/offers", MarketingApi.offers);
 router.get("/offers/:id", MarketingApi.offer);
-router.post("/offers", uploadOffer.single("image"), MarketingApi.createOffer);
-router.put("/offers/:id", uploadOffer.single("image"), MarketingApi.updateOffer);
-router.patch("/offers/:id/toggle", MarketingApi.toggleOffer);
-router.delete("/offers/:id", MarketingApi.deleteOffer);
+router.post("/offers", requireVerifiedKyc, uploadOffer.single("image"), MarketingApi.createOffer);
+router.put("/offers/:id", requireVerifiedKyc, uploadOffer.single("image"), MarketingApi.updateOffer);
+router.patch("/offers/:id/toggle", requireVerifiedKyc, MarketingApi.toggleOffer);
+router.delete("/offers/:id", requireVerifiedKyc, MarketingApi.deleteOffer);
 
 // Reports
 router.get("/reports", ReportApi.reports);
