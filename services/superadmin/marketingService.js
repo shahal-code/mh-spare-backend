@@ -171,30 +171,34 @@ export const getBanners = async () => {
 };
 
 export const createBanner = async (data, file) => {
-  const { title, link, type } = data;
+  const { title, tagline, headline, subtitle, order } = data;
   if (!title || !file) {
     throw new Error("Title and image are required.");
   }
   return await Banner.create({
-    title,
-    imageUrl: `/uploads/banners/${file.filename}`,
-    link: link || "",
-    type: type || "main",
+    title: title || "",
+    tagline: tagline || "",
+    headline: headline || "",
+    subtitle: subtitle || "",
+    image: file.location || `/uploads/banners/${file.filename}`,
+    order: Number(order) || 0,
     isActive: true,
   });
 };
 
 export const updateBanner = async (id, data, file) => {
-  const { title, link, type, isActive } = data;
+  const { title, tagline, headline, subtitle, order, isActive } = data;
   const banner = await Banner.findById(id);
   if (!banner) throw new Error("Banner not found.");
   
-  if (title) banner.title = title;
-  if (link !== undefined) banner.link = link;
-  if (type) banner.type = type;
+  if (title !== undefined) banner.title = title;
+  if (tagline !== undefined) banner.tagline = tagline;
+  if (headline !== undefined) banner.headline = headline;
+  if (subtitle !== undefined) banner.subtitle = subtitle;
+  if (order !== undefined) banner.order = Number(order) || 0;
   if (isActive !== undefined) banner.isActive = isActive === 'true' || isActive === true;
   if (file) {
-    banner.imageUrl = `/uploads/banners/${file.filename}`;
+    banner.image = file.location || `/uploads/banners/${file.filename}`;
   }
   return await banner.save();
 };
