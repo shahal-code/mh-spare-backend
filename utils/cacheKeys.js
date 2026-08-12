@@ -17,6 +17,13 @@ export const CACHE_KEYS = {
     BANNERS_ACTIVE: "banners:active",
     OFFERS_ACTIVE: "offers:active",
     BRANDS_ALL: "brands:all",
+
+    // Dashboard metrics keys
+    DASHBOARD_SUPERADMIN: "dashboard:superadmin",
+    DASHBOARD_VENDOR: (id) => `dashboard:vendor:${id}`,
+
+    // Security & Auth keys
+    JWT_BLACKLIST: (token) => `jwt:blacklist:${token}`,
 };
 
 /**
@@ -30,4 +37,6 @@ export const CACHE_TTL = {
     BANNERS: 1800,               // 30 minutes
     OFFERS: 300,                 // 5 minutes
     BRANDS: 1800,                // 30 minutes
+    DASHBOARD: 300,              // 5 minutes
+    JWT_BLACKLIST: 86400,        // 24 hours
 };

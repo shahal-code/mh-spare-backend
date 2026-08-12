@@ -5,9 +5,21 @@ import Product from "../../models/productModel.js";
 import Category from "../../models/categoryModel.js";
 import Admin from "../../models/adminModel.js";
 import Payout from "../../models/payoutModel.js";
+import { getCache, setCache } from "../../utils/cacheHelper.js";
+import { CACHE_KEYS, CACHE_TTL } from "../../utils/cacheKeys.js";
 
 export const getDashboardStats = async (adminContext = null) => {
   try {
+    const isOwner = adminContext && adminContext.role === 'owner';
+    const cacheKey = isOwner 
+      ? CACHE_KEYS.DASHBOARD_SUPERADMIN 
+      : CACHE_KEYS.DASHBOARD_VENDOR(adminContext?._id);
+
+    const cachedStats = await getCache(cacheKey);
+    if (cachedStats) {
+      return cachedStats;
+    }
+
     const validStatuses = ['Delivered', 'Shipped', 'Out for Delivery'];
     
     // Match query for orders
@@ -174,7 +186,7 @@ export const getDashboardStats = async (adminContext = null) => {
       };
     }
 
-    return {
+    const resultData = {
       totalRevenue,
       totalOrders,
       totalUsers,
@@ -189,6 +201,9 @@ export const getDashboardStats = async (adminContext = null) => {
       pageTitle: "Global Overview",
       pageSubtitle: "Real-time Admin Statistics"
     };
+
+    await setCache(cacheKey, resultData, CACHE_TTL.DASHBOARD);
+    return resultData;
   } catch (error) {
     console.error("Dashboard Service Error:", error);
     throw error;

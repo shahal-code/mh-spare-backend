@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import Admin from "../models/adminModel.js";
 import User from "../models/userModel.js";
+import { getCache } from "../utils/cacheHelper.js";
+import { CACHE_KEYS } from "../utils/cacheKeys.js";
 
 // Ensure secrets are available
 const JWT_SECRET = process.env.JWT_SECRET || "default_jwt_secret";
@@ -23,6 +25,12 @@ export const verifyAdminJWT = async (req, res, next) => {
       return res.status(401).json({ message: "No token provided, authorization denied" });
     }
 
+    // Check if token is blacklisted in Redis
+    const isBlacklisted = await getCache(CACHE_KEYS.JWT_BLACKLIST(token));
+    if (isBlacklisted) {
+      return res.status(401).json({ message: "Token has been logged out and revoked." });
+    }
+
     const decoded = jwt.verify(token, JWT_SECRET);
 
     if (decoded.type !== "admin") {
@@ -39,6 +47,7 @@ export const verifyAdminJWT = async (req, res, next) => {
     }
 
     req.admin = admin;
+    req.token = token;
     next();
   } catch (error) {
     console.error("Admin JWT Verification Error:", error.message);
@@ -57,6 +66,13 @@ export const verifyUserJWT = async (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
+
+    // Check if token is blacklisted in Redis
+    const isBlacklisted = await getCache(CACHE_KEYS.JWT_BLACKLIST(token));
+    if (isBlacklisted) {
+      return res.status(401).json({ message: "Token has been logged out and revoked." });
+    }
+
     const decoded = jwt.verify(token, JWT_SECRET);
 
     if (decoded.type !== "user") {

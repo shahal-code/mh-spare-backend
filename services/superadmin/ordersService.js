@@ -231,6 +231,15 @@ export const updateOrderStatus = async (orderId, status) => {
     order.markModified("orderedItems");
     console.log(`Updating Order ${orderId} to status: ${status}`);
     await order.save();
+
+    // Invalidate dashboard cache
+    try {
+        const { deleteCachePattern } = await import("../../utils/cacheHelper.js");
+        await deleteCachePattern("dashboard:*");
+    } catch (e) {
+        console.error("Dashboard cache invalidation error:", e.message);
+    }
+
     return order;
 };
 

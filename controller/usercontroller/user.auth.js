@@ -161,8 +161,18 @@ export const reset_Password = async (req, res) => {
     }
 };
 
-export const isLogout = (req, res) => {
-    // In stateless JWT, logout is primarily handled on the client-side by deleting the token.
-    // If we wanted to blacklist tokens, we would implement it here.
-    res.status(200).json({ success: true, message: "Logged out successfully" });
+import { setCache } from "../../utils/cacheHelper.js";
+import { CACHE_KEYS, CACHE_TTL } from "../../utils/cacheKeys.js";
+
+export const isLogout = async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith("Bearer ")) {
+            const token = authHeader.split(" ")[1];
+            await setCache(CACHE_KEYS.JWT_BLACKLIST(token), "revoked", CACHE_TTL.JWT_BLACKLIST);
+        }
+        res.status(200).json({ success: true, message: "Logged out successfully and token revoked" });
+    } catch (error) {
+        res.status(200).json({ success: true, message: "Logged out successfully" });
+    }
 };

@@ -107,9 +107,21 @@ export const session = async (req, res) => {
   }
 };
 
+import { setCache } from "../../utils/cacheHelper.js";
+import { CACHE_KEYS, CACHE_TTL } from "../../utils/cacheKeys.js";
+
 /**
- * Handles admin logout (client side deletes token)
+ * Handles admin logout (Blacklists token in Redis)
  */
-export const logout = (req, res) => {
-  res.json({ message: "Logout successful" });
+export const logout = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      await setCache(CACHE_KEYS.JWT_BLACKLIST(token), "revoked", CACHE_TTL.JWT_BLACKLIST);
+    }
+    res.json({ message: "Logout successful and token revoked" });
+  } catch (error) {
+    res.json({ message: "Logout successful" });
+  }
 };
