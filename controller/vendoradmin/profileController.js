@@ -18,6 +18,7 @@ import * as ReportService from "../../services/vendoradmin/reportService.js";
 import ActivityLog from "../../models/activityLogModel.js";
 import Notification from "../../models/notificationModel.js";
 import Admin from "../../models/adminModel.js";
+import { notifySuperAdmins } from "../../services/vendoradmin/notificationService.js";
 
 const ADMIN_OFFER_TYPES = ["product", "category"];
 
@@ -110,18 +111,12 @@ export const uploadKycDocuments = async (req, res) => {
       ipAddress: req.ip
     });
 
-    const superAdmins = await Admin.find({ role: "owner" });
-    const notifications = superAdmins.map(sa => ({
-      adminId: sa._id,
-      title: "KYC Pending Review",
-      message: `Vendor ${admin.fullname || admin.storeDetails?.storeName || 'Unknown'} has uploaded KYC documents for review.`,
-      type: "warning",
-      link: `/superadmin/vendors/${admin._id}`
-    }));
-    
-    if (notifications.length > 0) {
-      await Notification.insertMany(notifications);
-    }
+    await notifySuperAdmins(
+      "KYC Pending Review",
+      `Vendor ${admin.fullname || admin.storeDetails?.storeName || 'Unknown'} has uploaded KYC documents for review.`,
+      "warning",
+      `/superadmin/vendors/${admin._id}`
+    );
 
     res.json({ 
       success: true, 
