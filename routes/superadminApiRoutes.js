@@ -35,6 +35,8 @@ const router = express.Router();
 // Authentication & Profile
 // ========================
 router.post("/login", authLimiter, AuthApi.login);
+router.post("/verify-otp", authLimiter, AuthApi.verifyLoginOtp);
+router.post("/resend-otp", authLimiter, AuthApi.resendLoginOtp);
 router.post("/logout", AuthApi.logout);
 
 router.use(verifyAdminJWT);

@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import Admin from "../../models/adminModel.js";
 import { generateToken } from "../../middleware/jwtMiddleware.js";
 import { validateLogin } from "../../utils/validation.js";
+import { sendOtpEmail } from "../../config/nodemailer.js";
 
 /**
  * Handles admin/vendor registration
@@ -41,7 +42,7 @@ export const register = async (req, res) => {
 };
 
 /**
- * Handles admin/owner login
+ * Handles admin/owner login (Sends 2FA OTP for Super Admin)
  */
 export const login = async (req, res) => {
   try {
@@ -66,6 +67,23 @@ export const login = async (req, res) => {
       return res.status(403).json({ message: `Your account is ${admin.status}. Please contact the owner.` });
     }
 
+    // Require 2FA OTP for Super Admin (owner)
+    if (admin.role === "owner") {
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      admin.loginOtp = otp;
+      admin.loginOtpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes validity
+      await admin.save();
+
+      await sendOtpEmail(admin.email, otp);
+
+      return res.json({
+        success: true,
+        requireOtp: true,
+        email: admin.email,
+        message: "A 6-digit OTP code has been sent to your registered Gmail address."
+      });
+    }
+
     const token = generateToken(admin._id, "admin");
 
     res.json({
@@ -84,6 +102,83 @@ export const login = async (req, res) => {
   } catch (error) {
     console.error("Admin login error:", error);
     res.status(500).json({ message: "Server error during login" });
+  }
+};
+
+/**
+ * Verifies Super Admin 2FA OTP and issues token
+ */
+export const verifyLoginOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and OTP are required" });
+    }
+
+    const admin = await Admin.findOne({ email });
+    if (!admin || admin.role !== "owner") {
+      return res.status(400).json({ message: "Invalid request" });
+    }
+
+    if (!admin.loginOtp || admin.loginOtp !== otp.toString().trim()) {
+      return res.status(400).json({ message: "Invalid OTP code. Please check your email and try again." });
+    }
+
+    if (admin.loginOtpExpires && new Date() > admin.loginOtpExpires) {
+      return res.status(400).json({ message: "OTP has expired. Please click Resend OTP." });
+    }
+
+    // Clear OTP fields
+    admin.loginOtp = undefined;
+    admin.loginOtpExpires = undefined;
+    await admin.save();
+
+    const token = generateToken(admin._id, "admin");
+
+    res.json({
+      message: "2FA Verification successful",
+      token,
+      admin: {
+        id: admin._id,
+        fullname: admin.fullname,
+        email: admin.email,
+        role: admin.role,
+        status: admin.status,
+        kycStatus: admin.kycStatus,
+        kycDocuments: admin.kycDocuments
+      }
+    });
+  } catch (error) {
+    console.error("Verify login OTP error:", error);
+    res.status(500).json({ message: "Server error during OTP verification" });
+  }
+};
+
+/**
+ * Resends 2FA OTP code
+ */
+export const resendLoginOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    const admin = await Admin.findOne({ email });
+    if (!admin || admin.role !== "owner") {
+      return res.status(400).json({ message: "Invalid request" });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    admin.loginOtp = otp;
+    admin.loginOtpExpires = new Date(Date.now() + 5 * 60 * 1000);
+    await admin.save();
+
+    await sendOtpEmail(admin.email, otp);
+
+    res.json({ success: true, message: "A new 6-digit OTP code has been sent to your email." });
+  } catch (error) {
+    console.error("Resend login OTP error:", error);
+    res.status(500).json({ message: "Server error while resending OTP" });
   }
 };
 

@@ -41,6 +41,8 @@ const adminSchema = new mongoose.Schema(
       phone: String,
       address: String,
     },
+    loginOtp: String,
+    loginOtpExpires: Date,
   },
   {
     timestamps: true,
