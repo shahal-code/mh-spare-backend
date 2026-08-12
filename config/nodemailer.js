@@ -35,7 +35,7 @@ transporter.verify((error) => {
  */
 const INBOX_HEADERS = {
     "Reply-To": process.env.NODEMAILER_EMAIL,
-    "X-Mailer": "MH-SPARE-HUB-Mailer/1.0",
+    "X-Mailer": "ESPARE-HUB-Mailer/1.0",
     "X-Priority": "1",
     "Importance": "High",
     "Precedence": "transactional",
@@ -45,14 +45,14 @@ export const sendOtpEmail = async (email, otp) => {
     try {
         const mailOptions = {
             from: {
-                name: "MH SPARE HUB",
+                name: "ESPARE HUB",
                 address: process.env.NODEMAILER_EMAIL
             },
             to: email,
             subject: `Your verification code is ${otp}`,   // plain subject = better inbox rate
             headers: INBOX_HEADERS,
             // Plain-text fallback — REQUIRED for inbox delivery; HTML-only = spam
-            text: `Hi,\n\nYour MH SPARE HUB verification code is: ${otp}\n\nThis code expires in 2 minutes.\n\nIf you didn't request this, please ignore this email.\n\n— MH SPARE HUB Team`,
+            text: `Hi,\n\nYour ESPARE HUB verification code is: ${otp}\n\nThis code expires in 2 minutes.\n\nIf you didn't request this, please ignore this email.\n\n— ESPARE HUB Team`,
             html: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verification Code</title></head>
@@ -64,7 +64,7 @@ export const sendOtpEmail = async (email, otp) => {
         <!-- Header -->
         <tr>
           <td style="background:#0657f9;padding:28px 32px;text-align:center;">
-            <p style="margin:0;font-size:13px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:3px;text-transform:uppercase;">MH SPARE HUB</p>
+            <p style="margin:0;font-size:13px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:3px;text-transform:uppercase;">ESPARE HUB</p>
             <h1 style="margin:8px 0 0;font-size:22px;font-weight:800;color:#ffffff;">Verify your identity</h1>
           </td>
         </tr>
@@ -95,7 +95,7 @@ export const sendOtpEmail = async (email, otp) => {
         <tr>
           <td style="padding:20px 40px;text-align:center;">
             <p style="margin:0;font-size:12px;color:#a1a1aa;">
-              © ${new Date().getFullYear()} MH SPARE HUB &nbsp;·&nbsp; This is an automated message, please do not reply.
+              © ${new Date().getFullYear()} ESPARE HUB &nbsp;·&nbsp; This is an automated message, please do not reply.
             </p>
           </td>
         </tr>
@@ -120,11 +120,11 @@ export const sendOtpEmail = async (email, otp) => {
 export const sendVerificationLink = async (email, link) => {
     try {
         const mailOptions = {
-            from: { name: "MH SPARE HUB", address: process.env.NODEMAILER_EMAIL },
+            from: { name: "ESPARE HUB", address: process.env.NODEMAILER_EMAIL },
             to: email,
             subject: "Confirm your new email address",
             headers: INBOX_HEADERS,
-            text: `Hi,\n\nPlease confirm your new email address by visiting the link below:\n\n${link}\n\nThis link expires in 15 minutes.\n\nIf you did not request this change, please ignore this email.\n\n— MH SPARE HUB Team`,
+            text: `Hi,\n\nPlease confirm your new email address by visiting the link below:\n\n${link}\n\nThis link expires in 15 minutes.\n\nIf you did not request this change, please ignore this email.\n\n— ESPARE HUB Team`,
             html: `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm Email</title></head>
@@ -134,14 +134,14 @@ export const sendVerificationLink = async (email, link) => {
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e4e4e7;max-width:560px;width:100%;">
         <tr>
           <td style="background:#0657f9;padding:28px 32px;text-align:center;">
-            <p style="margin:0;font-size:13px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:3px;text-transform:uppercase;">MH SPARE HUB</p>
+            <p style="margin:0;font-size:13px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:3px;text-transform:uppercase;">ESPARE HUB</p>
             <h1 style="margin:8px 0 0;font-size:22px;font-weight:800;color:#ffffff;">Confirm your email</h1>
           </td>
         </tr>
         <tr>
           <td style="padding:36px 40px;text-align:center;">
             <p style="margin:0 0 28px;font-size:15px;color:#52525b;line-height:1.6;">
-              We received a request to update your <strong style="color:#09090b;">MH SPARE HUB</strong> account email address.<br>
+              We received a request to update your <strong style="color:#09090b;">ESPARE HUB</strong> account email address.<br>
               Click the button below to confirm this change. This link expires in <strong style="color:#09090b;">15 minutes</strong>.
             </p>
             <a href="${link}" style="display:inline-block;background:#0657f9;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 36px;border-radius:10px;">Verify Email Address</a>
@@ -155,7 +155,7 @@ export const sendVerificationLink = async (email, link) => {
         <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #f0f0f0;margin:0;"></td></tr>
         <tr>
           <td style="padding:20px 40px;text-align:center;">
-            <p style="margin:0;font-size:12px;color:#a1a1aa;">© ${new Date().getFullYear()} MH SPARE HUB &nbsp;·&nbsp; This is an automated message, please do not reply.</p>
+            <p style="margin:0;font-size:12px;color:#a1a1aa;">© ${new Date().getFullYear()} ESPARE HUB &nbsp;·&nbsp; This is an automated message, please do not reply.</p>
           </td>
         </tr>
       </table>
@@ -193,18 +193,18 @@ export const sendVendorOrderEmail = async (vendorEmail, vendorName, order, items
         `).join('');
 
         const mailOptions = {
-            from: { name: "MH SPARE HUB", address: process.env.NODEMAILER_EMAIL },
+            from: { name: "ESPARE HUB", address: process.env.NODEMAILER_EMAIL },
             to: vendorEmail,
             subject: `🛒 New Order Received — #${order.orderId}`,
             headers: INBOX_HEADERS,
-            text: `Hi ${vendorName},\n\nA customer just ordered your product! Order ID: #${order.orderId}.\nPlease log into your vendor dashboard to process this order.\n\n— MH SPARE HUB`,
+            text: `Hi ${vendorName},\n\nA customer just ordered your product! Order ID: #${order.orderId}.\nPlease log into your vendor dashboard to process this order.\n\n— ESPARE HUB`,
             html: `
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; background-color: #09090b; border: 1px solid #27272a; border-radius: 16px; overflow: hidden; color: #ffffff;">
                     
                     <!-- Header -->
                     <div style="background: linear-gradient(135deg, #0657f9 0%, #0040c1 100%); padding: 32px 28px; text-align: center;">
                         <div style="display: inline-block; background-color: rgba(255,255,255,0.15); padding: 6px 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.2);">
-                            <span style="font-size: 13px; font-weight: 700; color: #ffffff; letter-spacing: 2px; text-transform: uppercase;">MH SPARE HUB</span>
+                            <span style="font-size: 13px; font-weight: 700; color: #ffffff; letter-spacing: 2px; text-transform: uppercase;">ESPARE HUB</span>
                         </div>
                         <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #ffffff; line-height: 1.2;">🎉 New Order Received!</h1>
                         <p style="margin: 8px 0 0; font-size: 15px; color: rgba(255,255,255,0.8);">Hi ${vendorName}, a customer just ordered your product!</p>
@@ -258,7 +258,7 @@ export const sendVendorOrderEmail = async (vendorEmail, vendorName, order, items
 
                     <!-- Footer -->
                     <div style="background-color: #000000; padding: 20px 28px; text-align: center; border-top: 1px solid #27272a;">
-                        <p style="color: #71717a; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} MH SPARE HUB. All rights reserved. | This is an automated email, please do not reply.</p>
+                        <p style="color: #71717a; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} ESPARE HUB. All rights reserved. | This is an automated email, please do not reply.</p>
                     </div>
                 </div>
             `,
@@ -310,18 +310,18 @@ export const sendUserOrderStatusEmail = async (userEmail, userName, order, newSt
             : 'N/A';
 
         const mailOptions = {
-            from: { name: "MH SPARE HUB", address: process.env.NODEMAILER_EMAIL },
+            from: { name: "ESPARE HUB", address: process.env.NODEMAILER_EMAIL },
             to: userEmail,
             subject: `${cfg.emoji} ${cfg.label} — Order #${order.orderId}`,
             headers: INBOX_HEADERS,
-            text: `Hi ${userName},\n\n${cfg.msg}\nOrder ID: #${order.orderId}\nStatus: ${newStatus}\n\n— MH SPARE HUB Team`,
+            text: `Hi ${userName},\n\n${cfg.msg}\nOrder ID: #${order.orderId}\nStatus: ${newStatus}\n\n— ESPARE HUB Team`,
             html: `
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; background-color: #09090b; border: 1px solid #27272a; border-radius: 16px; overflow: hidden; color: #ffffff;">
 
                     <!-- Header Banner -->
                     <div style="background: linear-gradient(135deg, ${cfg.color}22 0%, #09090b 80%); padding: 32px 28px; text-align: center; border-bottom: 1px solid ${cfg.color}33;">
                         <div style="display: inline-block; background-color: rgba(255,255,255,0.05); padding: 6px 14px; border-radius: 20px; margin-bottom: 16px; border: 1px solid #27272a;">
-                            <span style="font-size: 11px; font-weight: 700; color: #71717a; letter-spacing: 2px; text-transform: uppercase;">MH SPARE HUB</span>
+                            <span style="font-size: 11px; font-weight: 700; color: #71717a; letter-spacing: 2px; text-transform: uppercase;">ESPARE HUB</span>
                         </div>
                         <div style="font-size: 48px; margin-bottom: 12px;">${cfg.emoji}</div>
                         <h1 style="margin: 0; font-size: 24px; font-weight: 800; color: #ffffff;">${cfg.label}</h1>
@@ -397,7 +397,7 @@ export const sendUserOrderStatusEmail = async (userEmail, userName, order, newSt
 
                     <!-- Footer -->
                     <div style="background-color: #000000; padding: 18px 28px; text-align: center; border-top: 1px solid #27272a;">
-                        <p style="color: #52525b; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} MH SPARE HUB. All rights reserved. | This is an automated email, please do not reply.</p>
+                        <p style="color: #52525b; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} ESPARE HUB. All rights reserved. | This is an automated email, please do not reply.</p>
                     </div>
                 </div>
             `,

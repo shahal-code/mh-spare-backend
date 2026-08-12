@@ -115,7 +115,7 @@ app.use(mongoSanitize());
 app.use(express.static("public"));
 
 app.get("/", (req, res) => {
-  res.status(200).json({ success: true, message: "Welcome to MH-Spare API" });
+  res.status(200).json({ success: true, message: "Welcome to ESPare Hub API" });
 });
 
 app.use("/api", apiLimiter, apiRoutes);
