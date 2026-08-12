@@ -49,6 +49,9 @@ const adminSchema = new mongoose.Schema(
   }
 );
 
+// Compound indexes for fast admin/vendor queries
+adminSchema.index({ role: 1, status: 1, createdAt: -1 });
+
 const Admin = mongoose.model("Admin", adminSchema);
 
 export default Admin;

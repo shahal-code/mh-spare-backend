@@ -119,5 +119,10 @@ const orderSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+// Compound indexes for fast order retrieval & aggregation
+orderSchema.index({ userId: 1, createdAt: -1 });
+orderSchema.index({ "orderedItems.adminId": 1, status: 1, createdAt: -1 });
+orderSchema.index({ status: 1, paymentStatus: 1, createdAt: -1 });
+
 const Order = mongoose.model("Order", orderSchema);
 export default Order;

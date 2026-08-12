@@ -41,5 +41,9 @@ const categorySchema = new mongoose.Schema(
   }
 );
 
+// Compound indexes for fast category queries
+categorySchema.index({ is_blocked: 1, url_slug: 1 });
+categorySchema.index({ is_blocked: 1, created_at: -1 });
+
 const Category = mongoose.model("Category", categorySchema);
 export default Category;
