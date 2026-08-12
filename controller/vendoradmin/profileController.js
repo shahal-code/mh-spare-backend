@@ -100,14 +100,17 @@ export const uploadKycDocuments = async (req, res) => {
     if (!admin.kycDocuments) admin.kycDocuments = {};
 
     if (req.files.idProof && req.files.idProof.length > 0) {
-      admin.kycDocuments.idProof = req.files.idProof[0].path;
+      const f = req.files.idProof[0];
+      admin.kycDocuments.idProof = f.location || `/uploads/kyc/${f.filename}`;
     }
     
     if (req.files.businessLicense && req.files.businessLicense.length > 0) {
-      admin.kycDocuments.businessLicense = req.files.businessLicense[0].path;
+      const f = req.files.businessLicense[0];
+      admin.kycDocuments.businessLicense = f.location || `/uploads/kyc/${f.filename}`;
     }
 
     admin.kycStatus = 'pending';
+    admin.markModified('kycDocuments');
     await admin.save();
 
     await ActivityLog.create({
