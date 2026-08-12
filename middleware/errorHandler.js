@@ -8,7 +8,19 @@ export const notFound = (req, res, next) => {
 
 // Global error handler middleware
 export const globalErrorHandler = (err, req, res, next) => {
-    // Always render the 404 page instead of a 500 error
+    // Handle Multer file upload errors gracefully
+    if (err.name === 'MulterError') {
+        let message = err.message;
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            message = 'File size is too large. Maximum allowed limit is 15MB per file.';
+        }
+        console.error("Multer Error Caught:", message);
+        return res.status(400).json({
+            success: false,
+            message
+        });
+    }
+
     const statusCode = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
 
     console.error("Error Caught:", err.message);
