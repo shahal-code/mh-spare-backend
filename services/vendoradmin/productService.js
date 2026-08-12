@@ -1,6 +1,17 @@
 import { Query } from "mongoose";
 import Product from "../../models/productModel.js";
 import Category from "../../models/categoryModel.js";
+import { deleteCache, deleteCachePattern } from "../../utils/cacheHelper.js";
+import { CACHE_KEYS } from "../../utils/cacheKeys.js";
+
+// Invalidate all product-related caches
+const invalidateProductCache = async (productId = null) => {
+    await deleteCachePattern("shop:*");
+    await deleteCache(CACHE_KEYS.LANDING_PRODUCTS);
+    if (productId) {
+        await deleteCache(CACHE_KEYS.PRODUCT_DETAIL(productId));
+    }
+};
 
 export const getCategories = async () => {
     return await Category.find({ is_blocked: false }).select("name _id").sort({ name: 1 }).lean();
@@ -53,7 +64,9 @@ export const bulkApproveProducts = async (data, admin) => {
       }
       query._id = { $in: productIds };
     }
-    return await Product.updateMany(query, { $set: { approvalStatus: status } });
+    const result = await Product.updateMany(query, { $set: { approvalStatus: status } });
+    await invalidateProductCache();
+    return result;
 };
 
 export const bulkDeleteProducts = async (data, admin) => {
@@ -78,7 +91,9 @@ export const bulkDeleteProducts = async (data, admin) => {
       }
       query._id = { $in: productIds };
     }
-    return await Product.deleteMany(query);
+    const result = await Product.deleteMany(query);
+    await invalidateProductCache();
+    return result;
 };
 
 export const bulkToggleProducts = async (data, isBlocked, admin) => {
@@ -103,7 +118,9 @@ export const bulkToggleProducts = async (data, isBlocked, admin) => {
       }
       query._id = { $in: productIds };
     }
-    return await Product.updateMany(query, { $set: { is_blocked: isBlocked } });
+    const result = await Product.updateMany(query, { $set: { is_blocked: isBlocked } });
+    await invalidateProductCache();
+    return result;
 };
 
 // Get all products with pagination and category populate.
@@ -145,7 +162,9 @@ export const quickEditProduct = async (id, { price, stock }) => {
         product.variants[0].stock = Number(stock);
       }
     }
-    return await product.save();
+    const result = await product.save();
+    await invalidateProductCache(id);
+    return result;
 };
 
 export const getProductById = async (id) => {
@@ -180,7 +199,9 @@ export const createProduct = async (productData) => {
             sku: slug + '-' + Date.now()
         }]
     });
-    return await newProduct.save();
+    const result = await newProduct.save();
+    await invalidateProductCache();
+    return result;
 };
 
 export const updateProduct = async (id, updateData) => {
@@ -237,26 +258,33 @@ export const updateProduct = async (id, updateData) => {
     }
     variant.images = currentImages;
 
-    return await product.save();
+    const result = await product.save();
+    await invalidateProductCache(id);
+    return result;
 };
 
 export const toggleProductStatus = async (id) => {
     const product = await Product.findById(id);
     if (!product) throw new Error("Product not found");
     product.is_blocked = !product.is_blocked;
-    return await product.save();
+    const result = await product.save();
+    await invalidateProductCache(id);
+    return result;
 };
 
 export const updateProductApproval = async (id, status) => {
     const product = await Product.findById(id);
     if (!product) throw new Error("Product not found");
     product.approvalStatus = status;
-    return await product.save();
+    const result = await product.save();
+    await invalidateProductCache(id);
+    return result;
 };
 
 export const deleteProduct = async (id) => {
     const product = await Product.findByIdAndDelete(id);
     if (!product) throw new Error("Product not found");
+    await invalidateProductCache(id);
     return product;
 };
 
@@ -279,7 +307,9 @@ export const addVariant = async (productId, data, files) => {
     };
     
     product.variants.push(newVariant);
-    return await product.save();
+    const result = await product.save();
+    await invalidateProductCache(productId);
+    return result;
 };
 
 export const updateVariant = async (productId, variantId, data, files) => {
@@ -312,12 +342,16 @@ export const updateVariant = async (productId, variantId, data, files) => {
     }
     
     variant.images = currentImages;
-    return await product.save();
+    const result = await product.save();
+    await invalidateProductCache(productId);
+    return result;
 };
 
 export const deleteVariant = async (productId, variantId) => {
     const product = await Product.findById(productId);
     if (!product) throw new Error("Product not found");
     product.variants.pull({ _id: variantId });
-    return await product.save();
+    const result = await product.save();
+    await invalidateProductCache(productId);
+    return result;
 };

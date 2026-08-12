@@ -1,5 +1,15 @@
 import Category from "../../models/categoryModel.js";
 import Product from "../../models/productModel.js";
+import { deleteCache, deleteCachePattern } from "../../utils/cacheHelper.js";
+import { CACHE_KEYS } from "../../utils/cacheKeys.js";
+
+// Invalidate all category-related caches (also products since they depend on categories)
+const invalidateCategoryCache = async () => {
+    await deleteCache(CACHE_KEYS.CATEGORIES_ACTIVE);
+    await deleteCache(CACHE_KEYS.CATEGORIES_ACTIVE_ALL);
+    await deleteCache(CACHE_KEYS.LANDING_PRODUCTS);
+    await deleteCachePattern("shop:*");
+};
 
 // Get all categories with pagination and product counts.
 export const getCategoryOptions = async () => {
@@ -75,7 +85,9 @@ export const createCategory = async (categoryData, adminUser = null) => {
         createdBy: adminUser?._id || categoryData.createdBy || null
     });
 
-    return await newCategory.save();
+    const result = await newCategory.save();
+    await invalidateCategoryCache();
+    return result;
 };
 
 // Update an existing category.
@@ -106,7 +118,9 @@ export const updateCategory = async (id, updateData, adminUser = null) => {
     if (image) category.image = image;
     if (url_slug) category.url_slug = url_slug;
 
-    return await category.save();
+    const result = await category.save();
+    await invalidateCategoryCache();
+    return result;
 };
 
 // Toggle category block status.
@@ -124,7 +138,9 @@ export const toggleCategoryStatus = async (id, adminUser = null) => {
     }
     
     category.is_blocked = !category.is_blocked;
-    return await category.save();
+    const result = await category.save();
+    await invalidateCategoryCache();
+    return result;
 };
 
 // Delete a category.
@@ -148,5 +164,6 @@ export const deleteCategory = async (id, adminUser = null) => {
     }
     
     await Category.findByIdAndDelete(id);
+    await invalidateCategoryCache();
     return category;
 };

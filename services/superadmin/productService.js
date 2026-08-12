@@ -1,5 +1,16 @@
 import { Query } from "mongoose";
 import Product from "../../models/productModel.js";
+import { deleteCache, deleteCachePattern } from "../../utils/cacheHelper.js";
+import { CACHE_KEYS } from "../../utils/cacheKeys.js";
+
+// Invalidate all product-related caches
+const invalidateProductCache = async (productId = null) => {
+    await deleteCachePattern("shop:*");
+    await deleteCache(CACHE_KEYS.LANDING_PRODUCTS);
+    if (productId) {
+        await deleteCache(CACHE_KEYS.PRODUCT_DETAIL(productId));
+    }
+};
 
 export const getProductOptions = async () => {
     return await Product.find({ is_unlisted: false, is_blocked: false }).select("name _id").sort({ name: 1 }).lean();
@@ -208,19 +219,24 @@ export const toggleProductStatus = async (id) => {
     const product = await Product.findById(id);
     if (!product) throw new Error("Product not found");
     product.is_blocked = !product.is_blocked;
-    return await product.save();
+    const result = await product.save();
+    await invalidateProductCache(id);
+    return result;
 };
 
 export const updateProductApproval = async (id, status) => {
     const product = await Product.findById(id);
     if (!product) throw new Error("Product not found");
     product.approvalStatus = status;
-    return await product.save();
+    const result = await product.save();
+    await invalidateProductCache(id);
+    return result;
 };
 
 export const deleteProduct = async (id) => {
     const product = await Product.findByIdAndDelete(id);
     if (!product) throw new Error("Product not found");
+    await invalidateProductCache(id);
     return product;
 };
 
@@ -243,7 +259,9 @@ export const addVariant = async (productId, data, files) => {
     };
     
     product.variants.push(newVariant);
-    return await product.save();
+    const result = await product.save();
+    await invalidateProductCache(productId);
+    return result;
 };
 
 export const updateVariant = async (productId, variantId, data, files) => {
@@ -276,12 +294,16 @@ export const updateVariant = async (productId, variantId, data, files) => {
     }
     
     variant.images = currentImages;
-    return await product.save();
+    const result = await product.save();
+    await invalidateProductCache(productId);
+    return result;
 };
 
 export const deleteVariant = async (productId, variantId) => {
     const product = await Product.findById(productId);
     if (!product) throw new Error("Product not found");
     product.variants.pull({ _id: variantId });
-    return await product.save();
+    const result = await product.save();
+    await invalidateProductCache(productId);
+    return result;
 };

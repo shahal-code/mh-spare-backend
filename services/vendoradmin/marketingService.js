@@ -4,6 +4,8 @@ import Banner from "../../models/bannerModel.js";
 import Brand from "../../models/brandModel.js";
 import Product from "../../models/productModel.js";
 import Category from "../../models/categoryModel.js";
+import { deleteCache, deleteCachePattern } from "../../utils/cacheHelper.js";
+import { CACHE_KEYS } from "../../utils/cacheKeys.js";
 
 const ADMIN_OFFER_TYPES = ["product", "category"];
 
@@ -102,7 +104,7 @@ export const createOffer = async (data, file) => {
   const existing = await Offer.findOne({ title: { $regex: new RegExp(`^${title}$`, "i") } });
   if (existing) throw new Error("An offer with this title already exists.");
 
-  return await Offer.create({
+  const result = await Offer.create({
     title,
     description: description || "",
     discountType,
@@ -114,6 +116,10 @@ export const createOffer = async (data, file) => {
     image: file ? `/uploads/offers/${file.filename}` : "",
     isActive: true,
   });
+  await deleteCache(CACHE_KEYS.OFFERS_ACTIVE);
+  await deleteCachePattern("shop:*");
+  await deleteCache(CACHE_KEYS.LANDING_PRODUCTS);
+  return result;
 };
 
 export const updateOffer = async (id, data, file) => {
@@ -150,19 +156,30 @@ export const updateOffer = async (id, data, file) => {
     offer.image = `/uploads/offers/${file.filename}`;
   }
 
-  return await offer.save();
+  const result = await offer.save();
+  await deleteCache(CACHE_KEYS.OFFERS_ACTIVE);
+  await deleteCachePattern("shop:*");
+  await deleteCache(CACHE_KEYS.LANDING_PRODUCTS);
+  return result;
 };
 
 export const toggleOffer = async (id) => {
   const offer = await Offer.findById(id);
   if (!offer) throw new Error("Offer not found.");
   offer.isActive = !offer.isActive;
-  return await offer.save();
+  const result = await offer.save();
+  await deleteCache(CACHE_KEYS.OFFERS_ACTIVE);
+  await deleteCachePattern("shop:*");
+  await deleteCache(CACHE_KEYS.LANDING_PRODUCTS);
+  return result;
 };
 
 export const deleteOffer = async (id) => {
   const offer = await Offer.findByIdAndDelete(id);
   if (!offer) throw new Error("Offer not found.");
+  await deleteCache(CACHE_KEYS.OFFERS_ACTIVE);
+  await deleteCachePattern("shop:*");
+  await deleteCache(CACHE_KEYS.LANDING_PRODUCTS);
   return offer;
 };
 
@@ -175,13 +192,15 @@ export const createBanner = async (data, file) => {
   if (!title || !file) {
     throw new Error("Title and image are required.");
   }
-  return await Banner.create({
+  const result = await Banner.create({
     title,
     imageUrl: `/uploads/banners/${file.filename}`,
     link: link || "",
     type: type || "main",
     isActive: true,
   });
+  await deleteCache(CACHE_KEYS.BANNERS_ACTIVE);
+  return result;
 };
 
 export const updateBanner = async (id, data, file) => {
@@ -196,12 +215,15 @@ export const updateBanner = async (id, data, file) => {
   if (file) {
     banner.imageUrl = `/uploads/banners/${file.filename}`;
   }
-  return await banner.save();
+  const result = await banner.save();
+  await deleteCache(CACHE_KEYS.BANNERS_ACTIVE);
+  return result;
 };
 
 export const deleteBanner = async (id) => {
   const banner = await Banner.findByIdAndDelete(id);
   if (!banner) throw new Error("Banner not found.");
+  await deleteCache(CACHE_KEYS.BANNERS_ACTIVE);
   return banner;
 };
 
@@ -220,11 +242,14 @@ export const createBrand = async (data, file) => {
     isBlocked: isBlocked === 'true' || isBlocked === true,
     logo: file ? `/uploads/brands/${file.filename}` : null
   });
-  return await newBrand.save();
+  const result = await newBrand.save();
+  await deleteCache(CACHE_KEYS.BRANDS_ALL);
+  return result;
 };
 
 export const deleteBrand = async (id) => {
   const brand = await Brand.findByIdAndDelete(id);
   if (!brand) throw new Error("Brand not found");
+  await deleteCache(CACHE_KEYS.BRANDS_ALL);
   return brand;
 };
