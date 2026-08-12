@@ -32,6 +32,22 @@ const connectDB = async () => {
           status: "active"
         });
         console.log("Super Admin seeded: " + ownerEmail);
+      } else {
+        let updated = false;
+        if (existingOwner.email !== ownerEmail) {
+          existingOwner.email = ownerEmail;
+          updated = true;
+        }
+        const isPasswordMatch = await bcrypt.compare(ownerPassword, existingOwner.password);
+        if (!isPasswordMatch) {
+          const salt = await bcrypt.genSalt(10);
+          existingOwner.password = await bcrypt.hash(ownerPassword, salt);
+          updated = true;
+        }
+        if (updated) {
+          await existingOwner.save();
+          console.log("Super Admin credentials synced from .env: " + ownerEmail);
+        }
       }
     }
 
