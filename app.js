@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import connectDB from "./config/db.js";
+import "./config/redis.js"; // Initialize Redis connection on startup
 import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import apiRoutes from "./routes/apiRoutes.js";

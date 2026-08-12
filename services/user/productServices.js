@@ -2,6 +2,8 @@ import Product from "../../models/productModel.js";
 import Category from "../../models/categoryModel.js";
 import Offer from "../../models/offerModel.js";
 import Admin from "../../models/adminModel.js";
+import { getCache, setCache } from "../../utils/cacheHelper.js";
+import { CACHE_KEYS, CACHE_TTL } from "../../utils/cacheKeys.js";
 
 async function applyOffers(products) {
     if (!products) return products;
@@ -86,6 +88,10 @@ async function applyOffers(products) {
 
 
 async function getProductDetails(productId) {
+    const cacheKey = CACHE_KEYS.PRODUCT_DETAIL(productId);
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
     const product = await Product.findById(productId)
         .populate("category_id")
         .populate("adminId")
@@ -119,10 +125,16 @@ async function getProductDetails(productId) {
     await applyOffers(product);
     await applyOffers(filteredRelated);
 
-    return { product, relatedProducts: filteredRelated };
+    const result = { product, relatedProducts: filteredRelated };
+    await setCache(cacheKey, result, CACHE_TTL.PRODUCT_DETAIL);
+    return result;
 }
 
 const getShopData = async (queryParams) => {
+    const queryString = new URLSearchParams(queryParams).toString();
+    const cacheKey = CACHE_KEYS.SHOP_PRODUCTS(queryString);
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
     const { search, category, sort, page = 1, limit = 5 } = queryParams;
 
     // Fetch active categories for filter options. If the category list is empty,
@@ -263,16 +275,23 @@ const getShopData = async (queryParams) => {
 
     const totalProducts = await Product.countDocuments(query);
 
-    return {
+    const result = {
         products,
         categories: activeCategories,
         totalProducts,
         currentPage: parseInt(page),
         totalPages: Math.ceil(totalProducts / limit)
     };
+
+    await setCache(cacheKey, result, CACHE_TTL.SHOP_PRODUCTS);
+    return result;
 };
 
 async function getFeaturedProducts(limit = 3) {
+    const cacheKey = CACHE_KEYS.LANDING_PRODUCTS;
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
     const activeCategories = await Category.find({ is_blocked: false }).select('_id name');
     const activeCategoryIds = activeCategories.map(cat => cat._id);
 
@@ -296,7 +315,9 @@ async function getFeaturedProducts(limit = 3) {
         .limit(limit)
         .lean();
 
-    return await applyOffers(products);
+    const result = await applyOffers(products);
+    await setCache(cacheKey, result, CACHE_TTL.LANDING_PRODUCTS);
+    return result;
 }
 
 async function checkProductAvailability(productId) {

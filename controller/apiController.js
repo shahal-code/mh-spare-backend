@@ -4,6 +4,8 @@ import Review from "../models/reviewModel.js";
 import Offer from "../models/offerModel.js";
 import Banner from "../models/bannerModel.js";
 import mongoose from "mongoose";
+import { getCache, setCache } from "../utils/cacheHelper.js";
+import { CACHE_KEYS, CACHE_TTL } from "../utils/cacheKeys.js";
 
 const { Types } = mongoose;
 
@@ -229,6 +231,12 @@ export const getProductDetails = async (req, res) => {
 
 export const getActiveOffers = async (req, res) => {
     try {
+        const cacheKey = CACHE_KEYS.OFFERS_ACTIVE;
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            return res.json({ success: true, offers: cached });
+        }
+
         const currentDate = new Date();
         const offers = await Offer.find({
             isActive: true,
@@ -246,6 +254,7 @@ export const getActiveOffers = async (req, res) => {
             }
         }
 
+        await setCache(cacheKey, offers, CACHE_TTL.OFFERS);
         res.json({ success: true, offers });
     } catch (error) {
         console.error("API Error fetching active offers:", error);
@@ -255,7 +264,14 @@ export const getActiveOffers = async (req, res) => {
 
 export const getActiveBanners = async (req, res) => {
     try {
+        const cacheKey = CACHE_KEYS.BANNERS_ACTIVE;
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            return res.json({ success: true, banners: cached });
+        }
+
         const banners = await Banner.find({ isActive: true }).sort({ order: 1, createdAt: -1 }).lean();
+        await setCache(cacheKey, banners, CACHE_TTL.BANNERS);
         res.json({ success: true, banners });
     } catch (error) {
         console.error("API Error fetching active banners:", error);
@@ -265,8 +281,15 @@ export const getActiveBanners = async (req, res) => {
 
 export const getBrands = async (req, res) => {
     try {
+        const cacheKey = CACHE_KEYS.BRANDS_ALL;
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            return res.json({ success: true, brands: cached });
+        }
+
         const Brand = (await import('../models/brandModel.js')).default;
         const brands = await Brand.find().sort({ createdAt: -1 });
+        await setCache(cacheKey, brands, CACHE_TTL.BRANDS);
         res.json({ success: true, brands });
     } catch (error) {
         console.error("API Error fetching brands:", error);
