@@ -42,6 +42,9 @@ const INBOX_HEADERS = {
 };
 
 export const sendOtpEmail = async (email, otp) => {
+    console.log(`\n🔑 ========================================`);
+    console.log(`🔑 OTP FOR [${email}]: >>> ${otp} <<<`);
+    console.log(`🔑 ========================================\n`);
     try {
         const mailOptions = {
             from: {
