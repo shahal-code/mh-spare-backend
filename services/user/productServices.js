@@ -279,14 +279,16 @@ const getShopData = async (queryParams) => {
             query["variants.price"] = { $gt: 200000 };
         }
     } else if (queryParams.minPrice || queryParams.maxPrice) {
-        query["variants.price"] = {};
+        const priceFilter = {};
         const min = parseInt(queryParams.minPrice);
         const max = parseInt(queryParams.maxPrice);
-        if (!isNaN(min)) query["variants.price"].$gte = min;
-        if (!isNaN(max)) query["variants.price"].$lte = max;
-        // If empty object, delete it
-        if (Object.keys(query["variants.price"]).length === 0) {
-            delete query["variants.price"];
+        if (!isNaN(min)) priceFilter.$gte = min;
+        if (!isNaN(max)) priceFilter.$lte = max;
+        if (Object.keys(priceFilter).length > 0) {
+            query.$or = [
+                { price: priceFilter },
+                { "variants.price": priceFilter }
+            ];
         }
     }
 
