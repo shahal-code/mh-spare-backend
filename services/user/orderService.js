@@ -248,7 +248,15 @@ class OrderService {
             try {
                 await CouponService.markCouponAsUsed(appliedCoupon._id, userId);
             } catch (error) {
-        return order;
+                console.error("Failed to mark coupon as used:", error.message);
+            }
+        }
+
+        await this.removeOrderedItemsFromCart(userId, orderedItems);
+
+        const primaryOrder = createdOrders[0];
+        primaryOrder.allCreatedOrders = createdOrders;
+        return primaryOrder;
     }
 
     async getOrders(userId, queryParams = {}, page = 1, limit = 5) {
