@@ -106,21 +106,44 @@ async function getProductDetails(productId) {
     const activeAdmins = await Admin.find({ status: { $ne: 'blocked' } }).select('_id');
     const activeAdminIds = activeAdmins.map(a => a._id);
 
-    // Fetch related products (same category and not blocked)
-    const relatedProducts = product.isUnavailable ? [] : await Product.find({
-        category_id: product.category_id?._id || product.category_id,
-        _id: { $ne: product._id },
-        adminId: { $in: activeAdminIds },
-        is_blocked: { $ne: true },
-        is_unlisted: { $ne: true },
-        approvalStatus: 'approved'
-    })
-        .populate("category_id")
-        .limit(4)
-        .lean();
+    let filteredRelated = [];
 
-    // Filter related products for blocked categories
-    const filteredRelated = relatedProducts.filter(p => p.category_id && !p.category_id.is_blocked);
+    if (!product.isUnavailable) {
+        const baseFilter = {
+            _id: { $ne: product._id },
+            adminId: { $in: activeAdminIds },
+            is_blocked: { $ne: true },
+            is_unlisted: { $ne: true },
+            approvalStatus: 'approved'
+        };
+
+        // Priority 1: Same category
+        const sameCategoryProducts = await Product.find({
+            ...baseFilter,
+            category_id: product.category_id?._id || product.category_id
+        })
+            .populate("category_id")
+            .limit(8)
+            .lean();
+
+        filteredRelated = sameCategoryProducts.filter(p => p.category_id && !p.category_id.is_blocked);
+
+        // Priority 2: Fill remaining slots with same-brand products if under 8
+        if (filteredRelated.length < 8 && product.specifications?.brand) {
+            const existingIds = filteredRelated.map(p => p._id.toString());
+            const brandProducts = await Product.find({
+                ...baseFilter,
+                _id: { $ne: product._id, $nin: existingIds },
+                'specifications.brand': product.specifications.brand
+            })
+                .populate("category_id")
+                .limit(8 - filteredRelated.length)
+                .lean();
+
+            const filteredBrand = brandProducts.filter(p => p.category_id && !p.category_id.is_blocked);
+            filteredRelated = [...filteredRelated, ...filteredBrand];
+        }
+    }
 
     await applyOffers(product);
     await applyOffers(filteredRelated);
@@ -288,10 +311,6 @@ const getShopData = async (queryParams) => {
 };
 
 async function getFeaturedProducts(limit = 3) {
-    const cacheKey = CACHE_KEYS.LANDING_PRODUCTS;
-    const cached = await getCache(cacheKey);
-    if (cached) return cached;
-
     const activeCategories = await Category.find({ is_blocked: false }).select('_id name');
     const activeCategoryIds = activeCategories.map(cat => cat._id);
 
@@ -315,9 +334,7 @@ async function getFeaturedProducts(limit = 3) {
         .limit(limit)
         .lean();
 
-    const result = await applyOffers(products);
-    await setCache(cacheKey, result, CACHE_TTL.LANDING_PRODUCTS);
-    return result;
+    return await applyOffers(products);
 }
 
 async function checkProductAvailability(productId) {
