@@ -133,6 +133,29 @@ export const updateCategoryApproval = async (id, approvalStatus, adminUser = nul
     }
 
     const result = await category.save();
+
+    // Send in-app notification to the vendor who created the category
+    if (category.createdBy) {
+        try {
+            const { notifyAdmin } = await import('../superadmin/notificationService.js');
+            const isApproved = approvalStatus === 'approved';
+            const title = `Category ${isApproved ? 'Approved' : 'Rejected'}`;
+            const message = isApproved
+                ? `Your category "${category.name}" has been approved by Super Admin and is now active.`
+                : `Your category "${category.name}" has been rejected by Super Admin. Please edit and re-submit it.`;
+
+            await notifyAdmin(
+                category.createdBy,
+                title,
+                message,
+                'category',
+                '/vendor/categories'
+            );
+        } catch (err) {
+            console.error("Failed to notify vendor on category approval update:", err.message);
+        }
+    }
+
     await invalidateCategoryCache();
     return result;
 };
