@@ -109,18 +109,24 @@ async function getProductDetails(productId) {
     let filteredRelated = [];
 
     if (!product.isUnavailable) {
+        const catId = product.category_id?._id || product.category_id;
+        const catSearch = catId ? [catId, catId.toString()].filter(Boolean) : [];
+
         const baseFilter = {
             _id: { $ne: product._id },
             adminId: { $in: activeAdminIds },
             is_blocked: { $ne: true },
             is_unlisted: { $ne: true },
-            approvalStatus: 'approved'
+            $or: [
+                { approvalStatus: 'approved' },
+                { approvalStatus: { $exists: false } }
+            ]
         };
 
         // Priority 1: Same category
         const sameCategoryProducts = await Product.find({
             ...baseFilter,
-            category_id: product.category_id?._id || product.category_id
+            category_id: { $in: catSearch }
         })
             .populate("category_id")
             .limit(8)

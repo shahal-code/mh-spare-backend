@@ -8,6 +8,7 @@ import { CACHE_KEYS } from "../../utils/cacheKeys.js";
 const invalidateProductCache = async (productId = null) => {
     await deleteCachePattern("shop:*");
     await deleteCache(CACHE_KEYS.LANDING_PRODUCTS);
+    await deleteCachePattern("product:detail:*");
     if (productId) {
         await deleteCache(CACHE_KEYS.PRODUCT_DETAIL(productId));
     }
