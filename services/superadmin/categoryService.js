@@ -166,9 +166,10 @@ export const updateCategory = async (id, updateData, adminUser = null) => {
     if (image) category.image = image;
     if (url_slug) category.url_slug = url_slug;
 
-    // If edited by a vendor, reset approvalStatus to 'pending'
+    // If edited by a vendor, reset approvalStatus to 'pending' and is_blocked to false
     if (isVendor) {
         category.approvalStatus = 'pending';
+        category.is_blocked = false;
         
         try {
             const { notifySuperAdmins } = await import('../superadmin/notificationService.js');
