@@ -174,32 +174,41 @@ const getShopData = async (queryParams) => {
     const activeAdmins = await Admin.find({ status: { $ne: 'blocked' } }).select('_id');
     const activeAdminIds = activeAdmins.map(a => a._id);
 
-    // 1. Build the Query Object
-    let query = {
-        is_blocked: { $ne: true },
-        is_unlisted: { $ne: true },
-        approvalStatus: 'approved',
-        adminId: { $in: activeAdminIds }
-    };
+    // 1. Build the Query Conditions ($and array)
+    const andConditions = [
+        { is_blocked: { $ne: true } },
+        { is_unlisted: { $ne: true } },
+        { adminId: { $in: activeAdminIds } },
+        {
+            $or: [
+                { approvalStatus: 'approved' },
+                { approvalStatus: { $exists: false } }
+            ]
+        }
+    ];
 
     if (activeCategoryIds.length > 0) {
-        query.category_id = { $in: activeCategoryIds };
+        andConditions.push({ category_id: { $in: activeCategoryIds } });
     }
 
     if (search) {
-        query.$or = [
-            { name: { $regex: search, $options: "i" } },
-            { description: { $regex: search, $options: "i" } },
-            { "specifications.partNumber": { $regex: search, $options: "i" } },
-            { "specifications.compatibility": { $regex: search, $options: "i" } },
-            { "specifications.brand": { $regex: search, $options: "i" } }
-        ];
+        const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const searchRegex = new RegExp(escapedSearch, 'i');
+        andConditions.push({
+            $or: [
+                { name: searchRegex },
+                { description: searchRegex },
+                { "specifications.partNumber": searchRegex },
+                { "specifications.compatibility": searchRegex },
+                { "specifications.brand": searchRegex }
+            ]
+        });
     }
 
     if (category) {
         // If active categories exist, keep blocked categories out of the public shop.
         if (activeCategoryIds.length === 0 || activeCategoryIds.some(id => id.toString() === category)) {
-            query.category_id = category;
+            andConditions.push({ category_id: category });
         } else {
             return {
                 products: [],
@@ -215,43 +224,33 @@ const getShopData = async (queryParams) => {
         const processors = Array.isArray(queryParams.processor)
             ? queryParams.processor
             : [queryParams.processor];
-        const processorRegexes = processors.map(p => new RegExp(p, 'i'));
-        query["$or"] = [
-            { "variants.processor": { $in: processorRegexes } },
-            { "variants.processorBrand": { $in: processorRegexes } }
-        ];
+        const processorRegexes = processors.map(p => new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
+        andConditions.push({
+            $or: [
+                { "variants.processor": { $in: processorRegexes } },
+                { "variants.processorBrand": { $in: processorRegexes } }
+            ]
+        });
     }
 
     if (queryParams.ram) {
-        if (Array.isArray(queryParams.ram)) {
-            query["variants.ram"] = { $in: queryParams.ram };
-        } else {
-            query["variants.ram"] = queryParams.ram;
-        }
+        const val = Array.isArray(queryParams.ram) ? { $in: queryParams.ram } : queryParams.ram;
+        andConditions.push({ "variants.ram": val });
     }
 
     if (queryParams.gpu) {
-        if (Array.isArray(queryParams.gpu)) {
-            query["variants.gpu"] = { $in: queryParams.gpu };
-        } else {
-            query["variants.gpu"] = queryParams.gpu;
-        }
+        const val = Array.isArray(queryParams.gpu) ? { $in: queryParams.gpu } : queryParams.gpu;
+        andConditions.push({ "variants.gpu": val });
     }
 
     if (queryParams.storage) {
-        if (Array.isArray(queryParams.storage)) {
-            query["variants.storage"] = { $in: queryParams.storage };
-        } else {
-            query["variants.storage"] = queryParams.storage;
-        }
+        const val = Array.isArray(queryParams.storage) ? { $in: queryParams.storage } : queryParams.storage;
+        andConditions.push({ "variants.storage": val });
     }
 
     if (queryParams.size) {
-        if (Array.isArray(queryParams.size)) {
-            query["variants.size"] = { $in: queryParams.size };
-        } else {
-            query["variants.size"] = queryParams.size;
-        }
+        const val = Array.isArray(queryParams.size) ? { $in: queryParams.size } : queryParams.size;
+        andConditions.push({ "variants.size": val });
     }
 
     let sortOrder = {};
@@ -269,14 +268,16 @@ const getShopData = async (queryParams) => {
 
     // 2. Build the Price Filter
     if (queryParams.price) {
-        if (queryParams.price === "under50000") {
-            query["variants.price"] = { $lt: 50000 };
-        } else if (queryParams.price === "50000-100000") {
-            query["variants.price"] = { $gte: 50000, $lte: 100000 };
-        } else if (queryParams.price === "100000-200000") {
-            query["variants.price"] = { $gte: 100000, $lte: 200000 };
-        } else if (queryParams.price === "over200000") {
-            query["variants.price"] = { $gt: 200000 };
+        let pFilter = null;
+        if (queryParams.price === "under50000") pFilter = { $lt: 50000 };
+        else if (queryParams.price === "50000-100000") pFilter = { $gte: 50000, $lte: 100000 };
+        else if (queryParams.price === "100000-200000") pFilter = { $gte: 100000, $lte: 200000 };
+        else if (queryParams.price === "over200000") pFilter = { $gt: 200000 };
+
+        if (pFilter) {
+            andConditions.push({
+                $or: [{ price: pFilter }, { "variants.price": pFilter }]
+            });
         }
     } else if (queryParams.minPrice || queryParams.maxPrice) {
         const priceFilter = {};
@@ -285,12 +286,13 @@ const getShopData = async (queryParams) => {
         if (!isNaN(min)) priceFilter.$gte = min;
         if (!isNaN(max)) priceFilter.$lte = max;
         if (Object.keys(priceFilter).length > 0) {
-            query.$or = [
-                { price: priceFilter },
-                { "variants.price": priceFilter }
-            ];
+            andConditions.push({
+                $or: [{ price: priceFilter }, { "variants.price": priceFilter }]
+            });
         }
     }
+
+    const query = { $and: andConditions };
 
     // 3. Fetch Data with Pagination
     const skip = (page - 1) * limit;
