@@ -80,6 +80,7 @@ router.get("/categories/:id", CategoryApi.category);
 router.post("/categories", uploadCategory.single("image"), CategoryApi.createCategory);
 router.put("/categories/:id", uploadCategory.single("image"), CategoryApi.updateCategory);
 router.patch("/categories/:id/toggle", CategoryApi.toggleCategory);
+router.patch("/categories/:id/approval", enforceOwner, CategoryApi.updateCategoryApproval);
 router.delete("/categories/:id", CategoryApi.deleteCategory);
 
 // Products

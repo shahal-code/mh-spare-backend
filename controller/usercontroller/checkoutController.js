@@ -189,11 +189,14 @@ export const placeOrder = async (req, res) => {
             console.error("Notification/Email Error:", err);
         }
 
+        const allOrderIds = (order.allCreatedOrders || [order]).map(o => o.orderId).join(',');
+
         res.json({
             success: true,
             message: "Order placed successfully!",
             orderId: order.orderId,
-            redirectUrl: `/checkout/order-success?id=${order.orderId}`
+            allOrderIds,
+            redirectUrl: `/checkout/order-success?id=${order.orderId}&allIds=${allOrderIds}`
         });
 
     } catch (error) {

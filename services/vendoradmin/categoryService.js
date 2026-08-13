@@ -13,7 +13,10 @@ const invalidateCategoryCache = async () => {
 
 // Get all categories with pagination and product counts.
 export const getCategoryOptions = async () => {
-    return await Category.find({ is_blocked: false }).sort({ name: 1 }).lean();
+    return await Category.find({ 
+        is_blocked: false, 
+        $or: [{ approvalStatus: 'approved' }, { approvalStatus: { $exists: false } }] 
+    }).sort({ name: 1 }).lean();
 };
 
 export const getAllCategories = async (query, page, limit) => {
@@ -46,8 +49,9 @@ export const getAllCategories = async (query, page, limit) => {
 export const getCategoryStats = async () => {
     const totalCount = await Category.countDocuments();
     const newestCategory = await Category.findOne().sort({ created_at: -1 });
-    const activeCategories = await Category.countDocuments({ is_blocked: false });
+    const activeCategories = await Category.countDocuments({ is_blocked: false, $or: [{ approvalStatus: 'approved' }, { approvalStatus: { $exists: false } }] });
     const blockedCategories = await Category.countDocuments({ is_blocked: true });
+    const pendingCategories = await Category.countDocuments({ approvalStatus: 'pending' });
 
     return {
         total: totalCount,
@@ -55,7 +59,8 @@ export const getCategoryStats = async () => {
         newestName: newestCategory ? newestCategory.name : "N/A",
         newestDate: newestCategory ? newestCategory.created_at : null,
         activeCategories,
-        blockedCategories
+        blockedCategories,
+        pendingCategories
     };
 };
 
@@ -77,15 +82,57 @@ export const createCategory = async (categoryData, adminUser = null) => {
         throw new Error("Category already exists");
     }
 
+    const isOwner = !adminUser || adminUser.role === 'owner';
+    const approvalStatus = isOwner ? 'approved' : 'pending';
+
     const newCategory = new Category({
         name,
         description,
         image,
         url_slug,
-        createdBy: adminUser?._id || categoryData.createdBy || null
+        createdBy: adminUser?._id || categoryData.createdBy || null,
+        approvalStatus
     });
 
     const result = await newCategory.save();
+
+    if (!isOwner) {
+        try {
+            const { notifySuperAdmins } = await import('../superadmin/notificationService.js');
+            await notifySuperAdmins(
+                'New Category Pending Approval',
+                `Vendor "${adminUser?.fullname || 'Vendor'}" created category "${name}" pending approval.`,
+                'category',
+                `/superadmin/categories`
+            );
+        } catch (err) {
+            console.error("Failed to notify superadmins for category:", err.message);
+        }
+    }
+
+    await invalidateCategoryCache();
+    return result;
+};
+
+// SuperAdmin approval / rejection of vendor created category
+export const updateCategoryApproval = async (id, approvalStatus, adminUser = null) => {
+    if (adminUser && adminUser.role !== 'owner') {
+        throw new Error("Permission denied. Only Super Admin can approve or reject categories.");
+    }
+
+    const category = await Category.findById(id);
+    if (!category) {
+        throw new Error("Category not found");
+    }
+
+    category.approvalStatus = approvalStatus;
+    if (approvalStatus === 'rejected') {
+        category.is_blocked = true;
+    } else if (approvalStatus === 'approved') {
+        category.is_blocked = false;
+    }
+
+    const result = await category.save();
     await invalidateCategoryCache();
     return result;
 };

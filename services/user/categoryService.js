@@ -11,7 +11,10 @@ export const getActiveCategories = async (limit = 100) => {
     const cached = await getCache(cacheKey);
     if (cached) return cached;
 
-    const categories = await Category.find({ is_blocked: false }).limit(limit).lean();
+    const categories = await Category.find({ 
+        is_blocked: false,
+        $or: [{ approvalStatus: 'approved' }, { approvalStatus: { $exists: false } }]
+    }).limit(limit).lean();
     await setCache(cacheKey, categories, CACHE_TTL.CATEGORIES);
     return categories;
 };
@@ -24,7 +27,10 @@ export const getAllActiveCategories = async () => {
     const cached = await getCache(cacheKey);
     if (cached) return cached;
 
-    const categories = await Category.find({ is_blocked: false }).select('_id name').lean();
+    const categories = await Category.find({ 
+        is_blocked: false,
+        $or: [{ approvalStatus: 'approved' }, { approvalStatus: { $exists: false } }]
+    }).select('_id name').lean();
     await setCache(cacheKey, categories, CACHE_TTL.CATEGORIES);
     return categories;
 };

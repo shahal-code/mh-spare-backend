@@ -88,3 +88,13 @@ export const deleteCategory = async (req, res) => {
     sendError(res, error, 400);
   }
 };
+
+export const updateCategoryApproval = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const category = await CategoryService.updateCategoryApproval(req.params.id, status, req.admin);
+    res.json({ success: true, message: `Category ${status} successfully`, category });
+  } catch (error) {
+    sendError(res, error, 400);
+  }
+};
