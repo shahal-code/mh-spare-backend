@@ -99,13 +99,16 @@ export const session = async (req, res) => {
         email: req.admin.email,
         role: req.admin.role,
         status: req.admin.status,
-        storeDetails: req.admin.storeDetails
+        storeDetails: req.admin.storeDetails,
+        kycStatus: req.admin.kycStatus,
+        kycDocuments: req.admin.kycDocuments
       }
     });
   } catch (error) {
     res.status(401).json({ authenticated: false });
   }
 };
+
 
 import { setCache } from "../../utils/cacheHelper.js";
 import { CACHE_KEYS, CACHE_TTL } from "../../utils/cacheKeys.js";
