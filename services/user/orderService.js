@@ -161,56 +161,86 @@ class OrderService {
             }
         }
 
-        //  Save Order
-        const order = new Order({
-            userId,
-            orderId: `ORD-${Date.now().toString().slice(-8)}`, // Simple unique ID
-            orderedItems,
-            totalPrice: subtotal,
-            discount,
-            finalAmount,
-            shippingAddress: {
-                fullname: address.fullname,
-                phone: address.phone,
-                line1: address.line1,
-                line2: address.line2,
-                city: address.city,
-                state: address.state,
-                postal_code: address.postal_code
-            },
-            paymentMethod,
-            status: 'Pending',
-            paymentStatus,
-            inventoryProcessed
-        });
+        // Group items by vendor adminId
+        const vendorGroupedMap = new Map();
+        for (const item of orderedItems) {
+            const vId = item.adminId ? (item.adminId._id ? item.adminId._id.toString() : item.adminId.toString()) : 'platform';
+            if (!vendorGroupedMap.has(vId)) {
+                vendorGroupedMap.set(vId, []);
+            }
+            vendorGroupedMap.get(vId).push(item);
+        }
 
-        let inventoryReserved = false;
+        const isMultiVendor = vendorGroupedMap.size > 1;
+        const createdOrders = [];
+        let orderIndex = 0;
+        const baseTimeStr = Date.now().toString();
 
         try {
-            await order.save();
+            for (const [vId, itemsGroup] of vendorGroupedMap.entries()) {
+                orderIndex++;
+                const groupSubtotal = itemsGroup.reduce((sum, it) => sum + (it.price * it.quantity), 0);
+                const groupTax = groupSubtotal * 0.18;
+                
+                let groupDiscount = 0;
+                if (discount > 0 && subtotal > 0) {
+                    groupDiscount = Math.round((groupSubtotal / subtotal) * discount);
+                }
+                let groupFinal = (groupSubtotal + groupTax) - groupDiscount;
+                if (groupFinal < 0) groupFinal = 0;
 
-            if (inventoryProcessed) {
-                await this.reserveInventoryForItems(orderedItems);
-                inventoryReserved = true;
+                const orderIdStr = isMultiVendor 
+                    ? `ORD-${baseTimeStr.slice(-6)}${orderIndex}` 
+                    : `ORD-${baseTimeStr.slice(-8)}`;
+
+                const order = new Order({
+                    userId,
+                    orderId: orderIdStr,
+                    orderedItems: itemsGroup,
+                    totalPrice: groupSubtotal,
+                    discount: groupDiscount,
+                    finalAmount: groupFinal,
+                    shippingAddress: {
+                        fullname: address.fullname,
+                        phone: address.phone,
+                        line1: address.line1,
+                        line2: address.line2,
+                        city: address.city,
+                        state: address.state,
+                        postal_code: address.postal_code
+                    },
+                    paymentMethod,
+                    status: 'Pending',
+                    paymentStatus,
+                    inventoryProcessed
+                });
+
+                await order.save();
+
+                if (inventoryProcessed) {
+                    await this.reserveInventoryForItems(itemsGroup);
+                }
+
+                createdOrders.push(order);
             }
 
             if (paymentMethod === 'Wallet' && !paymentFailed) {
                 await walletService.debitWallet(
                     userId,
                     finalAmount,
-                    `Payment for order ${order.orderId}`,
-                    order.orderId
+                    `Payment for order(s) ${createdOrders.map(o => o.orderId).join(', ')}`,
+                    createdOrders[0].orderId
                 );
             }
         } catch (error) {
-            if (inventoryReserved) {
-                await this.releaseInventoryForItems(orderedItems);
+            for (const createdOrder of createdOrders) {
+                if (inventoryProcessed) {
+                    await this.releaseInventoryForItems(createdOrder.orderedItems);
+                }
+                if (createdOrder._id) {
+                    await Order.deleteOne({ _id: createdOrder._id });
+                }
             }
-
-            if (order._id) {
-                await Order.deleteOne({ _id: order._id });
-            }
-
             throw error;
         }
 
@@ -218,18 +248,6 @@ class OrderService {
             try {
                 await CouponService.markCouponAsUsed(appliedCoupon._id, userId);
             } catch (error) {
-                console.error(`Failed to mark coupon ${appliedCoupon._id} as used for order ${order.orderId}:`, error);
-            }
-        }
-
-        if (inventoryProcessed) {
-            try {
-                await this.removeOrderedItemsFromCart(userId, orderedItems);
-            } catch (error) {
-                console.error(`Failed to reconcile cart for order ${order.orderId}:`, error);
-            }
-        }
-
         return order;
     }
 
