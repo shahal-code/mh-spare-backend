@@ -19,7 +19,21 @@ export const categories = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
     const search = req.query.search || "";
-    const query = search ? { name: { $regex: search, $options: "i" } } : {};
+    const status = req.query.status || "";
+
+    const query = {};
+    if (search) {
+      query.name = { $regex: search, $options: "i" };
+    }
+    if (status === "active") {
+      query.is_blocked = false;
+      query.$or = [{ approvalStatus: "approved" }, { approvalStatus: { $exists: false } }];
+    } else if (status === "pending") {
+      query.approvalStatus = "pending";
+    } else if (status === "blocked") {
+      query.$or = [{ is_blocked: true }, { approvalStatus: "rejected" }];
+    }
+
     const data = await CategoryService.getAllCategories(query, page, limit);
     const stats = await CategoryService.getCategoryStats();
     res.json({ ...data, page, limit, search, stats });
