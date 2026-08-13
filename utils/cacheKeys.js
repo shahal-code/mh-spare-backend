@@ -7,6 +7,7 @@ export const CACHE_KEYS = {
     // Public product keys
     LANDING_PRODUCTS: "landing:products",
     PRODUCT_DETAIL: (id) => `product:detail:${id}`,
+    PRODUCT_REVIEWS: (id) => `product:reviews:${id}`,
     SHOP_PRODUCTS: (queryString) => `shop:${queryString}`,
 
     // Category keys
@@ -32,6 +33,7 @@ export const CACHE_KEYS = {
 export const CACHE_TTL = {
     LANDING_PRODUCTS: 300,       // 5 minutes
     PRODUCT_DETAIL: 300,         // 5 minutes
+    PRODUCT_REVIEWS: 300,        // 5 minutes
     SHOP_PRODUCTS: 180,          // 3 minutes
     CATEGORIES: 600,             // 10 minutes
     BANNERS: 1800,               // 30 minutes

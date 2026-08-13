@@ -221,10 +221,14 @@ export const updateOrderStatus = async (orderId, status, adminContext = null) =>
             );
         }
         item.status = status;
+        if (status === 'Delivered' && !item.deliveredAt) {
+            item.deliveredAt = new Date();
+        }
     }
 
-    if (status === 'Delivered' && order.paymentMethod === 'COD') {
-        order.paymentStatus = 'Paid';
+    if (status === 'Delivered') {
+        if (!order.deliveredAt) order.deliveredAt = new Date();
+        if (['COD', 'WhatsApp'].includes(order.paymentMethod)) order.paymentStatus = 'Paid';
     }
 
     // Refund logic for full return
@@ -298,6 +302,9 @@ export const updateOrderItemStatus = async (orderId, itemId, status, adminContex
     }
 
     item.status = status;
+    if (status === 'Delivered' && !item.deliveredAt) {
+        item.deliveredAt = new Date();
+    }
 
     // Refund for single item return
     if (status === 'Returned' && (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded')) {
@@ -339,8 +346,9 @@ export const updateOrderItemStatus = async (orderId, itemId, status, adminContex
         }
     }
 
-    if (order.status === 'Delivered' && order.paymentMethod === 'COD') {
-        order.paymentStatus = 'Paid';
+    if (order.status === 'Delivered') {
+        if (!order.deliveredAt) order.deliveredAt = new Date();
+        if (['COD', 'WhatsApp'].includes(order.paymentMethod)) order.paymentStatus = 'Paid';
     }
 
     order.markModified("orderedItems");
@@ -348,55 +356,74 @@ export const updateOrderItemStatus = async (orderId, itemId, status, adminContex
     return order;
 };
 
-export const getReturnRequests = async (queryParams ,page, limit) => {
+export const getReturnRequests = async (queryParams, page, limit, adminContext = null) => {
     const skip = (page - 1) * limit;
 
-    const {search}=queryParams;
+    const { search } = queryParams;
 
     // Find orders where at least one item has a return request
     let query = {
         "orderedItems.status": "Return Request"
     };
 
-    if(search){
-        const cleanSearch = search.replace("#","").trim();
-        const User=(await import ("../../models/userModel.js")).default
+    if (adminContext && adminContext.role !== 'owner') {
+        query["orderedItems.adminId"] = adminContext._id;
+    }
 
-        const matchingUsers=await User.find({
-            fullname:{$regex:cleanSearch,$options:"i"}
+    if (search) {
+        const cleanSearch = search.replace("#", "").trim();
+        const User = (await import("../../models/userModel.js")).default;
+
+        const matchingUsers = await User.find({
+            fullname: { $regex: cleanSearch, $options: "i" }
         }).select("_id");
 
-        const userIds=matchingUsers.map(u=>u._id);
+        const userIds = matchingUsers.map(u => u._id);
 
-        const matchingProduct=await Product.find({
-            name:{$regex:cleanSearch,$options:"i"}
+        const matchingProduct = await Product.find({
+            name: { $regex: cleanSearch, $options: "i" }
         }).select("_id");
 
-        let productIds=matchingProduct.map(p=>p._id);
+        let productIds = matchingProduct.map(p => p._id);
 
-          query = {
-            $and: [
-                { "orderedItems.status": "Return Request" },
+        const conditions = [
+            { "orderedItems.status": "Return Request" },
+            {
+                $or: [
+                    { orderId: { $regex: cleanSearch, $options: "i" } },
+                    { userId: { $in: userIds } },
+                    { "orderedItems.product": { $in: productIds } },
+                    { "orderedItems.returnReason": { $regex: cleanSearch, $options: "i" } }
+                ]
+            }
+        ];
 
-                {
-                    $or: [
-                        { orderId: { $regex: cleanSearch, $options: "i" } },
-                        { userId: { $in: userIds } },
-                        { "orderedItems.product": { $in: productIds } },
-                        { "orderedItems.returnReason": { $regex: cleanSearch, $options: "i" } }
-                    ]
-                }
-            ]
-        };
+        if (adminContext && adminContext.role !== 'owner') {
+            conditions.push({ "orderedItems.adminId": adminContext._id });
+        }
+
+        query = { $and: conditions };
     }
     
     const orders = await Order.find(query)
         .populate("userId")
         .populate("orderedItems.product")
+        .populate("orderedItems.adminId", "fullname storeDetails")
         .sort({ updatedAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean();
+
+    if (adminContext && adminContext.role !== 'owner') {
+        const adminIdStr = adminContext._id.toString();
+        orders.forEach(order => {
+            order.orderedItems = (order.orderedItems || []).filter(item => {
+                if (!item.adminId) return false;
+                const itemAdminId = item.adminId._id ? item.adminId._id.toString() : item.adminId.toString();
+                return itemAdminId === adminIdStr && item.status === "Return Request";
+            });
+        });
+    }
 
     const totalOrders = await Order.countDocuments(query);
     const totalPages = Math.ceil(totalOrders / limit);

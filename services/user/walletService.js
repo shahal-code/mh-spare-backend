@@ -13,6 +13,11 @@ export const getOrCreateWallet = async (userId) => {
 export const creditWallet = async (userId, amount, description, orderId = null) => {
     const wallet = await getOrCreateWallet(userId);
     wallet.balance += amount;
+
+    // Cap transactions at 200 to prevent wallet doc growing unbounded (M0 storage)
+    if (wallet.transactions.length >= 200) {
+        wallet.transactions.shift(); // remove oldest
+    }
     wallet.transactions.push({
         type: "credit",
         amount,
@@ -31,6 +36,11 @@ export const debitWallet = async (userId, amount, description, orderId = null) =
         throw new Error("Insufficient wallet balance");
     }
     wallet.balance -= amount;
+
+    // Cap transactions at 200 to prevent wallet doc growing unbounded (M0 storage)
+    if (wallet.transactions.length >= 200) {
+        wallet.transactions.shift(); // remove oldest
+    }
     wallet.transactions.push({
         type: "debit",
         amount,

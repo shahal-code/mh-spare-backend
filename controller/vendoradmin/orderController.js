@@ -31,7 +31,7 @@ export const returns = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 5;
-    const data = await OrderService.getReturnRequests(req.query, page, limit);
+    const data = await OrderService.getReturnRequests(req.query, page, limit, req.admin);
     res.json({ ...data, page, limit, search: req.query.search || "" });
   } catch (error) {
     sendError(res, error);

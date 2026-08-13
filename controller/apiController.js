@@ -128,6 +128,13 @@ const batchGetRatings = async (productIds) => {
 
 export const getLandingProducts = async (req, res) => {
     try {
+        // Serve from cache — avoids heavy Review aggregate + Product queries on every homepage load
+        const cacheKey = CACHE_KEYS.LANDING_PRODUCTS;
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            return res.json({ success: true, ...cached, fromCache: true });
+        }
+
         const featuredProducts = await ProductService.getFeaturedProducts(10);
         const productIds = featuredProducts.map(p => toId(p));
         const ratingMap = await batchGetRatings(productIds);
@@ -136,7 +143,10 @@ export const getLandingProducts = async (req, res) => {
         const activeCategories = await CategoryService.getActiveCategories(10);
         const categoriesData = activeCategories.map(normalizeCategory);
 
-        res.json({ success: true, products: productsData, categories: categoriesData });
+        const payload = { products: productsData, categories: categoriesData };
+        await setCache(cacheKey, payload, CACHE_TTL.LANDING_PRODUCTS);
+
+        res.json({ success: true, ...payload });
     } catch (error) {
         console.error("API Error fetching products:", error);
         res.status(500).json({ success: false, message: "Failed to fetch products" });
@@ -180,6 +190,11 @@ const normalizeReview = (review) => ({
 });
 
 const getReviewSummary = async (productId) => {
+    // Cache per product — avoids repeated DB hits on every product page visit
+    const cacheKey = CACHE_KEYS.PRODUCT_REVIEWS(productId);
+    const cached = await getCache(cacheKey);
+    if (cached) return cached;
+
     const reviews = await Review.find({ product: productId })
         .populate("user", "fullname profileImage")
         .sort({ createdAt: -1 })
@@ -188,11 +203,13 @@ const getReviewSummary = async (productId) => {
         ? Math.round((reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length) * 10) / 10
         : 0;
 
-    return {
+    const result = {
         reviews: reviews.map(normalizeReview),
         averageRating,
         totalRatings: reviews.length
     };
+    await setCache(cacheKey, result, CACHE_TTL.PRODUCT_REVIEWS);
+    return result;
 };
 
 export const getProductDetails = async (req, res) => {

@@ -5,6 +5,7 @@ import Product from "../../models/productModel.js";
 import CouponService from "./couponService.js";
 import { applyOffers } from "./productServices.js";
 import * as walletService from "./walletService.js";
+import { notifyAdmin, notifySuperAdmins } from "../vendoradmin/notificationService.js";
 
 class OrderService {
     async validateCartAndBuildOrder(userId, appliedCoupon = null) {
@@ -356,7 +357,7 @@ class OrderService {
         }
 
         // Calculate refund
-        if (order.paymentMethod !== 'COD' && (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded')) {
+        if (!['COD', 'WhatsApp'].includes(order.paymentMethod) && (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded')) {
             let refundAmount = 0;
             const allActive = order.orderedItems.every(i => i.status !== 'Cancelled' && i.status !== 'Returned');
             
@@ -421,6 +422,12 @@ class OrderService {
             throw new Error("Only delivered orders can be returned.");
         }
 
+        const deliveryDate = order.deliveredAt || order.updatedAt;
+        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        if (Date.now() - new Date(deliveryDate).getTime() > SEVEN_DAYS_MS) {
+            throw new Error("The 7-day refund window for this order has expired.");
+        }
+
         order.status = 'Return Request';
         order.returnReason = reason;
 
@@ -433,6 +440,20 @@ class OrderService {
         });
 
         await order.save();
+
+        // Send real-time SSE notifications
+        (async () => {
+            try {
+                const vendorIds = [...new Set(order.orderedItems.map(i => i.adminId ? (i.adminId._id ? i.adminId._id.toString() : i.adminId.toString()) : null).filter(Boolean))];
+                for (const vendorId of vendorIds) {
+                    await notifyAdmin(vendorId, "New Return Request", `Return request submitted for Order #${order.orderId}`, 'warning', '/vendor/returns');
+                }
+                await notifySuperAdmins("New Return Request", `Return request submitted for Order #${order.orderId}`, 'warning', '/superadmin/returns');
+            } catch (notifErr) {
+                console.error("Failed to send return request notification:", notifErr);
+            }
+        })();
+
         return order;
     }
 
@@ -466,7 +487,7 @@ class OrderService {
         item.status = 'Cancelled';
         item.cancellationReason = reason;
 
-        if (order.paymentMethod !== 'COD' && (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded')) {
+        if (!['COD', 'WhatsApp'].includes(order.paymentMethod) && (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded')) {
             // No coupon discount — safe to refund at face value + tax
             const refundAmount = item.price * item.quantity * 1.18;
             await walletService.creditWallet(
@@ -517,6 +538,12 @@ class OrderService {
             throw new Error("Only delivered items can be returned.");
         }
 
+        const deliveryDate = item.deliveredAt || order.deliveredAt || order.updatedAt;
+        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        if (Date.now() - new Date(deliveryDate).getTime() > SEVEN_DAYS_MS) {
+            throw new Error("The 7-day refund window for this item has expired.");
+        }
+
         item.status = 'Return Request';
         item.returnReason = reason;
 
@@ -527,6 +554,20 @@ class OrderService {
         }
 
         await order.save();
+
+        // Send real-time SSE notifications
+        (async () => {
+            try {
+                if (item.adminId) {
+                    const vendorId = item.adminId._id ? item.adminId._id.toString() : item.adminId.toString();
+                    await notifyAdmin(vendorId, "New Return Request", `Item return request submitted for Order #${order.orderId}`, 'warning', '/vendor/returns');
+                }
+                await notifySuperAdmins("New Return Request", `Item return request submitted for Order #${order.orderId}`, 'warning', '/superadmin/returns');
+            } catch (notifErr) {
+                console.error("Failed to send item return request notification:", notifErr);
+            }
+        })();
+
         return order;
     }
 }

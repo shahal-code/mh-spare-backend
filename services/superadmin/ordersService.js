@@ -194,10 +194,14 @@ export const updateOrderStatus = async (orderId, status) => {
             );
         }
         item.status = status;
+        if (status === 'Delivered' && !item.deliveredAt) {
+            item.deliveredAt = new Date();
+        }
     }
 
-    if (status === 'Delivered' && order.paymentMethod === 'COD') {
-        order.paymentStatus = 'Paid';
+    if (status === 'Delivered') {
+        if (!order.deliveredAt) order.deliveredAt = new Date();
+        if (['COD', 'WhatsApp'].includes(order.paymentMethod)) order.paymentStatus = 'Paid';
     }
 
     // Refund logic for full return
@@ -276,6 +280,9 @@ export const updateOrderItemStatus = async (orderId, itemId, status) => {
     }
 
     item.status = status;
+    if (status === 'Delivered' && !item.deliveredAt) {
+        item.deliveredAt = new Date();
+    }
 
     // Refund for single item return
     if (status === 'Returned' && (order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Refunded')) {
@@ -317,8 +324,9 @@ export const updateOrderItemStatus = async (orderId, itemId, status) => {
         }
     }
 
-    if (order.status === 'Delivered' && order.paymentMethod === 'COD') {
-        order.paymentStatus = 'Paid';
+    if (order.status === 'Delivered') {
+        if (!order.deliveredAt) order.deliveredAt = new Date();
+        if (['COD', 'WhatsApp'].includes(order.paymentMethod)) order.paymentStatus = 'Paid';
     }
 
     order.markModified("orderedItems");

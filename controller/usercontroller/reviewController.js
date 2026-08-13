@@ -1,5 +1,7 @@
 import Review from "../../models/reviewModel.js";
 import Product from "../../models/productModel.js";
+import { deleteCache } from "../../utils/cacheHelper.js";
+import { CACHE_KEYS } from "../../utils/cacheKeys.js";
 
 export const addReview = async (req, res) => {
     try {
@@ -36,6 +38,10 @@ export const addReview = async (req, res) => {
 
         await review.save();
 
+        // Invalidate cached review summary so next request gets fresh data
+        await deleteCache(CACHE_KEYS.PRODUCT_REVIEWS(productId));
+        await deleteCache(CACHE_KEYS.LANDING_PRODUCTS);
+
         res.status(201).json({ success: true, message: "Review added successfully.", review });
     } catch (error) {
         console.error("Error adding review:", error);
@@ -62,6 +68,11 @@ export const deleteReview = async (req, res) => {
         }
 
         await Review.findByIdAndDelete(reviewId);
+
+        // Invalidate cached review summary so next request gets fresh data
+        await deleteCache(CACHE_KEYS.PRODUCT_REVIEWS(productId));
+        await deleteCache(CACHE_KEYS.LANDING_PRODUCTS);
+
         res.status(200).json({ success: true, message: "Review deleted successfully." });
     } catch (error) {
         console.error("Error deleting review:", error);

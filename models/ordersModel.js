@@ -65,6 +65,10 @@ const orderSchema = new mongoose.Schema({
         courierName: {
             type: String,
             default: null
+        },
+        deliveredAt: {
+            type: Date,
+            default: null
         }
     }],
     totalPrice: {
@@ -115,6 +119,10 @@ const orderSchema = new mongoose.Schema({
     },
     returnReason: {
         type: String,
+        default: null
+    },
+    deliveredAt: {
+        type: Date,
         default: null
     }
 }, { timestamps: true });

@@ -28,6 +28,12 @@ const activityLogSchema = new mongoose.Schema(
   }
 );
 
+// Fast lookup by admin
+activityLogSchema.index({ adminId: 1, createdAt: -1 });
+
+// Auto-delete activity logs older than 90 days to save M0 storage
+activityLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
+
 const ActivityLog = mongoose.model("ActivityLog", activityLogSchema);
 
 export default ActivityLog;

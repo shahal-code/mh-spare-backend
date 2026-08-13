@@ -187,9 +187,16 @@ export const resendLoginOtp = async (req, res) => {
  */
 export const session = async (req, res) => {
   try {
-    // verifyAdminJWT already checks the token and sets req.admin
+    const Order = (await import("../../models/ordersModel.js")).default;
+    let returnQuery = { "orderedItems.status": "Return Request" };
+    if (req.admin && req.admin.role !== 'owner') {
+      returnQuery["orderedItems.adminId"] = req.admin._id;
+    }
+    const returnCount = await Order.countDocuments(returnQuery);
+
     res.json({
       authenticated: true,
+      returnCount,
       admin: {
         id: req.admin._id,
         fullname: req.admin.fullname,
