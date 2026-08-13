@@ -108,6 +108,10 @@ router.delete('/address/delete/:id', userAuth.isAuthenticated, Address.deleteAdd
 
 router.get('/address/set-default/:id', userAuth.isAuthenticated, Address.setDefaultAddress);
 
+import * as ContactController from "../controller/usercontroller/contactController.js";
+
+router.post('/contact-inquiry', ContactController.submitContactInquiry);
+
 router.get('/logout', userAuth.isAuthenticated, usercontroller.isLogout);
 
 export default router;

@@ -411,3 +411,82 @@ export const sendUserOrderStatusEmail = async (userEmail, userName, order, newSt
         return false;
     }
 };
+
+/**
+ * Send customer contact inquiry email to admin (mhspare@gmail.com)
+ * and auto-reply confirmation to the customer.
+ */
+export const sendContactInquiryEmail = async ({ name, email, phone, orderId, message }) => {
+    try {
+        const targetAdminEmail = "mhspare@gmail.com";
+        const mailOptions = {
+            from: {
+                name: "ESPARE HUB Website Inquiry",
+                address: process.env.NODEMAILER_EMAIL
+            },
+            to: targetAdminEmail,
+            replyTo: email,
+            subject: `📩 New Customer Message from ${name} (${orderId ? 'Order: ' + orderId : 'General Inquiry'})`,
+            headers: INBOX_HEADERS,
+            text: `New Inquiry Received from ESPARE HUB Contact Form:\n\nName: ${name}\nEmail: ${email}\nPhone: ${phone || 'N/A'}\nOrder ID: ${orderId || 'N/A'}\n\nMessage:\n${message}`,
+            html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    <div style="background: #0f172a; padding: 24px; text-align: center; border-bottom: 2px solid #2563eb;">
+                        <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">📩 New Customer Inquiry</h2>
+                        <p style="color: #94a3b8; margin: 6px 0 0; font-size: 13px;">Received from E-Spare Hub Contact Page</p>
+                    </div>
+                    <div style="padding: 24px;">
+                        <table width="100%" cellpadding="8" cellspacing="0" style="font-size: 14px; color: #1e293b; border-collapse: collapse; margin-bottom: 20px;">
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="font-weight: 700; color: #64748b; width: 110px;">Name:</td><td>${name}</td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="font-weight: 700; color: #64748b;">Email:</td><td><a href="mailto:${email}" style="color: #2563eb; text-decoration: none; font-weight: 600;">${email}</a></td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="font-weight: 700; color: #64748b;">Phone:</td><td>${phone || 'Not provided'}</td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="font-weight: 700; color: #64748b;">Order ID:</td><td>${orderId || 'N/A'}</td></tr>
+                        </table>
+                        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; color: #0f172a; font-size: 14px; line-height: 1.6;">
+                            <strong style="color: #475569; display: block; margin-bottom: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Customer Message:</strong>
+                            ${message.replace(/\n/g, '<br/>')}
+                        </div>
+                    </div>
+                    <div style="background: #f1f5f9; padding: 14px 24px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0;">
+                        💡 <em>Clicking "Reply" to this email will respond directly to <strong>${name}</strong> (${email}).</em>
+                    </div>
+                </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ Contact inquiry from ${name} sent to ${targetAdminEmail}`);
+
+        // Auto-reply confirmation to the customer
+        const customerAckMail = {
+            from: { name: "ESPARE HUB Support", address: process.env.NODEMAILER_EMAIL },
+            to: email,
+            subject: `We've received your message! — ESPARE HUB Support`,
+            headers: INBOX_HEADERS,
+            text: `Hi ${name},\n\nThank you for reaching out to ESPARE HUB. We have received your inquiry and our support team will reach out within 2 hours during working hours (Mon - Sat, 9:30 AM - 7:30 PM).\n\nYour message:\n"${message}"\n\nBest regards,\nESPARE HUB Support Team`,
+            html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    <div style="background: #0f172a; padding: 24px; text-align: center;">
+                        <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">Message Received!</h2>
+                    </div>
+                    <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
+                        <p>Hi <strong>${name}</strong>,</p>
+                        <p>Thank you for contacting <strong>ESPARE HUB Support</strong>. We have successfully received your inquiry.</p>
+                        <p>Our technical support team will review your message and reach out to you within 2 hours during working hours (Monday – Saturday, 9:30 AM – 7:30 PM IST).</p>
+                        <div style="background: #f8fafc; border-left: 4px solid #2563eb; padding: 14px 18px; border-radius: 0 10px 10px 0; margin: 20px 0; font-size: 13px; color: #334155;">
+                            <strong style="color: #0f172a; display: block; margin-bottom: 4px;">Summary of your query:</strong>
+                            ${message.replace(/\n/g, '<br/>')}
+                        </div>
+                        <p style="margin-bottom: 0;">Warm regards,<br/><strong>ESPARE HUB Support Team</strong></p>
+                    </div>
+                </div>
+            `
+        };
+        await transporter.sendMail(customerAckMail).catch(err => console.warn("Customer auto-reply email warning:", err.message));
+
+        return true;
+    } catch (error) {
+        console.error("❌ Failed to send contact inquiry email:", error.message);
+        return false;
+    }
+};
