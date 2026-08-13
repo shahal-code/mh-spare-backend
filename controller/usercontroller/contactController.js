@@ -21,12 +21,12 @@ export const submitContactInquiry = async (req, res) => {
       message: message.trim()
     });
 
-    // Send email to mhspare@gmail.com + user auto-reply
+    // Send email to mhsparehub@gmail.com + user auto-reply
     await sendContactInquiryEmail({ name, email, phone, orderId, message });
 
     return res.status(201).json({
       success: true,
-      message: "Your inquiry has been sent successfully to mhspare@gmail.com!",
+      message: "Your inquiry has been submitted successfully!",
       data: inquiry
     });
   } catch (error) {
