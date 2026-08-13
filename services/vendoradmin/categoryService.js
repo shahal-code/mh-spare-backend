@@ -128,8 +128,10 @@ export const updateCategoryApproval = async (id, approvalStatus, adminUser = nul
     category.approvalStatus = approvalStatus;
     if (approvalStatus === 'rejected') {
         category.is_blocked = true;
+        category.blockedBy = 'superadmin';
     } else if (approvalStatus === 'approved') {
         category.is_blocked = false;
+        category.blockedBy = null;
     }
 
     const result = await category.save();
@@ -193,6 +195,7 @@ export const updateCategory = async (id, updateData, adminUser = null) => {
     if (isVendor) {
         category.approvalStatus = 'pending';
         category.is_blocked = false;
+        category.blockedBy = null;
         
         try {
             const { notifySuperAdmins } = await import('../superadmin/notificationService.js');
@@ -223,14 +226,27 @@ export const toggleCategoryStatus = async (id, adminUser = null) => {
         throw new Error("Cannot block or unblock a rejected category. Please edit the category to re-submit it for Super Admin approval.");
     }
 
+    const isOwner = adminUser && adminUser.role === 'owner';
+    const isVendor = adminUser && adminUser.role !== 'owner';
+
     // Permission check for vendors
-    if (adminUser && adminUser.role !== 'owner') {
+    if (isVendor) {
         if (category.createdBy && category.createdBy.toString() !== adminUser._id.toString()) {
             throw new Error("Permission denied. You can only toggle categories created by your account.");
+        }
+
+        if (category.is_blocked && category.blockedBy === 'superadmin') {
+            throw new Error("Permission denied. This category was blocked by Super Admin and cannot be unblocked by vendor. Please contact Super Admin.");
         }
     }
     
     category.is_blocked = !category.is_blocked;
+    if (category.is_blocked) {
+        category.blockedBy = isOwner ? 'superadmin' : 'vendor';
+    } else {
+        category.blockedBy = null;
+    }
+
     const result = await category.save();
     await invalidateCategoryCache();
     return result;

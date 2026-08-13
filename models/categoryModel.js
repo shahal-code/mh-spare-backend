@@ -37,6 +37,11 @@ const categorySchema = new mongoose.Schema(
       enum: ['pending', 'approved', 'rejected'],
       default: 'approved'
     },
+    blockedBy: {
+      type: String,
+      enum: ['superadmin', 'vendor', null],
+      default: null
+    },
   },
   {
     timestamps: { 
