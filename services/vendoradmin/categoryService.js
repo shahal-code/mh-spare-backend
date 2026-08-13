@@ -147,7 +147,8 @@ export const updateCategory = async (id, updateData, adminUser = null) => {
     }
 
     // Permission check for vendors: Vendors cannot update categories created by others
-    if (adminUser && adminUser.role !== 'owner') {
+    const isVendor = adminUser && adminUser.role !== 'owner';
+    if (isVendor) {
         if (category.createdBy && category.createdBy.toString() !== adminUser._id.toString()) {
             throw new Error("Permission denied. You can only update categories created by your account.");
         }
@@ -165,6 +166,23 @@ export const updateCategory = async (id, updateData, adminUser = null) => {
     if (image) category.image = image;
     if (url_slug) category.url_slug = url_slug;
 
+    // If edited by a vendor, reset approvalStatus to 'pending'
+    if (isVendor) {
+        category.approvalStatus = 'pending';
+        
+        try {
+            const { notifySuperAdmins } = await import('../superadmin/notificationService.js');
+            await notifySuperAdmins(
+                'Category Re-Submitted For Approval',
+                `Vendor "${adminUser?.fullname || 'Vendor'}" updated category "${category.name}" and re-submitted it for approval.`,
+                'category',
+                `/superadmin/categories`
+            );
+        } catch (err) {
+            console.error("Failed to notify superadmins for category edit:", err.message);
+        }
+    }
+
     const result = await category.save();
     await invalidateCategoryCache();
     return result;
@@ -175,6 +193,10 @@ export const toggleCategoryStatus = async (id, adminUser = null) => {
     const category = await Category.findById(id);
     if (!category) {
         throw new Error("Category not found");
+    }
+
+    if (category.approvalStatus === 'rejected') {
+        throw new Error("Cannot block or unblock a rejected category. Please edit the category to re-submit it for Super Admin approval.");
     }
 
     // Permission check for vendors
