@@ -59,7 +59,7 @@ export const orders = async (req, res) => {
 
 export const order = async (req, res) => {
   try {
-    const data = await OrderService.getOrderById(req.params.orderId);
+    const data = await OrderService.getOrderById(req.params.orderId, req.admin);
     if (!data) return res.status(404).json({ success: false, message: "Order not found" });
     res.json({ order: data });
   } catch (error) {
@@ -69,7 +69,7 @@ export const order = async (req, res) => {
 
 export const updateOrderStatus = async (req, res) => {
   try {
-    const order = await OrderService.updateOrderStatus(req.body.orderId, req.body.status);
+    const order = await OrderService.updateOrderStatus(req.body.orderId, req.body.status, req.admin);
     if (!order) return res.status(400).json({ success: false, message: "Failed to update status" });
 
     // Send status update email to the user — fire and forget (don't block response)
@@ -99,7 +99,7 @@ export const updateOrderStatus = async (req, res) => {
 
 export const updateOrderItemStatus = async (req, res) => {
   try {
-    const order = await OrderService.updateOrderItemStatus(req.body.orderId, req.body.itemId, req.body.status);
+    const order = await OrderService.updateOrderItemStatus(req.body.orderId, req.body.itemId, req.body.status, req.admin);
     res.json({ success: true, order, message: "Item status updated successfully" });
   } catch (error) {
     sendError(res, error, 400);

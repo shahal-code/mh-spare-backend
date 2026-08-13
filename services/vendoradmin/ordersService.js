@@ -171,21 +171,44 @@ export const bulkUpdateOrderStatus = async (orderIds, status) => {
     return { successCount, failedCount, errors };
 };
 
-export const getOrderById = async (orderId) => {
-    return await Order.findById(orderId)
+export const getOrderById = async (orderId, adminContext = null) => {
+    const orderObj = await Order.findById(orderId)
         .populate("userId")
-        .populate("orderedItems.product");
+        .populate("orderedItems.product")
+        .populate("orderedItems.adminId", "fullname storeDetails")
+        .lean();
+
+    if (!orderObj) return null;
+
+    if (adminContext && adminContext.role !== 'owner') {
+        const adminIdStr = adminContext._id.toString();
+        orderObj.orderedItems = (orderObj.orderedItems || []).filter(item => {
+            if (!item.adminId) return false;
+            const itemAdminId = item.adminId._id ? item.adminId._id.toString() : item.adminId.toString();
+            return itemAdminId === adminIdStr;
+        });
+    }
+
+    return orderObj;
 };
 
-export const updateOrderStatus = async (orderId, status) => {
+export const updateOrderStatus = async (orderId, status, adminContext = null) => {
     const order = await Order.findById(orderId);
     if (!order) return null;
 
     validateStatusTransition(order.status, status, "Order");
 
     const activeStatuses = [...ORDER_PROGRESS_STATUSES, 'Return Request'];
+    const isOwner = !adminContext || adminContext.role === 'owner';
+    const adminIdStr = adminContext ? adminContext._id.toString() : null;
 
     for (const item of order.orderedItems) {
+        if (!isOwner) {
+            if (!item.adminId) continue;
+            const itemAdminId = item.adminId._id ? item.adminId._id.toString() : item.adminId.toString();
+            if (itemAdminId !== adminIdStr) continue;
+        }
+
         const oldItemStatus = item.status;
 
         validateStatusTransition(oldItemStatus, status, "Item");
@@ -231,19 +254,31 @@ export const updateOrderStatus = async (orderId, status) => {
         order.paymentStatus = 'Refunded';
     }
 
-    order.status = status;
+    const allItemStatuses = order.orderedItems.map(i => i.status);
+    if (isOwner || allItemStatuses.every(s => s === status)) {
+        order.status = status;
+    }
+
     order.markModified("orderedItems");
-    console.log(`Updating Order ${orderId} to status: ${status}`);
+    console.log(`Updating Order ${orderId} by ${isOwner ? 'owner' : adminIdStr} to status: ${status}`);
     await order.save();
     return order;
 };
 
-export const updateOrderItemStatus = async (orderId, itemId, status) => {
+export const updateOrderItemStatus = async (orderId, itemId, status, adminContext = null) => {
     const order = await Order.findById(orderId);
     if (!order) throw new Error("Order not found.");
 
     const item = order.orderedItems.id(itemId);
     if (!item) throw new Error("Item not found in order.");
+
+    if (adminContext && adminContext.role !== 'owner') {
+        const adminIdStr = adminContext._id.toString();
+        const itemAdminId = item.adminId ? (item.adminId._id ? item.adminId._id.toString() : item.adminId.toString()) : '';
+        if (itemAdminId !== adminIdStr) {
+            throw new Error("Unauthorized to update item for another vendor.");
+        }
+    }
 
     const oldStatus = item.status;
     if (oldStatus === status) return order;
