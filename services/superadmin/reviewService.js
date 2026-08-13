@@ -1,12 +1,17 @@
 import Review from "../../models/reviewModel.js";
+import { deleteCache } from "../../utils/cacheHelper.js";
+import { CACHE_KEYS } from "../../utils/cacheKeys.js";
 
 export const getReviews = async (page = 1, limit = 10, search = "", statusFilter = "", ratingFilter = "") => {
   const skip = (page - 1) * limit;
 
   const query = {};
-  if (statusFilter) {
-    query.status = statusFilter;
+  if (statusFilter === "hidden") {
+    query.status = "hidden";
+  } else if (statusFilter === "visible") {
+    query.$or = [{ status: "visible" }, { status: { $exists: false } }];
   }
+
   if (ratingFilter) {
     query.rating = Number(ratingFilter);
   }
@@ -14,7 +19,7 @@ export const getReviews = async (page = 1, limit = 10, search = "", statusFilter
   // Calculate overall metrics
   const [totalCount, visibleCount, hiddenCount, avgRatingResult] = await Promise.all([
     Review.countDocuments({}),
-    Review.countDocuments({ status: "visible" }),
+    Review.countDocuments({ $or: [{ status: "visible" }, { status: { $exists: false } }] }),
     Review.countDocuments({ status: "hidden" }),
     Review.aggregate([
       { $group: { _id: null, avgRating: { $avg: "$rating" } } }
@@ -62,11 +67,29 @@ export const toggleReviewStatus = async (reviewId) => {
 
   review.status = review.status === "hidden" ? "visible" : "hidden";
   await review.save();
+
+  // Invalidate public caches for this product and landing page
+  if (review.product) {
+    const prodId = review.product.toString();
+    await deleteCache(CACHE_KEYS.PRODUCT_REVIEWS(prodId));
+    await deleteCache(CACHE_KEYS.PRODUCT_DETAIL(prodId));
+  }
+  await deleteCache(CACHE_KEYS.LANDING_PRODUCTS);
+
   return review;
 };
 
 export const deleteReview = async (reviewId) => {
   const review = await Review.findByIdAndDelete(reviewId);
   if (!review) throw new Error("Review not found");
+
+  // Invalidate public caches for this product and landing page
+  if (review.product) {
+    const prodId = review.product.toString();
+    await deleteCache(CACHE_KEYS.PRODUCT_REVIEWS(prodId));
+    await deleteCache(CACHE_KEYS.PRODUCT_DETAIL(prodId));
+  }
+  await deleteCache(CACHE_KEYS.LANDING_PRODUCTS);
+
   return review;
 };

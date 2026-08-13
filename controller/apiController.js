@@ -116,7 +116,7 @@ const batchGetRatings = async (productIds) => {
         .filter(Boolean);
     if (!objectIds.length) return {};
     const results = await Review.aggregate([
-        { $match: { product: { $in: objectIds } } },
+        { $match: { product: { $in: objectIds }, status: { $ne: "hidden" } } },
         { $group: { _id: '$product', avg: { $avg: '$rating' }, count: { $sum: 1 } } }
     ]);
     const map = {};
@@ -195,7 +195,7 @@ const getReviewSummary = async (productId) => {
     const cached = await getCache(cacheKey);
     if (cached) return cached;
 
-    const reviews = await Review.find({ product: productId })
+    const reviews = await Review.find({ product: productId, status: { $ne: "hidden" } })
         .populate("user", "fullname profileImage")
         .sort({ createdAt: -1 })
         .lean();

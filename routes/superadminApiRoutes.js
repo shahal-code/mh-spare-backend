@@ -149,8 +149,8 @@ router.post("/payouts", enforceOwner, PayoutApi.createPayout);
 router.get("/payouts/:id", enforceOwner, PayoutApi.getVendorHistory);
 
 // Reviews (Super Admin Only)
-router.get("/reviews", enforceOwner, ReviewApi.getReviews);
-router.patch("/reviews/:id/toggle", enforceOwner, ReviewApi.toggleStatus);
-router.delete("/reviews/:id", enforceOwner, ReviewApi.removeReview);
+router.get("/reviews", ReviewApi.getReviews);
+router.patch("/reviews/:id/toggle", ReviewApi.toggleStatus);
+router.delete("/reviews/:id", ReviewApi.removeReview);
 
 export default router;
