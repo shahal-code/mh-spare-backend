@@ -19,6 +19,7 @@ import * as ReviewController from "../controller/usercontroller/reviewController
 router.post('/login', authLimiter, userAuth.isAlreadyLoggedIn, usercontroller.login);
 router.post('/signup', authLimiter, userAuth.isAlreadyLoggedIn, usercontroller.signup);
 router.post('/otp', authLimiter, userAuth.isAlreadyLoggedIn, usercontroller.Verifyotp);
+router.post('/verify-otp', authLimiter, userAuth.isAlreadyLoggedIn, usercontroller.Verifyotp);
 router.post('/resend-otp', authLimiter, usercontroller.resendOTP);
 router.post('/forgot-password', authLimiter, userAuth.isAlreadyLoggedIn, usercontroller.fogotPassword);
 router.post('/reset-password', authLimiter, userAuth.isAlreadyLoggedIn, usercontroller.reset_Password);
