@@ -418,7 +418,7 @@ export const sendUserOrderStatusEmail = async (userEmail, userName, order, newSt
  */
 export const sendContactInquiryEmail = async ({ name, email, phone, orderId, message }) => {
     try {
-        const targetAdminEmail = process.env.ADMIN_SUPPORT_EMAIL || "mhsparehub@gmail.com";
+        const targetAdminEmail = process.env.ADMIN_SUPPORT_EMAIL || "esparehubcommunity@gmail.com";
         const mailOptions = {
             from: {
                 name: "ESPARE HUB Website Inquiry",
