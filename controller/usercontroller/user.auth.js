@@ -57,13 +57,13 @@ export const signup = async (req, res) => {
 };
 
 export const Verifyotp = async (req, res) => {
-    const { otp, signupToken, resetToken } = req.body;
+    const { otp, signupToken, resetToken, token: bodyToken } = req.body;
     try {
         const otpError = validateOtp(otp);
         if (otpError) return res.status(400).json({ success: false, message: otpError });
 
-        const token = signupToken || resetToken;
-        if (!token) return res.status(400).json({ success: false, message: "Token is required" });
+        const token = signupToken || resetToken || bodyToken;
+        if (!token) return res.status(400).json({ success: false, message: "Verification session expired. Please sign up again." });
 
         const decoded = jwt.verify(token, JWT_SECRET);
         
