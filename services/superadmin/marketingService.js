@@ -4,6 +4,8 @@ import Banner from "../../models/bannerModel.js";
 import Brand from "../../models/brandModel.js";
 import Product from "../../models/productModel.js";
 import Category from "../../models/categoryModel.js";
+import { deleteCache } from "../../utils/cacheHelper.js";
+import { CACHE_KEYS } from "../../utils/cacheKeys.js";
 
 const ADMIN_OFFER_TYPES = ["product", "category"];
 
@@ -234,5 +236,6 @@ export const createBrand = async (data, file) => {
 export const deleteBrand = async (id) => {
   const brand = await Brand.findByIdAndDelete(id);
   if (!brand) throw new Error("Brand not found");
+  await deleteCache(CACHE_KEYS.BRANDS_ALL);
   return brand;
 };
