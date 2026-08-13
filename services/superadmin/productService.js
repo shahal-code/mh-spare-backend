@@ -96,14 +96,32 @@ export const bulkToggleProducts = async (data, isBlocked, admin) => {
         else if (stockLevelFilter === 'low_stock') query['variants.0.stock'] = { $gt: 0, $lte: 10 };
         else if (stockLevelFilter === 'in_stock') query['variants.0.stock'] = { $gt: 10 };
       }
-      if (admin.role !== "owner") query.adminId = admin._id;
+      if (admin.role !== "owner") {
+        query.adminId = admin._id;
+        if (!isBlocked) {
+          query.blockedBy = { $ne: 'superadmin' };
+        }
+      }
     } else {
       if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
         throw new Error('No products selected');
       }
       query._id = { $in: productIds };
+      if (admin.role !== "owner" && !isBlocked) {
+        query.blockedBy = { $ne: 'superadmin' };
+      }
     }
-    return await Product.updateMany(query, { $set: { is_blocked: isBlocked } });
+
+    const updateObj = { is_blocked: isBlocked };
+    if (isBlocked) {
+      updateObj.blockedBy = admin.role === 'owner' ? 'superadmin' : 'vendor';
+    } else {
+      updateObj.blockedBy = null;
+    }
+
+    const result = await Product.updateMany(query, { $set: updateObj });
+    await invalidateProductCache();
+    return result;
 };
 
 // Get all products with pagination and category populate.
@@ -215,10 +233,25 @@ export const updateProduct = async (id, updateData) => {
     return await product.save();
 };
 
-export const toggleProductStatus = async (id) => {
+export const toggleProductStatus = async (id, adminUser = null) => {
     const product = await Product.findById(id);
     if (!product) throw new Error("Product not found");
+
+    const isOwner = adminUser && adminUser.role === 'owner';
+    const isVendor = adminUser && adminUser.role !== 'owner';
+
+    // If vendor tries to unblock a product that was blocked by Super Admin
+    if (isVendor && product.is_blocked && product.blockedBy === 'superadmin') {
+        throw new Error("Permission denied. This product was blocked by Super Admin and cannot be unblocked by vendor. Please contact Super Admin.");
+    }
+
     product.is_blocked = !product.is_blocked;
+    if (product.is_blocked) {
+        product.blockedBy = isOwner ? 'superadmin' : 'vendor';
+    } else {
+        product.blockedBy = null;
+    }
+
     const result = await product.save();
     await invalidateProductCache(id);
     return result;

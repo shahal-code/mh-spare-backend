@@ -271,7 +271,7 @@ export const updateProduct = async (req, res) => {
 
 export const toggleProduct = async (req, res) => {
   try {
-    const product = await ProductService.toggleProductStatus(req.params.id);
+    const product = await ProductService.toggleProductStatus(req.params.id, req.admin);
     if (req.admin.role !== 'owner') {
       const statusText = product.is_blocked ? 'blocked' : 'unblocked';
       await NotificationService.notifySuperAdmins(

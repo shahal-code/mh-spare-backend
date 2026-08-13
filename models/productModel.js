@@ -68,6 +68,11 @@ const productSchema = new mongoose.Schema({
         type: Boolean, 
         default: false 
     },
+    blockedBy: {
+        type: String,
+        enum: ['superadmin', 'vendor', null],
+        default: null
+    },
     is_unlisted: { 
         type: Boolean, 
         default: false 
