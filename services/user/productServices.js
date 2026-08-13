@@ -178,7 +178,13 @@ const getShopData = async (queryParams) => {
     const andConditions = [
         { is_blocked: { $ne: true } },
         { is_unlisted: { $ne: true } },
-        { adminId: { $in: activeAdminIds } },
+        {
+            $or: [
+                { adminId: { $in: activeAdminIds } },
+                { adminId: { $exists: false } },
+                { adminId: null }
+            ]
+        },
         {
             $or: [
                 { approvalStatus: 'approved' },
@@ -188,7 +194,13 @@ const getShopData = async (queryParams) => {
     ];
 
     if (activeCategoryIds.length > 0) {
-        andConditions.push({ category_id: { $in: activeCategoryIds } });
+        andConditions.push({
+            $or: [
+                { category_id: { $in: activeCategoryIds } },
+                { category_id: { $exists: false } },
+                { category_id: null }
+            ]
+        });
     }
 
     if (search) {
