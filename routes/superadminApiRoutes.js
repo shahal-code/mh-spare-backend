@@ -131,9 +131,9 @@ router.post("/banners", enforceOwner, uploadBanner.single("image"), MarketingApi
 router.put("/banners/:id", enforceOwner, uploadBanner.single("image"), MarketingApi.updateBanner);
 router.delete("/banners/:id", enforceOwner, MarketingApi.deleteBanner);
 
-router.get("/brands", enforceOwner, MarketingApi.brands);
-router.post("/brands", enforceOwner, uploadBrand.single("image"), MarketingApi.createBrand);
-router.delete("/brands/:id", enforceOwner, MarketingApi.deleteBrand);
+router.get("/brands", MarketingApi.brands);
+router.post("/brands", uploadBrand.single("image"), MarketingApi.createBrand);
+router.delete("/brands/:id", MarketingApi.deleteBrand);
 
 // Reports
 router.get("/reports", ReportApi.reports);

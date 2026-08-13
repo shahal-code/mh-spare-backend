@@ -236,15 +236,17 @@ export const getBrands = async () => {
 };
 
 export const createBrand = async (data, file) => {
-  const { name, isBlocked } = data;
+  const { name } = data;
   if (!name) throw new Error("Brand name is required");
-  const existing = await Brand.findOne({ name: { $regex: new RegExp(`^${name}$`, 'i') } });
+  const existing = await Brand.findOne({ name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } });
   if (existing) throw new Error("Brand already exists");
 
+  const imageUrl = file ? (file.location || file.path || `/uploads/brands/${file.filename}`) : (data.image || null);
+  if (!imageUrl) throw new Error("Brand image is required");
+
   const newBrand = new Brand({
-    name,
-    isBlocked: isBlocked === 'true' || isBlocked === true,
-    logo: file ? `/uploads/brands/${file.filename}` : null
+    name: name.trim(),
+    image: imageUrl
   });
   const result = await newBrand.save();
   await deleteCache(CACHE_KEYS.BRANDS_ALL);
