@@ -76,6 +76,10 @@ const normalizeProduct = (product, ratingMap = {}) => {
         (product.adminId && product.adminId.status === 'blocked')
     );
 
+    const totalStock = typeof product.stock === 'number' 
+        ? product.stock 
+        : (variants.length ? variants.reduce((acc, v) => acc + (v.stock || 0), 0) : 10);
+
     return {
         id: productId,
         _id: productId,
@@ -88,7 +92,10 @@ const normalizeProduct = (product, ratingMap = {}) => {
         highlights: Array.isArray(product.highlights) ? product.highlights : [],
         specifications: product.specifications || {},
         material: product.material || "",
-        inStock: isUnavailable ? false : inStock,
+        stock: totalStock,
+        stockCount: totalStock,
+        soldCount: product.soldCount || 0,
+        inStock: isUnavailable ? false : (totalStock > 0 || inStock),
         price,
         originalPrice,
         variantId: toId(variant),
