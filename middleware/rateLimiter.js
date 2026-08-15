@@ -19,6 +19,7 @@ const getStore = (prefix) => {
   return undefined; // Standard MemoryStore fallback when Redis is offline
 };
 
+// Global API rate limiter for general endpoint traffic
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 3000, // allow storefront browsing and live updates
@@ -28,11 +29,35 @@ export const apiLimiter = rateLimit({
   store: getStore('rl:api:'),
 });
 
-export const authLimiter = rateLimit({
+// Dedicated User Customer Portal Auth Rate Limiter
+export const userAuthLimiter = rateLimit({
   windowMs: authLockoutMinutes * 60 * 1000,
   max: authMaxAttempts,
   message: { success: false, message: `Too many login attempts, please try again after ${authLockoutMinutes} minutes` },
   standardHeaders: true,
   legacyHeaders: false,
-  store: getStore('rl:auth:'),
+  store: getStore('rl:user:'),
 });
+
+// Dedicated Vendor Portal Auth Rate Limiter
+export const vendorAuthLimiter = rateLimit({
+  windowMs: authLockoutMinutes * 60 * 1000,
+  max: authMaxAttempts,
+  message: { success: false, message: `Too many vendor login attempts, please try again after ${authLockoutMinutes} minutes` },
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: getStore('rl:vendor:'),
+});
+
+// Dedicated Super Admin Portal Auth Rate Limiter
+export const superAdminAuthLimiter = rateLimit({
+  windowMs: authLockoutMinutes * 60 * 1000,
+  max: authMaxAttempts,
+  message: { success: false, message: `Too many admin login attempts, please try again after ${authLockoutMinutes} minutes` },
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: getStore('rl:superadmin:'),
+});
+
+// Backward compatible alias
+export const authLimiter = userAuthLimiter;

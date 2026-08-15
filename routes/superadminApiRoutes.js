@@ -1,7 +1,7 @@
 import express from "express";
 import { verifyAdminJWT } from "../middleware/jwtMiddleware.js";
 import { isOwner as enforceOwner } from "../middleware/rbacMiddleware.js";
-import { authLimiter } from "../middleware/rateLimiter.js";
+import { superAdminAuthLimiter } from "../middleware/rateLimiter.js";
 
 // Import Modular Controllers
 import * as AuthApi from "../controller/superadmin/admin.auth.js";
@@ -34,9 +34,9 @@ const router = express.Router();
 // ========================
 // Authentication & Profile
 // ========================
-router.post("/login", authLimiter, AuthApi.login);
-router.post("/verify-otp", authLimiter, AuthApi.verifyLoginOtp);
-router.post("/resend-otp", authLimiter, AuthApi.resendLoginOtp);
+router.post("/login", superAdminAuthLimiter, AuthApi.login);
+router.post("/verify-otp", superAdminAuthLimiter, AuthApi.verifyLoginOtp);
+router.post("/resend-otp", superAdminAuthLimiter, AuthApi.resendLoginOtp);
 router.post("/logout", AuthApi.logout);
 
 router.use(verifyAdminJWT);
