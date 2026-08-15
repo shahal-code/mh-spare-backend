@@ -19,6 +19,14 @@ const getStore = (prefix) => {
   return undefined; // Standard MemoryStore fallback when Redis is offline
 };
 
+// Generates an independent key combining User Email + IP Address
+// This ensures each user account gets its own independent attempt counter!
+const emailOrIpKey = (req) => {
+  const email = (req.body && req.body.email) ? String(req.body.email).trim().toLowerCase() : '';
+  const ip = req.ip || req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'ip';
+  return email ? `${email}_${ip}` : ip;
+};
+
 // Global API rate limiter for general endpoint traffic
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -29,33 +37,36 @@ export const apiLimiter = rateLimit({
   store: getStore('rl:api:'),
 });
 
-// Dedicated User Customer Portal Auth Rate Limiter
+// Dedicated User Customer Portal Auth Rate Limiter (Per User Account + IP)
 export const userAuthLimiter = rateLimit({
   windowMs: authLockoutMinutes * 60 * 1000,
   max: authMaxAttempts,
   message: { success: false, message: `Too many login attempts, please try again after ${authLockoutMinutes} minutes` },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: emailOrIpKey,
   store: getStore('rl:user:'),
 });
 
-// Dedicated Vendor Portal Auth Rate Limiter
+// Dedicated Vendor Portal Auth Rate Limiter (Per Vendor Account + IP)
 export const vendorAuthLimiter = rateLimit({
   windowMs: authLockoutMinutes * 60 * 1000,
   max: authMaxAttempts,
   message: { success: false, message: `Too many vendor login attempts, please try again after ${authLockoutMinutes} minutes` },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: emailOrIpKey,
   store: getStore('rl:vendor:'),
 });
 
-// Dedicated Super Admin Portal Auth Rate Limiter
+// Dedicated Super Admin Portal Auth Rate Limiter (Per Admin Account + IP)
 export const superAdminAuthLimiter = rateLimit({
   windowMs: authLockoutMinutes * 60 * 1000,
   max: authMaxAttempts,
   message: { success: false, message: `Too many admin login attempts, please try again after ${authLockoutMinutes} minutes` },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: emailOrIpKey,
   store: getStore('rl:superadmin:'),
 });
 
