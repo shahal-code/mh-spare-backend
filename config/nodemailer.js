@@ -7,18 +7,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const logoPath = path.join(__dirname, '../public/logo.png');
 
-// Read logo image on startup and convert to Base64 Data URI
-// This embeds the logo 100% inside HTML so Gmail/Outlook render it cleanly
-// WITHOUT adding a downloadable file attachment box at the bottom of emails!
-let logoDataUri = '';
-if (fs.existsSync(logoPath)) {
-    try {
-        const logoBuffer = fs.readFileSync(logoPath);
-        logoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`;
-    } catch (e) {
-        console.warn('Failed to read logo.png for base64 embed:', e.message);
-    }
-}
+// Public hosted HTTPS logo URL for reliable email client rendering (Gmail, Outlook, Apple Mail)
+// Using an HTTPS URL ensures 100% crisp image rendering without Gmail blocking data URIs
+// or creating downloadable file attachment boxes at the bottom of emails!
+const PUBLIC_LOGO_URL = process.env.BRAND_LOGO_URL || 'https://raw.githubusercontent.com/shahal-code/mh-spare-backend/main/public/logo.png';
 
 /**
  * Gmail SMTP transporter.
@@ -60,10 +52,7 @@ const INBOX_HEADERS = {
  * Helper to build HTML logo block
  */
 const getLogoHeaderHtml = () => {
-    if (logoDataUri) {
-        return `<div style="margin-bottom:12px;"><img src="${logoDataUri}" alt="E-SPARE HUB" style="max-height:48px;max-width:180px;width:auto;height:auto;display:inline-block;border:0;outline:none;text-decoration:none;" /></div>`;
-    }
-    return '';
+    return `<div style="margin-bottom:12px;"><img src="${PUBLIC_LOGO_URL}" alt="E-SPARE HUB" width="160" height="42" style="max-height:48px;max-width:180px;width:auto;height:auto;display:inline-block;border:0;outline:none;text-decoration:none;" /></div>`;
 };
 
 /**
