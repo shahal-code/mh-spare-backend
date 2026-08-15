@@ -6,7 +6,19 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const logoPath = path.join(__dirname, '../public/logo.png');
-const hasLogo = fs.existsSync(logoPath);
+
+// Read logo image on startup and convert to Base64 Data URI
+// This embeds the logo 100% inside HTML so Gmail/Outlook render it cleanly
+// WITHOUT adding a downloadable file attachment box at the bottom of emails!
+let logoDataUri = '';
+if (fs.existsSync(logoPath)) {
+    try {
+        const logoBuffer = fs.readFileSync(logoPath);
+        logoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+    } catch (e) {
+        console.warn('Failed to read logo.png for base64 embed:', e.message);
+    }
+}
 
 /**
  * Gmail SMTP transporter.
@@ -42,6 +54,16 @@ const INBOX_HEADERS = {
     "X-Priority": "1",
     "Importance": "High",
     "Precedence": "transactional",
+};
+
+/**
+ * Helper to build HTML logo block
+ */
+const getLogoHeaderHtml = () => {
+    if (logoDataUri) {
+        return `<div style="margin-bottom:12px;"><img src="${logoDataUri}" alt="E-SPARE HUB" style="max-height:48px;max-width:180px;width:auto;height:auto;display:inline-block;border:0;outline:none;text-decoration:none;" /></div>`;
+    }
+    return '';
 };
 
 /**
@@ -82,18 +104,6 @@ export const sendOtpEmail = async (email, otp, type = 'verify') => {
     }
 
     try {
-        const attachments = hasLogo ? [
-            {
-                filename: 'logo.png',
-                path: logoPath,
-                cid: 'esparehublogo'
-            }
-        ] : [];
-
-        const logoHtml = hasLogo
-            ? `<div style="margin-bottom:8px;"><img src="cid:esparehublogo" alt="E-SPARE HUB" style="height:38px;width:auto;display:inline-block;" /></div>`
-            : '';
-
         const mailOptions = {
             from: {
                 name: "ESPARE HUB",
@@ -102,7 +112,6 @@ export const sendOtpEmail = async (email, otp, type = 'verify') => {
             to: email,
             subject: emailSubject,
             headers: INBOX_HEADERS,
-            attachments,
             text: `Hi,\n\nYour ESPARE HUB code is: ${otp}\n\nThis code expires in 2 minutes.\n\n— ESPARE HUB Team`,
             html: `<!DOCTYPE html>
 <html lang="en">
@@ -115,7 +124,7 @@ export const sendOtpEmail = async (email, otp, type = 'verify') => {
         <!-- Header Banner matching user brand styling -->
         <tr>
           <td style="background:#0052FF;padding:32px 32px;text-align:center;">
-            ${logoHtml}
+            ${getLogoHeaderHtml()}
             <p style="margin:0;font-size:12px;font-weight:800;color:rgba(255,255,255,0.85);letter-spacing:3px;text-transform:uppercase;">${emailTitle}</p>
             <h1 style="margin:6px 0 0;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">${emailHeading}</h1>
           </td>
@@ -170,24 +179,11 @@ export const sendOtpEmail = async (email, otp, type = 'verify') => {
 
 export const sendVerificationLink = async (email, link) => {
     try {
-        const attachments = hasLogo ? [
-            {
-                filename: 'logo.png',
-                path: logoPath,
-                cid: 'esparehublogo'
-            }
-        ] : [];
-
-        const logoHtml = hasLogo
-            ? `<div style="margin-bottom:8px;"><img src="cid:esparehublogo" alt="E-SPARE HUB" style="height:36px;width:auto;display:inline-block;" /></div>`
-            : '';
-
         const mailOptions = {
             from: { name: "ESPARE HUB", address: process.env.NODEMAILER_EMAIL },
             to: email,
             subject: "Confirm your new email address",
             headers: INBOX_HEADERS,
-            attachments,
             text: `Hi,\n\nPlease confirm your new email address by visiting the link below:\n\n${link}\n\nThis link expires in 15 minutes.\n\nIf you did not request this change, please ignore this email.\n\n— ESPARE HUB Team`,
             html: `<!DOCTYPE html>
 <html lang="en">
@@ -198,7 +194,7 @@ export const sendVerificationLink = async (email, link) => {
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #e4e4e7;max-width:560px;width:100%;box-shadow:0 10px 25px rgba(0,0,0,0.05);">
         <tr>
           <td style="background:#0052FF;padding:32px 32px;text-align:center;">
-            ${logoHtml}
+            ${getLogoHeaderHtml()}
             <p style="margin:0;font-size:12px;font-weight:800;color:rgba(255,255,255,0.85);letter-spacing:3px;text-transform:uppercase;">ESPARE HUB</p>
             <h1 style="margin:6px 0 0;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">Confirm your email</h1>
           </td>
@@ -245,18 +241,6 @@ export const sendVerificationLink = async (email, link) => {
  */
 export const sendVendorOrderEmail = async (vendorEmail, vendorName, order, items) => {
     try {
-        const attachments = hasLogo ? [
-            {
-                filename: 'logo.png',
-                path: logoPath,
-                cid: 'esparehublogo'
-            }
-        ] : [];
-
-        const logoHtml = hasLogo
-            ? `<div style="margin-bottom:8px;"><img src="cid:esparehublogo" alt="E-SPARE HUB" style="height:36px;width:auto;display:inline-block;" /></div>`
-            : '';
-
         const itemRows = items.map(item => `
             <tr>
                 <td style="padding: 12px 16px; border-bottom: 1px solid #27272a; color: #e4e4e7; font-size: 14px;">${item.productName || 'Product'}</td>
@@ -270,14 +254,13 @@ export const sendVendorOrderEmail = async (vendorEmail, vendorName, order, items
             to: vendorEmail,
             subject: `🛒 New Order Received — #${order.orderId}`,
             headers: INBOX_HEADERS,
-            attachments,
             text: `Hi ${vendorName},\n\nA customer just ordered your product! Order ID: #${order.orderId}.\nPlease log into your vendor dashboard to process this order.\n\n— ESPARE HUB`,
             html: `
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; background-color: #09090b; border: 1px solid #27272a; border-radius: 20px; overflow: hidden; color: #ffffff; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
                     
                     <!-- Header -->
                     <div style="background: linear-gradient(135deg, #0052FF 0%, #0036a8 100%); padding: 32px 28px; text-align: center;">
-                        ${logoHtml}
+                        ${getLogoHeaderHtml()}
                         <div style="display: inline-block; background-color: rgba(255,255,255,0.15); padding: 6px 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.2);">
                             <span style="font-size: 13px; font-weight: 700; color: #ffffff; letter-spacing: 2px; text-transform: uppercase;">ESPARE HUB</span>
                         </div>
@@ -353,18 +336,6 @@ export const sendVendorOrderEmail = async (vendorEmail, vendorName, order, items
  */
 export const sendUserOrderStatusEmail = async (userEmail, userName, order, newStatus) => {
     try {
-        const attachments = hasLogo ? [
-            {
-                filename: 'logo.png',
-                path: logoPath,
-                cid: 'esparehublogo'
-            }
-        ] : [];
-
-        const logoHtml = hasLogo
-            ? `<div style="margin-bottom:8px;"><img src="cid:esparehublogo" alt="E-SPARE HUB" style="height:36px;width:auto;display:inline-block;" /></div>`
-            : '';
-
         const statusConfig = {
             'Confirmed':        { emoji: '✅', color: '#22c55e', label: 'Order Confirmed',        msg: 'Great news! Your order has been confirmed and is being prepared.' },
             'Shipped':          { emoji: '🚚', color: '#3b82f6', label: 'Order Shipped',           msg: 'Your order is on its way! It has been handed over to the delivery partner.' },
@@ -395,14 +366,13 @@ export const sendUserOrderStatusEmail = async (userEmail, userName, order, newSt
             to: userEmail,
             subject: `${cfg.emoji} ${cfg.label} — Order #${order.orderId}`,
             headers: INBOX_HEADERS,
-            attachments,
             text: `Hi ${userName},\n\n${cfg.msg}\nOrder ID: #${order.orderId}\nStatus: ${newStatus}\n\n— ESPARE HUB Team`,
             html: `
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; background-color: #09090b; border: 1px solid #27272a; border-radius: 20px; overflow: hidden; color: #ffffff;">
 
                     <!-- Header Banner -->
                     <div style="background: linear-gradient(135deg, ${cfg.color}22 0%, #09090b 80%); padding: 32px 28px; text-align: center; border-bottom: 1px solid ${cfg.color}33;">
-                        ${logoHtml}
+                        ${getLogoHeaderHtml()}
                         <div style="display: inline-block; background-color: rgba(255,255,255,0.05); padding: 6px 14px; border-radius: 20px; margin-bottom: 16px; border: 1px solid #27272a;">
                             <span style="font-size: 11px; font-weight: 700; color: #71717a; letter-spacing: 2px; text-transform: uppercase;">ESPARE HUB</span>
                         </div>
@@ -501,17 +471,6 @@ export const sendUserOrderStatusEmail = async (userEmail, userName, order, newSt
 export const sendContactInquiryEmail = async ({ name, email, phone, orderId, message }) => {
     try {
         const targetAdminEmail = process.env.ADMIN_SUPPORT_EMAIL || "esparehubcommunity@gmail.com";
-        const attachments = hasLogo ? [
-            {
-                filename: 'logo.png',
-                path: logoPath,
-                cid: 'esparehublogo'
-            }
-        ] : [];
-
-        const logoHtml = hasLogo
-            ? `<div style="margin-bottom:8px;"><img src="cid:esparehublogo" alt="E-SPARE HUB" style="height:36px;width:auto;display:inline-block;" /></div>`
-            : '';
 
         const mailOptions = {
             from: {
@@ -522,12 +481,11 @@ export const sendContactInquiryEmail = async ({ name, email, phone, orderId, mes
             replyTo: email,
             subject: `📩 New Customer Message from ${name} (${orderId ? 'Order: ' + orderId : 'General Inquiry'})`,
             headers: INBOX_HEADERS,
-            attachments,
             text: `New Inquiry Received from ESPARE HUB Contact Form:\n\nName: ${name}\nEmail: ${email}\nPhone: ${phone || 'N/A'}\nOrder ID: ${orderId || 'N/A'}\n\nMessage:\n${message}`,
             html: `
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
                     <div style="background: #0052FF; padding: 24px; text-align: center;">
-                        ${logoHtml}
+                        ${getLogoHeaderHtml()}
                         <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">📩 New Customer Inquiry</h2>
                         <p style="color: rgba(255,255,255,0.8); margin: 6px 0 0; font-size: 13px;">Received from E-Spare Hub Contact Page</p>
                     </div>
@@ -558,12 +516,11 @@ export const sendContactInquiryEmail = async ({ name, email, phone, orderId, mes
             to: email,
             subject: `We've received your message! — ESPARE HUB Support`,
             headers: INBOX_HEADERS,
-            attachments,
             text: `Hi ${name},\n\nThank you for reaching out to ESPARE HUB. We have received your inquiry and our support team will reach out within 2 hours during working hours (Mon - Sat, 9:30 AM - 7:30 PM).\n\nYour message:\n"${message}"\n\nBest regards,\nESPARE HUB Support Team`,
             html: `
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
                     <div style="background: #0052FF; padding: 24px; text-align: center;">
-                        ${logoHtml}
+                        ${getLogoHeaderHtml()}
                         <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">Message Received!</h2>
                     </div>
                     <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
