@@ -84,7 +84,7 @@ export const prepareSignup = async (fullname, email, password, referralCode) => 
     const hashedPassword = await bcrypt.hash(password, 10);
     const otp = generateOtp();
 
-    await sendOtpEmail(email, otp);
+    await sendOtpEmail(email, otp, 'signup');
 
     return {
         userData: {
@@ -137,7 +137,7 @@ export const completeSignup = async (userData) => {
  */
 export const resendOtp = async (email) => {
     const otp = generateOtp();
-    await sendOtpEmail(email, otp);
+    await sendOtpEmail(email, otp, 'verify');
     return {
         otp,
         otpExpiry: Date.now() + 60 * 1000
@@ -152,7 +152,7 @@ export const preparePasswordReset = async (email) => {
     if (!user) throw new Error("User not found");
 
     const otp = generateOtp();
-    await sendOtpEmail(email, otp);
+    await sendOtpEmail(email, otp, 'forgot-password');
 
     return {
         otp,

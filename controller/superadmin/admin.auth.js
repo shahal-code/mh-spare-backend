@@ -74,7 +74,7 @@ export const login = async (req, res) => {
       admin.loginOtpExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes validity
       await admin.save();
 
-      await sendOtpEmail(admin.email, otp);
+      await sendOtpEmail(admin.email, otp, 'admin-2fa');
 
       return res.json({
         success: true,

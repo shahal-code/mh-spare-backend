@@ -1,9 +1,15 @@
 import nodemailer from "nodemailer";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const logoPath = path.join(__dirname, '../public/logo.png');
+const hasLogo = fs.existsSync(logoPath);
 
 /**
  * Gmail SMTP transporter.
- * Using explicit SMTP config (host/port) instead of service:"gmail" 
- * is more reliable and avoids some spam triggers.
  */
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -18,7 +24,7 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Verify connection on startup so we catch config errors early
+// Verify connection on startup
 transporter.verify((error) => {
     if (error) {
         console.error("❌ Nodemailer connection failed:", error.message);
@@ -28,10 +34,7 @@ transporter.verify((error) => {
 });
 
 /**
- * Shared headers that help emails land in inbox instead of spam.
- * - Reply-To: gives spam filters a return path
- * - X-Mailer: identifies the sending agent
- * - Precedence/List-Unsubscribe: tells Gmail this is transactional, not bulk spam
+ * Shared headers for inbox delivery optimization.
  */
 const INBOX_HEADERS = {
     "Reply-To": process.env.NODEMAILER_EMAIL,
@@ -41,63 +44,108 @@ const INBOX_HEADERS = {
     "Precedence": "transactional",
 };
 
-export const sendOtpEmail = async (email, otp) => {
+/**
+ * Custom OTP Email Sender with dynamic text and electric blue theme matching user brand logo
+ * @param {string} email - Recipient Email
+ * @param {string} otp   - 6-digit OTP code
+ * @param {string} type  - Email purpose: 'signup' | 'forgot-password' | 'admin-2fa' | 'verify'
+ */
+export const sendOtpEmail = async (email, otp, type = 'verify') => {
     console.log(`\n🔑 ========================================`);
-    console.log(`🔑 OTP FOR [${email}]: >>> ${otp} <<<`);
+    console.log(`🔑 OTP FOR [${email}] (${type}): >>> ${otp} <<<`);
     console.log(`🔑 ========================================\n`);
+
+    let emailSubject = `Your verification code is ${otp}`;
+    let emailTitle = 'ESPARE HUB';
+    let emailHeading = 'Verify your identity';
+    let emailBodyText = 'Use the code below to complete your sign-in. It expires in <strong style="color:#0f172a;">2 minutes</strong>.';
+    let emailNoticeText = 'If you did not request this code, you can safely ignore this email.<br>Someone else might have typed your email address by mistake.';
+
+    if (type === 'forgot-password') {
+        emailSubject = `Password reset code: ${otp}`;
+        emailTitle = 'ESPARE HUB SECURITY';
+        emailHeading = 'Reset your password';
+        emailBodyText = 'We received a request to reset your account password. Use the code below to complete the reset. It expires in <strong style="color:#0f172a;">2 minutes</strong>.';
+        emailNoticeText = 'If you did not request a password reset, your account is safe and you can safely ignore this email.';
+    } else if (type === 'signup') {
+        emailSubject = `Welcome to ESPARE HUB — Verification code: ${otp}`;
+        emailTitle = 'ESPARE HUB ONBOARDING';
+        emailHeading = 'Verify your email address';
+        emailBodyText = 'Welcome to E-SPARE HUB! Use the verification code below to complete your registration. It expires in <strong style="color:#0f172a;">2 minutes</strong>.';
+        emailNoticeText = 'If you did not create an account on ESPARE HUB, you can safely ignore this email.';
+    } else if (type === 'admin-2fa') {
+        emailSubject = `Super Admin 2FA Security Code: ${otp}`;
+        emailTitle = 'SUPER ADMIN PORTAL';
+        emailHeading = 'Verify 2FA Admin Login';
+        emailBodyText = 'Use the 2FA security code below to log into the Super Admin Portal. It expires in <strong style="color:#0f172a;">2 minutes</strong>.';
+        emailNoticeText = 'Never share this security code with anyone. All administrative access attempts are monitored.';
+    }
+
     try {
+        const attachments = hasLogo ? [
+            {
+                filename: 'logo.png',
+                path: logoPath,
+                cid: 'esparehublogo'
+            }
+        ] : [];
+
+        const logoHtml = hasLogo
+            ? `<div style="margin-bottom:8px;"><img src="cid:esparehublogo" alt="E-SPARE HUB" style="height:38px;width:auto;display:inline-block;" /></div>`
+            : '';
+
         const mailOptions = {
             from: {
                 name: "ESPARE HUB",
                 address: process.env.NODEMAILER_EMAIL
             },
             to: email,
-            subject: `Your verification code is ${otp}`,   // plain subject = better inbox rate
+            subject: emailSubject,
             headers: INBOX_HEADERS,
-            // Plain-text fallback — REQUIRED for inbox delivery; HTML-only = spam
-            text: `Hi,\n\nYour ESPARE HUB verification code is: ${otp}\n\nThis code expires in 2 minutes.\n\nIf you didn't request this, please ignore this email.\n\n— ESPARE HUB Team`,
+            attachments,
+            text: `Hi,\n\nYour ESPARE HUB code is: ${otp}\n\nThis code expires in 2 minutes.\n\n— ESPARE HUB Team`,
             html: `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verification Code</title></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${emailHeading}</title></head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 0;">
     <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e4e4e7;max-width:560px;width:100%;">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #e4e4e7;max-width:560px;width:100%;box-shadow:0 10px 25px rgba(0,0,0,0.05);">
         
-        <!-- Header -->
+        <!-- Header Banner matching user brand styling -->
         <tr>
-          <td style="background:#0657f9;padding:28px 32px;text-align:center;">
-            <p style="margin:0;font-size:13px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:3px;text-transform:uppercase;">ESPARE HUB</p>
-            <h1 style="margin:8px 0 0;font-size:22px;font-weight:800;color:#ffffff;">Verify your identity</h1>
+          <td style="background:#0052FF;padding:32px 32px;text-align:center;">
+            ${logoHtml}
+            <p style="margin:0;font-size:12px;font-weight:800;color:rgba(255,255,255,0.85);letter-spacing:3px;text-transform:uppercase;">${emailTitle}</p>
+            <h1 style="margin:6px 0 0;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">${emailHeading}</h1>
           </td>
         </tr>
 
         <!-- Body -->
         <tr>
           <td style="padding:36px 40px;text-align:center;">
-            <p style="margin:0 0 24px;font-size:15px;color:#52525b;line-height:1.6;">
-              Use the code below to complete your sign-in. It expires in <strong style="color:#09090b;">2 minutes</strong>.
+            <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+              ${emailBodyText}
             </p>
 
-            <!-- OTP Box -->
-            <div style="display:inline-block;background:#f4f7ff;border:2px dashed #0657f9;border-radius:12px;padding:20px 40px;margin-bottom:28px;">
-              <span style="font-size:44px;font-weight:900;letter-spacing:14px;color:#0657f9;font-family:'Courier New',monospace;">${otp}</span>
+            <!-- Large OTP Box with Dashed Border -->
+            <div style="display:inline-block;background:#f0f5ff;border:2px dashed #0052FF;border-radius:16px;padding:20px 44px;margin-bottom:28px;">
+              <span style="font-size:42px;font-weight:900;letter-spacing:14px;color:#0052FF;font-family:'Courier New',monospace;">${otp}</span>
             </div>
 
-            <p style="margin:0;font-size:13px;color:#a1a1aa;line-height:1.6;">
-              If you did not request this code, you can safely ignore this email.<br>
-              Someone else might have typed your email address by mistake.
+            <p style="margin:0;font-size:13px;color:#94a3b8;line-height:1.6;">
+              ${emailNoticeText}
             </p>
           </td>
         </tr>
 
         <!-- Divider -->
-        <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #f0f0f0;margin:0;"></td></tr>
+        <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #f1f5f9;margin:0;"></td></tr>
 
         <!-- Footer -->
         <tr>
           <td style="padding:20px 40px;text-align:center;">
-            <p style="margin:0;font-size:12px;color:#a1a1aa;">
+            <p style="margin:0;font-size:12px;color:#94a3b8;">
               © ${new Date().getFullYear()} ESPARE HUB &nbsp;·&nbsp; This is an automated message, please do not reply.
             </p>
           </td>
@@ -111,7 +159,7 @@ export const sendOtpEmail = async (email, otp) => {
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ OTP email sent to ${email} — ${info.messageId}`);
+        console.log(`✅ OTP email (${type}) sent to ${email} — ${info.messageId}`);
         return true;
     } catch (error) {
         console.error("❌ Error sending OTP email:", error.message);
@@ -122,11 +170,24 @@ export const sendOtpEmail = async (email, otp) => {
 
 export const sendVerificationLink = async (email, link) => {
     try {
+        const attachments = hasLogo ? [
+            {
+                filename: 'logo.png',
+                path: logoPath,
+                cid: 'esparehublogo'
+            }
+        ] : [];
+
+        const logoHtml = hasLogo
+            ? `<div style="margin-bottom:8px;"><img src="cid:esparehublogo" alt="E-SPARE HUB" style="height:36px;width:auto;display:inline-block;" /></div>`
+            : '';
+
         const mailOptions = {
             from: { name: "ESPARE HUB", address: process.env.NODEMAILER_EMAIL },
             to: email,
             subject: "Confirm your new email address",
             headers: INBOX_HEADERS,
+            attachments,
             text: `Hi,\n\nPlease confirm your new email address by visiting the link below:\n\n${link}\n\nThis link expires in 15 minutes.\n\nIf you did not request this change, please ignore this email.\n\n— ESPARE HUB Team`,
             html: `<!DOCTYPE html>
 <html lang="en">
@@ -134,31 +195,32 @@ export const sendVerificationLink = async (email, link) => {
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 0;">
     <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e4e4e7;max-width:560px;width:100%;">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #e4e4e7;max-width:560px;width:100%;box-shadow:0 10px 25px rgba(0,0,0,0.05);">
         <tr>
-          <td style="background:#0657f9;padding:28px 32px;text-align:center;">
-            <p style="margin:0;font-size:13px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:3px;text-transform:uppercase;">ESPARE HUB</p>
-            <h1 style="margin:8px 0 0;font-size:22px;font-weight:800;color:#ffffff;">Confirm your email</h1>
+          <td style="background:#0052FF;padding:32px 32px;text-align:center;">
+            ${logoHtml}
+            <p style="margin:0;font-size:12px;font-weight:800;color:rgba(255,255,255,0.85);letter-spacing:3px;text-transform:uppercase;">ESPARE HUB</p>
+            <h1 style="margin:6px 0 0;font-size:24px;font-weight:900;color:#ffffff;letter-spacing:-0.5px;">Confirm your email</h1>
           </td>
         </tr>
         <tr>
           <td style="padding:36px 40px;text-align:center;">
-            <p style="margin:0 0 28px;font-size:15px;color:#52525b;line-height:1.6;">
-              We received a request to update your <strong style="color:#09090b;">ESPARE HUB</strong> account email address.<br>
-              Click the button below to confirm this change. This link expires in <strong style="color:#09090b;">15 minutes</strong>.
+            <p style="margin:0 0 28px;font-size:15px;color:#475569;line-height:1.6;">
+              We received a request to update your <strong style="color:#0f172a;">ESPARE HUB</strong> account email address.<br>
+              Click the button below to confirm this change. This link expires in <strong style="color:#0f172a;">15 minutes</strong>.
             </p>
-            <a href="${link}" style="display:inline-block;background:#0657f9;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 36px;border-radius:10px;">Verify Email Address</a>
-            <p style="margin:24px 0 0;font-size:12px;color:#a1a1aa;word-break:break-all;">
+            <a href="${link}" style="display:inline-block;background:#0052FF;color:#ffffff;text-decoration:none;font-size:15px;font-weight:800;padding:14px 38px;border-radius:12px;box-shadow:0 4px 15px rgba(0,82,255,0.3);">Verify Email Address</a>
+            <p style="margin:24px 0 0;font-size:12px;color:#94a3b8;word-break:break-all;">
               Or copy this link into your browser:<br>
-              <a href="${link}" style="color:#0657f9;text-decoration:none;">${link}</a>
+              <a href="${link}" style="color:#0052FF;text-decoration:none;">${link}</a>
             </p>
-            <p style="margin:16px 0 0;font-size:13px;color:#a1a1aa;">If you did not request this change, you can safely ignore this email.</p>
+            <p style="margin:16px 0 0;font-size:13px;color:#94a3b8;">If you did not request this change, you can safely ignore this email.</p>
           </td>
         </tr>
-        <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #f0f0f0;margin:0;"></td></tr>
+        <tr><td style="padding:0 40px;"><hr style="border:none;border-top:1px solid #f1f5f9;margin:0;"></td></tr>
         <tr>
           <td style="padding:20px 40px;text-align:center;">
-            <p style="margin:0;font-size:12px;color:#a1a1aa;">© ${new Date().getFullYear()} ESPARE HUB &nbsp;·&nbsp; This is an automated message, please do not reply.</p>
+            <p style="margin:0;font-size:12px;color:#94a3b8;">© ${new Date().getFullYear()} ESPARE HUB &nbsp;·&nbsp; This is an automated message, please do not reply.</p>
           </td>
         </tr>
       </table>
@@ -180,18 +242,26 @@ export const sendVerificationLink = async (email, link) => {
 
 /**
  * Sends a "New Order" notification email to a vendor
- * @param {string} vendorEmail  - Vendor's email address
- * @param {string} vendorName   - Vendor's display name
- * @param {object} order        - The order object
- * @param {Array}  items        - Items belonging to this vendor
  */
 export const sendVendorOrderEmail = async (vendorEmail, vendorName, order, items) => {
     try {
+        const attachments = hasLogo ? [
+            {
+                filename: 'logo.png',
+                path: logoPath,
+                cid: 'esparehublogo'
+            }
+        ] : [];
+
+        const logoHtml = hasLogo
+            ? `<div style="margin-bottom:8px;"><img src="cid:esparehublogo" alt="E-SPARE HUB" style="height:36px;width:auto;display:inline-block;" /></div>`
+            : '';
+
         const itemRows = items.map(item => `
             <tr>
                 <td style="padding: 12px 16px; border-bottom: 1px solid #27272a; color: #e4e4e7; font-size: 14px;">${item.productName || 'Product'}</td>
                 <td style="padding: 12px 16px; border-bottom: 1px solid #27272a; color: #a1a1aa; font-size: 14px; text-align: center;">${item.quantity}</td>
-                <td style="padding: 12px 16px; border-bottom: 1px solid #27272a; color: #0657f9; font-size: 14px; font-weight: 600; text-align: right;">₹${(item.price || 0).toLocaleString('en-IN')}</td>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #27272a; color: #0052FF; font-size: 14px; font-weight: 600; text-align: right;">₹${(item.price || 0).toLocaleString('en-IN')}</td>
             </tr>
         `).join('');
 
@@ -200,24 +270,26 @@ export const sendVendorOrderEmail = async (vendorEmail, vendorName, order, items
             to: vendorEmail,
             subject: `🛒 New Order Received — #${order.orderId}`,
             headers: INBOX_HEADERS,
+            attachments,
             text: `Hi ${vendorName},\n\nA customer just ordered your product! Order ID: #${order.orderId}.\nPlease log into your vendor dashboard to process this order.\n\n— ESPARE HUB`,
             html: `
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; background-color: #09090b; border: 1px solid #27272a; border-radius: 16px; overflow: hidden; color: #ffffff;">
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; background-color: #09090b; border: 1px solid #27272a; border-radius: 20px; overflow: hidden; color: #ffffff; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
                     
                     <!-- Header -->
-                    <div style="background: linear-gradient(135deg, #0657f9 0%, #0040c1 100%); padding: 32px 28px; text-align: center;">
+                    <div style="background: linear-gradient(135deg, #0052FF 0%, #0036a8 100%); padding: 32px 28px; text-align: center;">
+                        ${logoHtml}
                         <div style="display: inline-block; background-color: rgba(255,255,255,0.15); padding: 6px 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.2);">
                             <span style="font-size: 13px; font-weight: 700; color: #ffffff; letter-spacing: 2px; text-transform: uppercase;">ESPARE HUB</span>
                         </div>
                         <h1 style="margin: 0; font-size: 26px; font-weight: 800; color: #ffffff; line-height: 1.2;">🎉 New Order Received!</h1>
-                        <p style="margin: 8px 0 0; font-size: 15px; color: rgba(255,255,255,0.8);">Hi ${vendorName}, a customer just ordered your product!</p>
+                        <p style="margin: 8px 0 0; font-size: 15px; color: rgba(255,255,255,0.85);">Hi ${vendorName}, a customer just ordered your product!</p>
                     </div>
 
                     <!-- Order ID Badge -->
                     <div style="padding: 20px 28px; background-color: #0f0f11; border-bottom: 1px solid #27272a; display: flex; align-items: center; justify-content: space-between;">
                         <div>
                             <p style="margin: 0; font-size: 12px; color: #71717a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Order ID</p>
-                            <p style="margin: 4px 0 0; font-size: 22px; font-weight: 800; color: #0657f9;">#${order.orderId}</p>
+                            <p style="margin: 4px 0 0; font-size: 22px; font-weight: 800; color: #0052FF;">#${order.orderId}</p>
                         </div>
                         <div style="text-align: right;">
                             <p style="margin: 0; font-size: 12px; color: #71717a; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Date</p>
@@ -255,7 +327,7 @@ export const sendVendorOrderEmail = async (vendorEmail, vendorName, order, items
 
                     <!-- CTA -->
                     <div style="padding: 0 28px 32px; text-align: center;">
-                        <a href="${(process.env.ADMIN_URL || 'http://localhost:5174').split(',')[0].trim().replace(/\/$/, '')}/vendor/orders" style="display: inline-block; background: linear-gradient(135deg, #0657f9 0%, #0040c1 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 14px 36px; border-radius: 12px; box-shadow: 0 4px 20px rgba(6, 87, 249, 0.35);">View Order in Dashboard →</a>
+                        <a href="${(process.env.ADMIN_URL || 'http://localhost:5174').split(',')[0].trim().replace(/\/$/, '')}/vendor/orders" style="display: inline-block; background: linear-gradient(135deg, #0052FF 0%, #0036a8 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 14px 36px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 82, 255, 0.35);">View Order in Dashboard →</a>
                         <p style="margin: 16px 0 0; font-size: 13px; color: #52525b;">Please process this order promptly to ensure customer satisfaction.</p>
                     </div>
 
@@ -276,17 +348,23 @@ export const sendVendorOrderEmail = async (vendorEmail, vendorName, order, items
     }
 };
 
-
 /**
  * Sends an order status update email to the customer
- * @param {string} userEmail   - Customer's email
- * @param {string} userName    - Customer's name
- * @param {object} order       - The full order object
- * @param {string} newStatus   - The new status string
  */
 export const sendUserOrderStatusEmail = async (userEmail, userName, order, newStatus) => {
     try {
-        // Status-specific config
+        const attachments = hasLogo ? [
+            {
+                filename: 'logo.png',
+                path: logoPath,
+                cid: 'esparehublogo'
+            }
+        ] : [];
+
+        const logoHtml = hasLogo
+            ? `<div style="margin-bottom:8px;"><img src="cid:esparehublogo" alt="E-SPARE HUB" style="height:36px;width:auto;display:inline-block;" /></div>`
+            : '';
+
         const statusConfig = {
             'Confirmed':        { emoji: '✅', color: '#22c55e', label: 'Order Confirmed',        msg: 'Great news! Your order has been confirmed and is being prepared.' },
             'Shipped':          { emoji: '🚚', color: '#3b82f6', label: 'Order Shipped',           msg: 'Your order is on its way! It has been handed over to the delivery partner.' },
@@ -297,7 +375,7 @@ export const sendUserOrderStatusEmail = async (userEmail, userName, order, newSt
             'Returned':         { emoji: '↩️', color: '#8b5cf6', label: 'Order Returned',          msg: 'Your return has been processed. If eligible, a refund has been credited to your wallet.' },
         };
 
-        const cfg = statusConfig[newStatus] || { emoji: 'ℹ️', color: '#0657f9', label: `Status: ${newStatus}`, msg: `Your order status has been updated to: ${newStatus}.` };
+        const cfg = statusConfig[newStatus] || { emoji: 'ℹ️', color: '#0052FF', label: `Status: ${newStatus}`, msg: `Your order status has been updated to: ${newStatus}.` };
 
         const itemRows = order.orderedItems.map(item => `
             <tr>
@@ -317,12 +395,14 @@ export const sendUserOrderStatusEmail = async (userEmail, userName, order, newSt
             to: userEmail,
             subject: `${cfg.emoji} ${cfg.label} — Order #${order.orderId}`,
             headers: INBOX_HEADERS,
+            attachments,
             text: `Hi ${userName},\n\n${cfg.msg}\nOrder ID: #${order.orderId}\nStatus: ${newStatus}\n\n— ESPARE HUB Team`,
             html: `
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; background-color: #09090b; border: 1px solid #27272a; border-radius: 16px; overflow: hidden; color: #ffffff;">
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; background-color: #09090b; border: 1px solid #27272a; border-radius: 20px; overflow: hidden; color: #ffffff;">
 
                     <!-- Header Banner -->
                     <div style="background: linear-gradient(135deg, ${cfg.color}22 0%, #09090b 80%); padding: 32px 28px; text-align: center; border-bottom: 1px solid ${cfg.color}33;">
+                        ${logoHtml}
                         <div style="display: inline-block; background-color: rgba(255,255,255,0.05); padding: 6px 14px; border-radius: 20px; margin-bottom: 16px; border: 1px solid #27272a;">
                             <span style="font-size: 11px; font-weight: 700; color: #71717a; letter-spacing: 2px; text-transform: uppercase;">ESPARE HUB</span>
                         </div>
@@ -416,12 +496,23 @@ export const sendUserOrderStatusEmail = async (userEmail, userName, order, newSt
 };
 
 /**
- * Send customer contact inquiry email to admin (mhspare@gmail.com)
- * and auto-reply confirmation to the customer.
+ * Send customer contact inquiry email to admin
  */
 export const sendContactInquiryEmail = async ({ name, email, phone, orderId, message }) => {
     try {
         const targetAdminEmail = process.env.ADMIN_SUPPORT_EMAIL || "esparehubcommunity@gmail.com";
+        const attachments = hasLogo ? [
+            {
+                filename: 'logo.png',
+                path: logoPath,
+                cid: 'esparehublogo'
+            }
+        ] : [];
+
+        const logoHtml = hasLogo
+            ? `<div style="margin-bottom:8px;"><img src="cid:esparehublogo" alt="E-SPARE HUB" style="height:36px;width:auto;display:inline-block;" /></div>`
+            : '';
+
         const mailOptions = {
             from: {
                 name: "ESPARE HUB Website Inquiry",
@@ -431,17 +522,19 @@ export const sendContactInquiryEmail = async ({ name, email, phone, orderId, mes
             replyTo: email,
             subject: `📩 New Customer Message from ${name} (${orderId ? 'Order: ' + orderId : 'General Inquiry'})`,
             headers: INBOX_HEADERS,
+            attachments,
             text: `New Inquiry Received from ESPARE HUB Contact Form:\n\nName: ${name}\nEmail: ${email}\nPhone: ${phone || 'N/A'}\nOrder ID: ${orderId || 'N/A'}\n\nMessage:\n${message}`,
             html: `
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                    <div style="background: #0f172a; padding: 24px; text-align: center; border-bottom: 2px solid #2563eb;">
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    <div style="background: #0052FF; padding: 24px; text-align: center;">
+                        ${logoHtml}
                         <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">📩 New Customer Inquiry</h2>
-                        <p style="color: #94a3b8; margin: 6px 0 0; font-size: 13px;">Received from E-Spare Hub Contact Page</p>
+                        <p style="color: rgba(255,255,255,0.8); margin: 6px 0 0; font-size: 13px;">Received from E-Spare Hub Contact Page</p>
                     </div>
                     <div style="padding: 24px;">
                         <table width="100%" cellpadding="8" cellspacing="0" style="font-size: 14px; color: #1e293b; border-collapse: collapse; margin-bottom: 20px;">
                             <tr style="border-bottom: 1px solid #f1f5f9;"><td style="font-weight: 700; color: #64748b; width: 110px;">Name:</td><td>${name}</td></tr>
-                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="font-weight: 700; color: #64748b;">Email:</td><td><a href="mailto:${email}" style="color: #2563eb; text-decoration: none; font-weight: 600;">${email}</a></td></tr>
+                            <tr style="border-bottom: 1px solid #f1f5f9;"><td style="font-weight: 700; color: #64748b;">Email:</td><td><a href="mailto:${email}" style="color: #0052FF; text-decoration: none; font-weight: 600;">${email}</a></td></tr>
                             <tr style="border-bottom: 1px solid #f1f5f9;"><td style="font-weight: 700; color: #64748b;">Phone:</td><td>${phone || 'Not provided'}</td></tr>
                             <tr style="border-bottom: 1px solid #f1f5f9;"><td style="font-weight: 700; color: #64748b;">Order ID:</td><td>${orderId || 'N/A'}</td></tr>
                         </table>
@@ -458,7 +551,6 @@ export const sendContactInquiryEmail = async ({ name, email, phone, orderId, mes
         };
 
         await transporter.sendMail(mailOptions);
-        console.log(`✅ Contact inquiry from ${name} sent to ${targetAdminEmail}`);
 
         // Auto-reply confirmation to the customer
         const customerAckMail = {
@@ -466,17 +558,19 @@ export const sendContactInquiryEmail = async ({ name, email, phone, orderId, mes
             to: email,
             subject: `We've received your message! — ESPARE HUB Support`,
             headers: INBOX_HEADERS,
+            attachments,
             text: `Hi ${name},\n\nThank you for reaching out to ESPARE HUB. We have received your inquiry and our support team will reach out within 2 hours during working hours (Mon - Sat, 9:30 AM - 7:30 PM).\n\nYour message:\n"${message}"\n\nBest regards,\nESPARE HUB Support Team`,
             html: `
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                    <div style="background: #0f172a; padding: 24px; text-align: center;">
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    <div style="background: #0052FF; padding: 24px; text-align: center;">
+                        ${logoHtml}
                         <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">Message Received!</h2>
                     </div>
                     <div style="padding: 24px; color: #1e293b; font-size: 14px; line-height: 1.6;">
                         <p>Hi <strong>${name}</strong>,</p>
                         <p>Thank you for contacting <strong>ESPARE HUB Support</strong>. We have successfully received your inquiry.</p>
                         <p>Our technical support team will review your message and reach out to you within 2 hours during working hours (Monday – Saturday, 9:30 AM – 7:30 PM IST).</p>
-                        <div style="background: #f8fafc; border-left: 4px solid #2563eb; padding: 14px 18px; border-radius: 0 10px 10px 0; margin: 20px 0; font-size: 13px; color: #334155;">
+                        <div style="background: #f8fafc; border-left: 4px solid #0052FF; padding: 14px 18px; border-radius: 0 10px 10px 0; margin: 20px 0; font-size: 13px; color: #334155;">
                             <strong style="color: #0f172a; display: block; margin-bottom: 4px;">Summary of your query:</strong>
                             ${message.replace(/\n/g, '<br/>')}
                         </div>
