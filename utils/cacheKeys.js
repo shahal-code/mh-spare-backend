@@ -17,7 +17,9 @@ export const CACHE_KEYS = {
     // Static content keys
     BANNERS_ACTIVE: "banners:active",
     OFFERS_ACTIVE: "offers:active",
+    OFFERS_ACTIVE_LIST: "offers:active:list",
     BRANDS_ALL: "brands:all",
+    ADMINS_ACTIVE: "admins:active",
 
     // Dashboard metrics keys
     DASHBOARD_SUPERADMIN: "dashboard:superadmin",

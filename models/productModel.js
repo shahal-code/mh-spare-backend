@@ -89,6 +89,8 @@ const productSchema = new mongoose.Schema({
 productSchema.index({ is_blocked: 1, is_unlisted: 1, approvalStatus: 1, category_id: 1 });
 productSchema.index({ adminId: 1, is_blocked: 1, createdAt: -1 });
 productSchema.index({ approvalStatus: 1, createdAt: -1 });
+// Covers the related-products query: adminId + approvalStatus + blocked + unlisted
+productSchema.index({ adminId: 1, approvalStatus: 1, is_blocked: 1, is_unlisted: 1 });
 productSchema.index({ name: "text", description: "text", "specifications.partNumber": "text" });
 
 const Product = mongoose.model("Product", productSchema);

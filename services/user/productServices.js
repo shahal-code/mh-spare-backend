@@ -5,24 +5,43 @@ import Admin from "../../models/adminModel.js";
 import { getCache, setCache } from "../../utils/cacheHelper.js";
 import { CACHE_KEYS, CACHE_TTL } from "../../utils/cacheKeys.js";
 
+async function getActiveAdminIds() {
+    const cacheKey = CACHE_KEYS.ADMINS_ACTIVE;
+    let activeAdminIds = await getCache(cacheKey);
+    if (!activeAdminIds) {
+        const activeAdmins = await Admin.find({ status: { $ne: 'blocked' } }).select('_id');
+        activeAdminIds = activeAdmins.map(a => a._id.toString());
+        await setCache(cacheKey, activeAdminIds, 300); // 5 min
+    }
+    return activeAdminIds;
+}
+
 async function applyOffers(products) {
     if (!products) return products;
     const isArray = Array.isArray(products);
     const productsList = isArray ? products : [products];
     if (productsList.length === 0) return products;
 
-    const currentDate = new Date();
-    const startOfDay = new Date(currentDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(currentDate);
-    endOfDay.setHours(23, 59, 59, 999);
+    // Cache the active offers list for 5 minutes — avoids a Mongo hit on every
+    // shop page load and every product detail request.
+    const cacheKey = CACHE_KEYS.OFFERS_ACTIVE_LIST;
+    let activeOffers = await getCache(cacheKey);
+    if (!activeOffers) {
+        const currentDate = new Date();
+        const startOfDay = new Date(currentDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(currentDate);
+        endOfDay.setHours(23, 59, 59, 999);
 
-    const activeOffers = await Offer.find({
-        isActive: true,
-        startDate: { $lte: endOfDay },
-        endDate: { $gte: startOfDay },
-        offerType: { $in: ["product", "category"] }
-    }).lean();
+        activeOffers = await Offer.find({
+            isActive: true,
+            startDate: { $lte: endOfDay },
+            endDate: { $gte: startOfDay },
+            offerType: { $in: ["product", "category"] }
+        }).lean();
+
+        await setCache(cacheKey, activeOffers, 300); // 5 min
+    }
 
     if (activeOffers.length === 0) return products;
 
@@ -85,8 +104,6 @@ async function applyOffers(products) {
     return isArray ? productsList : productsList[0];
 }
 
-
-
 async function getProductDetails(productId) {
     const cacheKey = CACHE_KEYS.PRODUCT_DETAIL(productId);
     const cached = await getCache(cacheKey);
@@ -103,8 +120,7 @@ async function getProductDetails(productId) {
         product.isUnavailable = true;
     }
 
-    const activeAdmins = await Admin.find({ status: { $ne: 'blocked' } }).select('_id');
-    const activeAdminIds = activeAdmins.map(a => a._id);
+    const activeAdminIds = await getActiveAdminIds();
 
     let filteredRelated = [];
 
@@ -171,8 +187,7 @@ const getShopData = async (queryParams) => {
     const activeCategories = await Category.find({ is_blocked: false }).select('_id name');
     const activeCategoryIds = activeCategories.map(cat => cat._id);
 
-    const activeAdmins = await Admin.find({ status: { $ne: 'blocked' } }).select('_id');
-    const activeAdminIds = activeAdmins.map(a => a._id);
+    const activeAdminIds = await getActiveAdminIds();
 
     // 1. Build the Query Conditions ($and array)
     const andConditions = [
@@ -336,8 +351,7 @@ async function getFeaturedProducts(limit = 3) {
     const activeCategories = await Category.find({ is_blocked: false }).select('_id name');
     const activeCategoryIds = activeCategories.map(cat => cat._id);
 
-    const activeAdmins = await Admin.find({ status: { $ne: 'blocked' } }).select('_id');
-    const activeAdminIds = activeAdmins.map(a => a._id);
+    const activeAdminIds = await getActiveAdminIds();
 
     const query = {
         is_blocked: { $ne: true },
