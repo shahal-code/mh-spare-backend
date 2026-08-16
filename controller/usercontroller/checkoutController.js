@@ -39,7 +39,13 @@ export const getCheckoutView = async (req, res) => {
             
             const variant = product?.variants?.find(v => v._id.toString() === item.variantId.toString());
             if (variant) {
-                subtotal += variant.price * item.quantity;
+                const unitPrice = CartService.calculateItemUnitPrice(product, variant, item.quantity);
+                const basePrice = Number(variant.price || 0);
+                item.unitPrice = unitPrice;
+                item.basePrice = basePrice;
+                item.lineTotal = unitPrice * item.quantity;
+                item.isBulkApplied = unitPrice < basePrice;
+                subtotal += unitPrice * item.quantity;
                 hasAvailableItems = true;
                 return;
             }
@@ -61,21 +67,17 @@ export const getCheckoutView = async (req, res) => {
         // Process coupon dynamically if provided by frontend
         if (requestedCouponCode) {
             try {
-                const coupon = await CouponService.validateCoupon(requestedCouponCode.trim().toUpperCase(), userId, total);
-                if (total >= coupon.minPurchaseAmount) {
-                    appliedCoupon = coupon;
-                    discount = CouponService.calculateDiscount(coupon, total);
-                    total = total - discount;
-                    if (total < 0) total = 0;
-                } else {
-                    couponWarning = `Coupon "${coupon.code}" removed: cart total is below the ₹${coupon.minPurchaseAmount} minimum required.`;
-                }
+                const coupon = await CouponService.validateCoupon(requestedCouponCode.trim().toUpperCase(), userId, cart);
+                appliedCoupon = coupon;
+                discount = CouponService.calculateDiscount(coupon, total, coupon.eligibleTotal);
+                total = total - discount;
+                if (total < 0) total = 0;
             } catch (err) {
                 couponWarning = err.message || "Invalid or expired coupon.";
             }
         }
 
-        const availableCoupons = await CouponService.getApplicableCoupons(userId, subtotal + tax);
+        const availableCoupons = await CouponService.getApplicableCoupons(userId, cart);
 
         return res.json({
             success: true,
@@ -139,8 +141,15 @@ export const placeOrder = async (req, res) => {
 
         let appliedCoupon = null;
         if (couponCode) {
-            const serverCartTotal = await CouponService.getServerCartTotal(userId);
-            appliedCoupon = await CouponService.validateCoupon(couponCode, userId, serverCartTotal);
+            const Cart = (await import('../../models/cartModel.js')).default;
+            const cart = await Cart.findOne({ userId }).populate({
+                path: 'items.productId',
+                populate: [
+                    { path: 'category_id' },
+                    { path: 'adminId', select: 'fullname storeDetails role' }
+                ]
+            });
+            appliedCoupon = await CouponService.validateCoupon(couponCode, userId, cart);
         }
 
         // Use the service to handle logic
@@ -227,8 +236,15 @@ export const placeOrderFailed = async (req, res) => {
 
         let appliedCoupon = null;
         if (couponCode) {
-            const serverCartTotal = await CouponService.getServerCartTotal(userId);
-            appliedCoupon = await CouponService.validateCoupon(couponCode, userId, serverCartTotal);
+            const Cart = (await import('../../models/cartModel.js')).default;
+            const cart = await Cart.findOne({ userId }).populate({
+                path: 'items.productId',
+                populate: [
+                    { path: 'category_id' },
+                    { path: 'adminId', select: 'fullname storeDetails role' }
+                ]
+            });
+            appliedCoupon = await CouponService.validateCoupon(couponCode, userId, cart);
         }
 
         // Create order with paymentFailed = true

@@ -45,6 +45,28 @@ export const getCart = async (userId) => {
     return cart;
 };
 
+export const calculateItemUnitPrice = (product, variant, quantity) => {
+    let price = Number(variant?.price || 0);
+
+    if (product?.offer && product.offer.discountedPrice) {
+        price = Number(product.offer.discountedPrice);
+    }
+
+    if (product?.wholesaleTiers && Array.isArray(product.wholesaleTiers) && product.wholesaleTiers.length > 0) {
+        const sorted = [...product.wholesaleTiers]
+            .map(t => ({ minQty: Number(t.minQty || t.minQuantity || 0), price: Number(t.price || 0) }))
+            .filter(t => t.minQty > 0 && t.price > 0)
+            .sort((a, b) => b.minQty - a.minQty);
+
+        const activeTier = sorted.find(t => quantity >= t.minQty);
+        if (activeTier) {
+            price = activeTier.price;
+        }
+    }
+
+    return price;
+};
+
 // Add item to cart
 export const addToCart = async (userId, productId, variantId, quantity = 1) => {
     let cart = await Cart.findOne({ userId });
@@ -71,8 +93,6 @@ export const addToCart = async (userId, productId, variantId, quantity = 1) => {
         throw new Error(`Only ${variant.stock} items left in stock`);
     }
 
-    const MAX_QUANTITY_PER_PRODUCT = 5;
-
     // Check if already in cart
     const existingItemIndex = cart.items.findIndex(
         item => item.productId.toString() === productId && item.variantId.toString() === variantId
@@ -81,19 +101,13 @@ export const addToCart = async (userId, productId, variantId, quantity = 1) => {
     if (existingItemIndex > -1) {
         let totalQuantity = cart.items[existingItemIndex].quantity + quantity;
         
-        // Cap at stock and per-product limit
+        // Cap at stock
         if (totalQuantity > variant.stock) {
             totalQuantity = variant.stock;
-        }
-        if (totalQuantity > MAX_QUANTITY_PER_PRODUCT) {
-            totalQuantity = MAX_QUANTITY_PER_PRODUCT;
         }
         
         cart.items[existingItemIndex].quantity = totalQuantity;
     } else {
-        if (quantity > MAX_QUANTITY_PER_PRODUCT) {
-            throw new Error(`Maximum quantity per product is ${MAX_QUANTITY_PER_PRODUCT}`);
-        }
         cart.items.push({
             productId,
             variantId,
@@ -119,12 +133,6 @@ export const updateQuantity = async (userId, itemId, newQuantity) => {
     }
     const variant = product.variants.id(item.variantId);
     if (!variant || variant.is_blocked) throw new Error("This product variant is no longer available.");
-
-    const MAX_QUANTITY_PER_PRODUCT = 5;
-
-    if (newQuantity > MAX_QUANTITY_PER_PRODUCT) {
-        throw new Error(`Maximum quantity per product is ${MAX_QUANTITY_PER_PRODUCT}`);
-    }
 
     if (newQuantity > variant.stock) {
         throw new Error(`Only ${variant.stock} items left in stock`);

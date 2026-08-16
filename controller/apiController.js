@@ -80,6 +80,29 @@ const normalizeProduct = (product, ratingMap = {}) => {
         ? product.stock 
         : (variants.length ? variants.reduce((acc, v) => acc + (v.stock || 0), 0) : 10);
 
+    const adminObj = (typeof product.adminId === 'object' && product.adminId) ? product.adminId : null;
+    const vendor = adminObj ? {
+        id: toId(adminObj),
+        storeName: adminObj.storeDetails?.storeName || adminObj.fullname || "MH Spare Official",
+        storeLogo: adminObj.storeDetails?.logo || null,
+        kycStatus: adminObj.kycStatus || "unverified",
+        isVerified: adminObj.kycStatus === "verified" || adminObj.role === "owner" || adminObj.role === "admin",
+        role: adminObj.role || "vendor"
+    } : {
+        storeName: "MH Spare Official",
+        storeLogo: null,
+        kycStatus: "verified",
+        isVerified: true,
+        role: "owner"
+    };
+
+    const wholesaleTiers = Array.isArray(product.wholesaleTiers)
+        ? product.wholesaleTiers
+            .map(t => ({ minQty: Number(t.minQty || t.minQuantity || 0), price: Number(t.price || 0) }))
+            .filter(t => t.minQty > 0 && t.price > 0)
+            .sort((a, b) => a.minQty - b.minQty)
+        : [];
+
     return {
         id: productId,
         _id: productId,
@@ -103,11 +126,17 @@ const normalizeProduct = (product, ratingMap = {}) => {
         categoryName: category.name,
         categoryData: category,
         variants,
+        wholesaleTiers,
         popular: isUnavailable ? false : inStock,
         createdAt: product.createdAt || null,
         offer: product.offer || null,
         averageRating: ratingData.avg || 0,
         totalRatings: ratingData.count || 0,
+        vendor,
+        vendorStoreName: vendor.storeName,
+        vendorIsVerified: vendor.isVerified,
+        vendorLogo: vendor.storeLogo,
+        adminId: product.adminId,
         isUnavailable,
         is_blocked: Boolean(product.is_blocked),
         is_unlisted: Boolean(product.is_unlisted),

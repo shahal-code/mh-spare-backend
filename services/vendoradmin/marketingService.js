@@ -9,18 +9,37 @@ import { CACHE_KEYS } from "../../utils/cacheKeys.js";
 
 const ADMIN_OFFER_TYPES = ["product", "category"];
 
-export const getCoupons = async () => {
-  return await Coupon.find().sort({ createdAt: -1 }).lean();
+export const getCoupons = async (vendorId = null) => {
+  const query = vendorId
+    ? {
+        $or: [
+          { createdBy: vendorId },
+          { creatorRole: 'superadmin' },
+          { creatorRole: { $exists: false }, createdBy: null }
+        ]
+      }
+    : {};
+  return await Coupon.find(query)
+    .populate("createdBy", "fullname email storeDetails role")
+    .populate("usedBy", "fullname email phone")
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
-export const getCouponById = async (id) => {
-  const coupon = await Coupon.findById(id).lean();
+export const getCouponById = async (id, vendorId = null) => {
+  const coupon = await Coupon.findById(id)
+    .populate("createdBy", "fullname email storeDetails role")
+    .populate("usedBy", "fullname email phone")
+    .lean();
   if (!coupon) throw new Error("Coupon not found");
+  if (vendorId && coupon.creatorRole === 'vendor' && coupon.createdBy?._id?.toString() !== vendorId.toString() && coupon.createdBy?.toString() !== vendorId.toString()) {
+    throw new Error("Coupon not found or access denied.");
+  }
   return coupon;
 };
 
-export const createCoupon = async (data) => {
-  const { code, discountType, discountValue, minPurchaseAmount, maxDiscountAmount, expirationDate } = data;
+export const createCoupon = async (data, adminId = null, creatorRole = 'vendor') => {
+  const { code, discountType, discountValue, minPurchaseAmount, maxDiscountAmount, expirationDate, applicableOnBulk } = data;
   if (!code || !discountType || !discountValue || !expirationDate) {
     throw new Error("All required fields must be filled.");
   }
@@ -33,37 +52,60 @@ export const createCoupon = async (data) => {
     minPurchaseAmount: minPurchaseAmount || 0,
     maxDiscountAmount: maxDiscountAmount || null,
     expirationDate: new Date(expirationDate),
+    applicableOnBulk: applicableOnBulk !== undefined ? Boolean(applicableOnBulk) : true,
+    createdBy: adminId,
+    creatorRole: creatorRole || 'vendor',
     isActive: true,
   });
 };
 
-export const updateCoupon = async (id, data) => {
-  const { code, discountType, discountValue, minPurchaseAmount, maxDiscountAmount, expirationDate } = data;
+export const updateCoupon = async (id, data, vendorId = null) => {
+  const coupon = await Coupon.findById(id);
+  if (!coupon) throw new Error("Coupon not found.");
+
+  if (coupon.creatorRole === 'superadmin' || (vendorId && coupon.createdBy?.toString() !== vendorId.toString())) {
+    throw new Error("You do not have permission to edit this coupon. Super Admin coupons cannot be modified.");
+  }
+
+  const { code, discountType, discountValue, minPurchaseAmount, maxDiscountAmount, expirationDate, applicableOnBulk } = data;
   if (!code || !discountType || !discountValue || !expirationDate) {
     throw new Error("All required fields must be filled.");
   }
   const existing = await Coupon.findOne({ code: code.toUpperCase(), _id: { $ne: id } });
   if (existing) throw new Error("Another coupon with this code already exists.");
-  return await Coupon.findByIdAndUpdate(id, {
-    code: code.toUpperCase(),
-    discountType,
-    discountValue,
-    minPurchaseAmount: minPurchaseAmount || 0,
-    maxDiscountAmount: maxDiscountAmount || null,
-    expirationDate: new Date(expirationDate),
-  }, { new: true });
+  
+  coupon.code = code.toUpperCase();
+  coupon.discountType = discountType;
+  coupon.discountValue = discountValue;
+  coupon.minPurchaseAmount = minPurchaseAmount || 0;
+  coupon.maxDiscountAmount = maxDiscountAmount || null;
+  coupon.expirationDate = new Date(expirationDate);
+  if (applicableOnBulk !== undefined) coupon.applicableOnBulk = Boolean(applicableOnBulk);
+
+  return await coupon.save();
 };
 
-export const toggleCoupon = async (id) => {
+export const toggleCoupon = async (id, vendorId = null) => {
   const coupon = await Coupon.findById(id);
   if (!coupon) throw new Error("Coupon not found.");
+
+  if (coupon.creatorRole === 'superadmin' || (vendorId && coupon.createdBy?.toString() !== vendorId.toString())) {
+    throw new Error("You do not have permission to toggle or block this coupon. Super Admin coupons cannot be modified.");
+  }
+
   coupon.isActive = !coupon.isActive;
   return await coupon.save();
 };
 
-export const deleteCoupon = async (id) => {
-  const coupon = await Coupon.findByIdAndDelete(id);
+export const deleteCoupon = async (id, vendorId = null) => {
+  const coupon = await Coupon.findById(id);
   if (!coupon) throw new Error("Coupon not found.");
+
+  if (coupon.creatorRole === 'superadmin' || (vendorId && coupon.createdBy?.toString() !== vendorId.toString())) {
+    throw new Error("You do not have permission to delete this coupon. Super Admin coupons cannot be modified.");
+  }
+
+  await Coupon.findByIdAndDelete(id);
   return coupon;
 };
 

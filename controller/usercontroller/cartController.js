@@ -16,7 +16,8 @@ export const getCartView = async (req, res) => {
                     if (product) {
                         const variant = product.variants.find(v => v._id.toString() === item.variantId.toString());
                         if (variant) {
-                            subtotal += variant.price * item.quantity;
+                            const unitPrice = cartService.calculateItemUnitPrice(product, variant, item.quantity);
+                            subtotal += unitPrice * item.quantity;
                         }
                     }
                 }

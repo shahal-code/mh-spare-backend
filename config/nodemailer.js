@@ -284,6 +284,12 @@ export const sendVendorOrderEmail = async (vendorEmail, vendorName, order, items
                                 ${itemRows}
                             </tbody>
                         </table>
+                        ${order.couponCode ? `
+                        <div style="padding: 10px 14px; background-color: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 8px; margin-top: 12px; font-size: 13px; color: #10b981; font-weight: 600; display: flex; justify-content: space-between;">
+                            <span>🏷️ Coupon Applied: <strong>${order.couponCode}</strong></span>
+                            <span>-₹${(order.discount || 0).toLocaleString('en-IN')}</span>
+                        </div>
+                        ` : ''}
                     </div>
 
                     <!-- Payment Method -->

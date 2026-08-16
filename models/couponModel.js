@@ -34,6 +34,20 @@ const couponSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    applicableOnBulk: {
+        type: Boolean,
+        default: true
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Admin',
+        default: null
+    },
+    creatorRole: {
+        type: String,
+        enum: ['superadmin', 'vendor'],
+        default: 'superadmin'
+    },
     usedBy: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

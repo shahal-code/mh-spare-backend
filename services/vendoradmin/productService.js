@@ -202,6 +202,20 @@ export const createProduct = async (productData) => {
             parsedSpecs = {};
         }
     }
+    let wholesaleTiers = [];
+    if (productData.wholesaleTiers) {
+        try {
+            wholesaleTiers = typeof productData.wholesaleTiers === 'string' ? JSON.parse(productData.wholesaleTiers) : productData.wholesaleTiers;
+        } catch (e) {
+            wholesaleTiers = [];
+        }
+    }
+    if (Array.isArray(wholesaleTiers)) {
+        wholesaleTiers = wholesaleTiers
+            .map(t => ({ minQty: Number(t.minQty || t.minQuantity || 0), price: Number(t.price || 0) }))
+            .filter(t => t.minQty > 0 && t.price > 0)
+            .sort((a, b) => a.minQty - b.minQty);
+    }
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
     const newProduct = new Product({
         name, description, category_id,
@@ -209,6 +223,7 @@ export const createProduct = async (productData) => {
         thumbnail: thumbnail || images[0],
         adminId, approvalStatus,
         specifications: parsedSpecs,
+        wholesaleTiers,
         variants: [{
             price: Number(price) || 0,
             stock: Number(stock) || 0,
@@ -237,6 +252,21 @@ export const updateProduct = async (id, updateData) => {
             product.specifications = typeof updateData.specifications === 'string' ? JSON.parse(updateData.specifications) : updateData.specifications;
         } catch (e) {
             // Keep existing specifications if parsing fails
+        }
+    }
+
+    if (updateData.wholesaleTiers !== undefined) {
+        let wholesaleTiers = [];
+        try {
+            wholesaleTiers = typeof updateData.wholesaleTiers === 'string' ? JSON.parse(updateData.wholesaleTiers) : updateData.wholesaleTiers;
+        } catch (e) {
+            wholesaleTiers = [];
+        }
+        if (Array.isArray(wholesaleTiers)) {
+            product.wholesaleTiers = wholesaleTiers
+                .map(t => ({ minQty: Number(t.minQty || t.minQuantity || 0), price: Number(t.price || 0) }))
+                .filter(t => t.minQty > 0 && t.price > 0)
+                .sort((a, b) => a.minQty - b.minQty);
         }
     }
 

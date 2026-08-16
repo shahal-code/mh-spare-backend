@@ -25,7 +25,8 @@ export const coupon = async (req, res) => {
 
 export const createCoupon = async (req, res) => {
   try {
-    const coupon = await MarketingService.createCoupon(req.body);
+    const adminId = req.admin?._id || req.user?._id || null;
+    const coupon = await MarketingService.createCoupon(req.body, adminId, 'superadmin');
     res.status(201).json({ success: true, coupon, message: "Coupon created successfully!" });
   } catch (error) {
     sendError(res, error, 400);

@@ -4,6 +4,7 @@ import Cart from "../../models/cartModel.js";
 import Product from "../../models/productModel.js";
 import CouponService from "./couponService.js";
 import { applyOffers } from "./productServices.js";
+import { calculateItemUnitPrice } from "./cartService.js";
 import * as walletService from "./walletService.js";
 import { notifyAdmin, notifySuperAdmins } from "../vendoradmin/notificationService.js";
 
@@ -30,7 +31,8 @@ class OrderService {
             if (!variant || variant.is_blocked) throw new Error(`Specific variant for ${product.name} is no longer available.`);
             if (variant.stock < item.quantity) throw new Error(`Not enough stock for ${product.name}`);
 
-            const itemTotal = variant.price * item.quantity;
+            const unitPrice = calculateItemUnitPrice(product, variant, item.quantity);
+            const itemTotal = unitPrice * item.quantity;
             subtotal += itemTotal;
             const commission = itemTotal * 0.10; // 10% flat commission
             const earning = itemTotal - commission;
@@ -40,7 +42,7 @@ class OrderService {
                 product: item.productId._id,
                 variantId: item.variantId.toString(),
                 quantity: item.quantity,
-                price: variant.price,
+                price: unitPrice,
                 commissionAmount: commission,
                 vendorEarning: earning
             };
@@ -52,16 +54,13 @@ class OrderService {
 
         if (appliedCoupon) {
             // SECURITY: Re-validate coupon server-side at order-placement time.
-            // This blocks the "apply coupon → remove item → place order" scam.
-            // reValidateCoupon throws a descriptive error if the minimum is no
-            // longer met, or if the coupon has since expired / been revoked.
             const validCoupon = await CouponService.reValidateCoupon(
                 appliedCoupon,
                 userId,
-                finalAmount
+                cart
             );
 
-            discount = CouponService.calculateDiscount(validCoupon, finalAmount);
+            discount = CouponService.calculateDiscount(validCoupon, finalAmount, validCoupon.eligibleTotal);
             finalAmount = finalAmount - discount;
             if (finalAmount < 0) finalAmount = 0;
         }
@@ -175,7 +174,20 @@ class OrderService {
         const isMultiVendor = vendorGroupedMap.size > 1;
         const createdOrders = [];
         let orderIndex = 0;
-        const baseTimeStr = Date.now().toString();
+        let couponCreatorName = null;
+        let couponCreatedBy = null;
+        if (appliedCoupon) {
+            try {
+                const Coupon = (await import('../../models/couponModel.js')).default;
+                const fullCoupon = await Coupon.findById(appliedCoupon._id).populate('createdBy', 'fullname storeDetails role');
+                if (fullCoupon) {
+                    couponCreatedBy = fullCoupon.createdBy?._id || fullCoupon.createdBy || null;
+                    couponCreatorName = fullCoupon.createdBy?.storeDetails?.storeName || fullCoupon.createdBy?.fullname || (fullCoupon.creatorRole === 'vendor' ? 'Vendor' : 'Super Admin');
+                }
+            } catch (e) {
+                couponCreatorName = 'Super Admin';
+            }
+        }
 
         try {
             for (const [vId, itemsGroup] of vendorGroupedMap.entries()) {
@@ -184,8 +196,17 @@ class OrderService {
                 const groupTax = groupSubtotal * 0.18;
                 
                 let groupDiscount = 0;
-                if (discount > 0 && subtotal > 0) {
-                    groupDiscount = Math.round((groupSubtotal / subtotal) * discount);
+                if (discount > 0) {
+                    if (appliedCoupon && (appliedCoupon.creatorRole === 'vendor' || couponCreatedBy)) {
+                        const couponVendorId = couponCreatedBy ? couponCreatedBy.toString() : null;
+                        if (couponVendorId && couponVendorId === vId.toString()) {
+                            groupDiscount = discount;
+                        } else {
+                            groupDiscount = 0;
+                        }
+                    } else if (subtotal > 0) {
+                        groupDiscount = Math.round((groupSubtotal / subtotal) * discount);
+                    }
                 }
                 let groupFinal = (groupSubtotal + groupTax) - groupDiscount;
                 if (groupFinal < 0) groupFinal = 0;
@@ -200,6 +221,10 @@ class OrderService {
                     orderedItems: itemsGroup,
                     totalPrice: groupSubtotal,
                     discount: groupDiscount,
+                    couponCode: appliedCoupon ? appliedCoupon.code : null,
+                    couponDiscount: groupDiscount,
+                    couponCreatedBy,
+                    couponCreatorName,
                     finalAmount: groupFinal,
                     shippingAddress: {
                         fullname: address.fullname,

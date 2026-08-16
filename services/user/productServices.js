@@ -360,7 +360,7 @@ async function getFeaturedProducts(limit = 3) {
 }
 
 async function checkProductAvailability(productId) {
-    return await Product.findById(productId).populate('category_id').lean();
+    return await Product.findById(productId).populate('category_id').populate('adminId').lean();
 }
 
 export {

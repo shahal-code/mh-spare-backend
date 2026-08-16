@@ -18,6 +18,11 @@ const productVariantSchema = new mongoose.Schema({
     is_blocked: { type: Boolean, default: false }
 }, { timestamps: true });
 
+const wholesaleTierSchema = new mongoose.Schema({
+    minQty: { type: Number, required: true },
+    price: { type: Number, required: true }
+}, { _id: false });
+
 const productSchema = new mongoose.Schema({
     adminId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -64,6 +69,7 @@ const productSchema = new mongoose.Schema({
         os: { type: String }
     },
     variants: [productVariantSchema],
+    wholesaleTiers: [wholesaleTierSchema],
     is_blocked: { 
         type: Boolean, 
         default: false 

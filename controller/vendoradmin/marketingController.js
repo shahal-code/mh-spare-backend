@@ -7,7 +7,8 @@ const sendError = (res, error, status = 500) => {
 
 export const coupons = async (req, res) => {
   try {
-    const coupons = await MarketingService.getCoupons();
+    const vendorId = req.admin?._id || req.user?._id || null;
+    const coupons = await MarketingService.getCoupons(vendorId);
     res.json({ coupons });
   } catch (error) {
     sendError(res, error);
@@ -16,16 +17,18 @@ export const coupons = async (req, res) => {
 
 export const coupon = async (req, res) => {
   try {
-    const coupon = await MarketingService.getCouponById(req.params.id);
+    const vendorId = req.admin?._id || req.user?._id || null;
+    const coupon = await MarketingService.getCouponById(req.params.id, vendorId);
     res.json({ coupon });
   } catch (error) {
-    sendError(res, error, error.message.includes("not found") ? 404 : 500);
+    sendError(res, error, error.message.includes("not found") ? 404 : 403);
   }
 };
 
 export const createCoupon = async (req, res) => {
   try {
-    const coupon = await MarketingService.createCoupon(req.body);
+    const adminId = req.admin?._id || req.user?._id || null;
+    const coupon = await MarketingService.createCoupon(req.body, adminId, 'vendor');
     res.status(201).json({ success: true, coupon, message: "Coupon created successfully!" });
   } catch (error) {
     sendError(res, error, 400);
@@ -34,7 +37,8 @@ export const createCoupon = async (req, res) => {
 
 export const updateCoupon = async (req, res) => {
   try {
-    const coupon = await MarketingService.updateCoupon(req.params.id, req.body);
+    const vendorId = req.admin?._id || req.user?._id || null;
+    const coupon = await MarketingService.updateCoupon(req.params.id, req.body, vendorId);
     res.json({ success: true, coupon, message: "Coupon updated successfully!" });
   } catch (error) {
     sendError(res, error, 400);
@@ -43,19 +47,21 @@ export const updateCoupon = async (req, res) => {
 
 export const toggleCoupon = async (req, res) => {
   try {
-    const coupon = await MarketingService.toggleCoupon(req.params.id);
+    const vendorId = req.admin?._id || req.user?._id || null;
+    const coupon = await MarketingService.toggleCoupon(req.params.id, vendorId);
     res.json({ success: true, coupon });
   } catch (error) {
-    sendError(res, error, error.message.includes("not found") ? 404 : 500);
+    sendError(res, error, 400);
   }
 };
 
 export const deleteCoupon = async (req, res) => {
   try {
-    await MarketingService.deleteCoupon(req.params.id);
+    const vendorId = req.admin?._id || req.user?._id || null;
+    await MarketingService.deleteCoupon(req.params.id, vendorId);
     res.json({ success: true, message: "Coupon deleted successfully" });
   } catch (error) {
-    sendError(res, error, error.message.includes("not found") ? 404 : 500);
+    sendError(res, error, 400);
   }
 };
 

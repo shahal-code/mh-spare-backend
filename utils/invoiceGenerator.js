@@ -103,7 +103,8 @@ export const generateInvoice = (res, order) => {
        .text(`₹${activeTax.toLocaleString()}`, 480, summaryTop + 25, { width: 70, align: "right" });
 
     if (activeDiscount > 0) {
-        doc.text("Discount:", 350, summaryTop + 40)
+        const discountLabel = order.couponCode ? `Coupon (${order.couponCode}):` : "Discount:";
+        doc.text(discountLabel, 350, summaryTop + 40)
            .text(`-₹${activeDiscount.toLocaleString()}`, 480, summaryTop + 40, { width: 70, align: "right" });
     }
 

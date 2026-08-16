@@ -10,17 +10,24 @@ import { CACHE_KEYS } from "../../utils/cacheKeys.js";
 const ADMIN_OFFER_TYPES = ["product", "category"];
 
 export const getCoupons = async () => {
-  return await Coupon.find().sort({ createdAt: -1 }).lean();
+  return await Coupon.find()
+    .populate("createdBy", "fullname email storeDetails role")
+    .populate("usedBy", "fullname email phone")
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 export const getCouponById = async (id) => {
-  const coupon = await Coupon.findById(id).lean();
+  const coupon = await Coupon.findById(id)
+    .populate("createdBy", "fullname email storeDetails role")
+    .populate("usedBy", "fullname email phone")
+    .lean();
   if (!coupon) throw new Error("Coupon not found");
   return coupon;
 };
 
-export const createCoupon = async (data) => {
-  const { code, discountType, discountValue, minPurchaseAmount, maxDiscountAmount, expirationDate } = data;
+export const createCoupon = async (data, adminId = null, creatorRole = 'superadmin') => {
+  const { code, discountType, discountValue, minPurchaseAmount, maxDiscountAmount, expirationDate, applicableOnBulk } = data;
   if (!code || !discountType || !discountValue || !expirationDate) {
     throw new Error("All required fields must be filled.");
   }
@@ -33,12 +40,15 @@ export const createCoupon = async (data) => {
     minPurchaseAmount: minPurchaseAmount || 0,
     maxDiscountAmount: maxDiscountAmount || null,
     expirationDate: new Date(expirationDate),
+    applicableOnBulk: applicableOnBulk !== undefined ? Boolean(applicableOnBulk) : true,
+    createdBy: adminId,
+    creatorRole: creatorRole || 'superadmin',
     isActive: true,
   });
 };
 
 export const updateCoupon = async (id, data) => {
-  const { code, discountType, discountValue, minPurchaseAmount, maxDiscountAmount, expirationDate } = data;
+  const { code, discountType, discountValue, minPurchaseAmount, maxDiscountAmount, expirationDate, applicableOnBulk } = data;
   if (!code || !discountType || !discountValue || !expirationDate) {
     throw new Error("All required fields must be filled.");
   }
@@ -51,6 +61,7 @@ export const updateCoupon = async (id, data) => {
     minPurchaseAmount: minPurchaseAmount || 0,
     maxDiscountAmount: maxDiscountAmount || null,
     expirationDate: new Date(expirationDate),
+    applicableOnBulk: applicableOnBulk !== undefined ? Boolean(applicableOnBulk) : true,
   }, { new: true });
 };
 
