@@ -5,6 +5,7 @@ import "./config/redis.js"; // Initialize Redis connection on startup
 import adminRoutes from "./routes/adminRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import apiRoutes from "./routes/apiRoutes.js";
+import { getProductSharePreview } from "./controller/apiController.js";
 import cors from "cors";
 import passport from "passport";
 import './config/passport.js';
@@ -117,6 +118,10 @@ app.use(express.static("public"));
 app.get("/", (req, res) => {
   res.status(200).json({ success: true, message: "Welcome to ESPare Hub API" });
 });
+
+// Public Social Crawler OpenGraph Previews (WhatsApp, Facebook, Twitter, Telegram, Discord, iMessage)
+app.get("/share/product/:id", getProductSharePreview);
+app.get("/p/:id", getProductSharePreview);
 
 app.use("/api", apiLimiter, apiRoutes);
 

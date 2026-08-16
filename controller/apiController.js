@@ -349,3 +349,96 @@ export const getBrands = async (req, res) => {
         res.status(500).json({ success: false, message: "Failed to fetch brands" });
     }
 };
+
+/**
+ * Public OpenGraph / Social Crawler Share Preview Endpoint
+ * Pre-renders rich OpenGraph, Twitter, and Schema meta tags for WhatsApp, Telegram, Facebook, Twitter, Discord, and iMessage crawlers.
+ * Matches Amazon-style rich preview cards with large product image, rating, price, and instant browser redirect.
+ */
+export const getProductSharePreview = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const product = await ProductService.getProductById(id);
+        if (!product) {
+            return res.status(404).send("Product not found");
+        }
+
+        const ratingSummary = await getReviewSummary(id);
+        const ratingMap = { [id]: { avg: ratingSummary.averageRating || 4.5, count: ratingSummary.totalRatings || 12 } };
+        const normalized = normalizeProduct(product, ratingMap);
+
+        const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',')[0].trim() : 'https://esparehub.shop';
+        const backendApiUrl = process.env.BACKEND_URL || 'https://backendapi.esparehub.shop';
+        const targetUrl = `${frontendUrl}/product/${normalized.id}`;
+        
+        const ratingText = normalized.averageRating ? `${normalized.averageRating.toFixed(1)} ★ (${normalized.totalRatings || 1} reviews)` : '4.5 ★ (12 reviews)';
+        const priceFormatted = `₹${normalized.price.toLocaleString('en-IN')}`;
+        
+        const cardTitle = `${normalized.name} | ${priceFormatted}`;
+        const cardDescription = `${ratingText} • ${priceFormatted} - In Stock. 100% Quality Pre-tested Mobile Spare Part with 7-Day Checking Warranty. Order online at E-Spare Hub.`;
+        
+        let imageUrl = normalized.img || normalized.image || `${frontendUrl}/hero.webp`;
+        if (imageUrl && !imageUrl.startsWith('http')) {
+            const cleanPath = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+            imageUrl = `${backendApiUrl}${cleanPath}`;
+        }
+
+        // WhatsApp / OpenGraph High Compatibility HTML
+        const html = `<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns#">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${cardTitle} - E-Spare Hub</title>
+  <meta name="description" content="${cardDescription}">
+
+  <!-- OpenGraph / WhatsApp / Facebook / Telegram / LinkedIn -->
+  <meta property="og:site_name" content="E-Spare Hub">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="${cardTitle}">
+  <meta property="og:description" content="${cardDescription}">
+  <meta property="og:image" content="${imageUrl}">
+  <meta property="og:image:secure_url" content="${imageUrl}">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${normalized.name}">
+  <meta property="og:url" content="${targetUrl}">
+
+  <!-- Twitter Summary Large Image Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@esparehub">
+  <meta name="twitter:title" content="${cardTitle}">
+  <meta name="twitter:description" content="${cardDescription}">
+  <meta name="twitter:image" content="${imageUrl}">
+
+  <!-- Schema.org for Google & Crawlers -->
+  <meta itemprop="name" content="${cardTitle}">
+  <meta itemprop="description" content="${cardDescription}">
+  <meta itemprop="image" content="${imageUrl}">
+
+  <!-- Instant Browser Redirect for human visitors -->
+  <meta http-equiv="refresh" content="0;url=${targetUrl}">
+  <link rel="canonical" href="${targetUrl}">
+</head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;text-align:center;padding:40px;background:#0f172a;color:#ffffff;">
+  <div style="max-width:400px;margin:40px auto;background:#1e293b;padding:24px;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+    <img src="${imageUrl}" alt="${normalized.name}" style="width:100%;max-height:240px;object-fit:contain;border-radius:12px;margin-bottom:16px;background:#ffffff;" />
+    <h2 style="font-size:18px;margin:0 0 8px;line-height:1.3;">${normalized.name}</h2>
+    <p style="font-size:20px;font-weight:bold;color:#38bdf8;margin:0 0 16px;">${priceFormatted}</p>
+    <p style="font-size:13px;color:#94a3b8;margin:0 0 20px;">Redirecting to E-Spare Hub Storefront...</p>
+    <a href="${targetUrl}" style="display:inline-block;background:#38bdf8;color:#0f172a;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:14px;">Open Product Page</a>
+  </div>
+  <script>window.location.href = "${targetUrl}";</script>
+</body>
+</html>`;
+
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        return res.send(html);
+    } catch (error) {
+        console.error("Error generating product share preview:", error);
+        return res.status(500).send("Error generating preview");
+    }
+};
+
+
