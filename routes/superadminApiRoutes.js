@@ -54,6 +54,8 @@ router.get("/vendors", enforceOwner, VendorManagementApi.getVendors);
 router.post("/vendors", enforceOwner, VendorManagementApi.createVendor);
 router.post("/vendors/:id/approve", enforceOwner, VendorManagementApi.approveVendor);
 router.post("/vendors/:id/block", enforceOwner, VendorManagementApi.blockVendor);
+router.patch("/vendors/:id/toggle-coupons", enforceOwner, VendorManagementApi.toggleVendorCouponPermission);
+router.post("/vendors/:id/toggle-coupons", enforceOwner, VendorManagementApi.toggleVendorCouponPermission);
 router.delete("/vendors/:id", enforceOwner, VendorManagementApi.deleteVendor);
 router.put("/vendors/:id", enforceOwner, VendorManagementApi.updateVendorProfile);
 router.patch("/vendors/:id/kyc", enforceOwner, VendorManagementApi.updateKycStatus);

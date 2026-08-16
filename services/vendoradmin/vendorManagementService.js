@@ -84,6 +84,16 @@ export const blockVendor = async (id) => {
   return await vendor.save();
 };
 
+export const toggleVendorCouponPermission = async (id) => {
+  const vendor = await Admin.findById(id);
+  if (!vendor) throw new Error('Vendor not found');
+  vendor.isCouponEnabled = !vendor.isCouponEnabled;
+  await vendor.save();
+  const vendorData = vendor.toObject();
+  delete vendorData.password;
+  return vendorData;
+};
+
 export const deleteVendor = async (id) => {
   const vendor = await Admin.findById(id);
   if (!vendor) throw new Error('Vendor not found');

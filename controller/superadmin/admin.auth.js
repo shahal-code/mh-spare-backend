@@ -204,6 +204,7 @@ export const session = async (req, res) => {
         role: req.admin.role,
         status: req.admin.status,
         storeDetails: req.admin.storeDetails,
+        isCouponEnabled: Boolean(req.admin.isCouponEnabled),
         kycStatus: req.admin.kycStatus,
         kycDocuments: req.admin.kycDocuments
       }

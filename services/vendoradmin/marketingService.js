@@ -39,6 +39,14 @@ export const getCouponById = async (id, vendorId = null) => {
 };
 
 export const createCoupon = async (data, adminId = null, creatorRole = 'vendor') => {
+  if (creatorRole === 'vendor' && adminId) {
+    const Admin = (await import("../../models/adminModel.js")).default;
+    const vendor = await Admin.findById(adminId);
+    if (!vendor || !vendor.isCouponEnabled) {
+      throw new Error("Coupon feature is disabled for your store. Please contact Super Admin to activate it.");
+    }
+  }
+
   const { code, discountType, discountValue, minPurchaseAmount, maxDiscountAmount, expirationDate, applicableOnBulk } = data;
   if (!code || !discountType || !discountValue || !expirationDate) {
     throw new Error("All required fields must be filled.");
@@ -67,6 +75,14 @@ export const updateCoupon = async (id, data, vendorId = null) => {
     throw new Error("You do not have permission to edit this coupon. Super Admin coupons cannot be modified.");
   }
 
+  if (vendorId) {
+    const Admin = (await import("../../models/adminModel.js")).default;
+    const vendor = await Admin.findById(vendorId);
+    if (!vendor || !vendor.isCouponEnabled) {
+      throw new Error("Coupon feature is disabled for your store. Please contact Super Admin to activate it.");
+    }
+  }
+
   const { code, discountType, discountValue, minPurchaseAmount, maxDiscountAmount, expirationDate, applicableOnBulk } = data;
   if (!code || !discountType || !discountValue || !expirationDate) {
     throw new Error("All required fields must be filled.");
@@ -93,6 +109,14 @@ export const toggleCoupon = async (id, vendorId = null) => {
     throw new Error("You do not have permission to toggle or block this coupon. Super Admin coupons cannot be modified.");
   }
 
+  if (vendorId) {
+    const Admin = (await import("../../models/adminModel.js")).default;
+    const vendor = await Admin.findById(vendorId);
+    if (!vendor || !vendor.isCouponEnabled) {
+      throw new Error("Coupon feature is disabled for your store. Please contact Super Admin to activate it.");
+    }
+  }
+
   coupon.isActive = !coupon.isActive;
   return await coupon.save();
 };
@@ -103,6 +127,14 @@ export const deleteCoupon = async (id, vendorId = null) => {
 
   if (coupon.creatorRole === 'superadmin' || (vendorId && coupon.createdBy?.toString() !== vendorId.toString())) {
     throw new Error("You do not have permission to delete this coupon. Super Admin coupons cannot be modified.");
+  }
+
+  if (vendorId) {
+    const Admin = (await import("../../models/adminModel.js")).default;
+    const vendor = await Admin.findById(vendorId);
+    if (!vendor || !vendor.isCouponEnabled) {
+      throw new Error("Coupon feature is disabled for your store. Please contact Super Admin to activate it.");
+    }
   }
 
   await Coupon.findByIdAndDelete(id);

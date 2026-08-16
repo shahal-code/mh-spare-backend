@@ -76,6 +76,19 @@ export const blockVendor = async (req, res) => {
   }
 };
 
+export const toggleVendorCouponPermission = async (req, res) => {
+  try {
+    const vendor = await VendorManagementService.toggleVendorCouponPermission(req.params.id);
+    res.json({
+      success: true,
+      vendor,
+      message: `Coupon permission ${vendor.isCouponEnabled ? 'enabled' : 'disabled'} for vendor.`
+    });
+  } catch (error) {
+    sendError(res, error, error.message.includes("not found") ? 404 : 400);
+  }
+};
+
 export const deleteVendor = async (req, res) => {
   try {
     await VendorManagementService.deleteVendor(req.params.id);

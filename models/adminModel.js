@@ -41,6 +41,10 @@ const adminSchema = new mongoose.Schema(
       phone: String,
       address: String,
     },
+    isCouponEnabled: {
+      type: Boolean,
+      default: false,
+    },
     loginOtp: String,
     loginOtpExpires: Date,
   },

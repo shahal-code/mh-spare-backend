@@ -76,7 +76,10 @@ export const login = async (req, res) => {
         fullname: admin.fullname,
         email: admin.email,
         role: admin.role,
-        status: admin.status
+        status: admin.status,
+        isCouponEnabled: Boolean(admin.isCouponEnabled),
+        storeDetails: admin.storeDetails,
+        kycStatus: admin.kycStatus
       }
     });
   } catch (error) {
@@ -88,7 +91,7 @@ export const login = async (req, res) => {
 /**
  * Handles session verification and returns admin details
  */
-export const session = async (req, res) => {
+export const me = async (req, res) => {
   try {
     // verifyAdminJWT already checks the token and sets req.admin
     res.json({
@@ -100,6 +103,7 @@ export const session = async (req, res) => {
         role: req.admin.role,
         status: req.admin.status,
         storeDetails: req.admin.storeDetails,
+        isCouponEnabled: Boolean(req.admin.isCouponEnabled),
         kycStatus: req.admin.kycStatus,
         kycDocuments: req.admin.kycDocuments
       }
