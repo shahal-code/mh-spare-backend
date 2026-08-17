@@ -27,7 +27,7 @@ export const login = async (req, res) => {
         const userJwtExpiry = process.env.USER_JWT_EXPIRES_IN || "30d";
         const token = createToken({ id: user._id, type: "user" }, userJwtExpiry);
         
-        res.status(200).json({ success: true, message: "Login successful", token, user: { id: user._id, fullname: user.fullname, email: user.email, isBlocked: user.isBlocked, isGoogleAuth: !!user.googleId } });
+        res.status(200).json({ success: true, message: "Login successful", token, user: { id: user._id, fullname: user.fullname, email: user.email, profileImage: user.profileImage, isBlocked: user.isBlocked, isGoogleAuth: !!user.googleId } });
     } catch (error) {
         console.error("Login Error:", error.message);
         if (error.isBlocked || error.message.toLowerCase().includes("blocked")) {
@@ -82,7 +82,7 @@ export const Verifyotp = async (req, res) => {
                 const user = await AuthService.completeSignup(decoded.userData);
                 const userJwtExpiry = process.env.USER_JWT_EXPIRES_IN || "30d";
                 const authToken = createToken({ id: user._id, type: "user" }, userJwtExpiry);
-                return res.status(201).json({ success: true, message: "Account created successfully", token: authToken, user: { id: user._id, fullname: user.fullname, email: user.email } });
+                return res.status(201).json({ success: true, message: "Account created successfully", token: authToken, user: { id: user._id, fullname: user.fullname, email: user.email, profileImage: user.profileImage } });
             } else {
                 return res.status(400).json({ success: false, message: "Invalid token type" });
             }
