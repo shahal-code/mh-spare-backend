@@ -24,7 +24,8 @@ export const login = async (req, res) => {
         }
 
         const user = await AuthService.login(email, password);
-        const token = createToken({ id: user._id, type: "user" }, "24h");
+        const userJwtExpiry = process.env.USER_JWT_EXPIRES_IN || "30d";
+        const token = createToken({ id: user._id, type: "user" }, userJwtExpiry);
         
         res.status(200).json({ success: true, message: "Login successful", token, user: { id: user._id, fullname: user.fullname, email: user.email, isBlocked: user.isBlocked, isGoogleAuth: !!user.googleId } });
     } catch (error) {
@@ -79,7 +80,8 @@ export const Verifyotp = async (req, res) => {
                 return res.status(200).json({ success: true, message: "OTP verified", verifiedResetToken });
             } else if (decoded.type === "signup") {
                 const user = await AuthService.completeSignup(decoded.userData);
-                const authToken = createToken({ id: user._id, type: "user" }, "24h");
+                const userJwtExpiry = process.env.USER_JWT_EXPIRES_IN || "30d";
+                const authToken = createToken({ id: user._id, type: "user" }, userJwtExpiry);
                 return res.status(201).json({ success: true, message: "Account created successfully", token: authToken, user: { id: user._id, fullname: user.fullname, email: user.email } });
             } else {
                 return res.status(400).json({ success: false, message: "Invalid token type" });

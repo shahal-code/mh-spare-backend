@@ -42,5 +42,5 @@ export const CACHE_TTL = {
     OFFERS: 300,                 // 5 minutes
     BRANDS: 1800,                // 30 minutes
     DASHBOARD: 300,              // 5 minutes
-    JWT_BLACKLIST: 86400,        // 24 hours
+    JWT_BLACKLIST: 2592000,      // 30 days (covers extended token lifetimes)
 };

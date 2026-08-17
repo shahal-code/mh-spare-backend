@@ -99,8 +99,11 @@ export const verifyUserJWT = async (req, res, next) => {
 /**
  * Helper to generate JWT
  */
-export const generateToken = (id, type) => {
+export const generateToken = (id, type, expiresIn) => {
+  const defaultExpiry = type === "user"
+    ? (process.env.USER_JWT_EXPIRES_IN || "30d")
+    : (process.env.ADMIN_JWT_EXPIRES_IN || "7d");
   return jwt.sign({ id, type }, JWT_SECRET, {
-    expiresIn: "1d",
+    expiresIn: expiresIn || defaultExpiry,
   });
 };
