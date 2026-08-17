@@ -34,6 +34,7 @@ export const apiLimiter = rateLimit({
   message: { success: false, message: 'Too many requests, please slow down' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
   store: getStore('rl:api:'),
 });
 
@@ -44,6 +45,7 @@ export const userAuthLimiter = rateLimit({
   message: { success: false, message: `Too many login attempts, please try again after ${authLockoutMinutes} minutes` },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
   keyGenerator: emailOrIpKey,
   store: getStore('rl:user:'),
 });
@@ -55,6 +57,7 @@ export const vendorAuthLimiter = rateLimit({
   message: { success: false, message: `Too many vendor login attempts, please try again after ${authLockoutMinutes} minutes` },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
   keyGenerator: emailOrIpKey,
   store: getStore('rl:vendor:'),
 });
@@ -66,6 +69,7 @@ export const superAdminAuthLimiter = rateLimit({
   message: { success: false, message: `Too many admin login attempts, please try again after ${authLockoutMinutes} minutes` },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
   keyGenerator: emailOrIpKey,
   store: getStore('rl:superadmin:'),
 });
