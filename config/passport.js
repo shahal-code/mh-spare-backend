@@ -2,14 +2,15 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import User from "../models/userModel.js";
 
+const googleClientId = process.env.GOOGLE_CLIENT_ID || "placeholder_google_client_id.apps.googleusercontent.com";
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET || "placeholder_google_client_secret";
+
 passport.use(
   new GoogleStrategy(
     {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      clientID: googleClientId,
+      clientSecret: googleClientSecret,
       callbackURL: "/user/auth/google/callback",
-
-
       userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
     },
 
